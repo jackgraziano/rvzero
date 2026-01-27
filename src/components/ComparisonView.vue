@@ -78,6 +78,39 @@
         :showOnlyDifferences="showOnlyDifferences"
       />
 
+      <!-- Bloco MP -->
+      <MPBlock
+        v-if="dadger1Data.MP && dadger2Data.MP"
+        :dadger1Data="dadger1Data"
+        :dadger1Name="dadger1Name"
+        :dadger2Data="dadger2Data"
+        :dadger2Name="dadger2Name"
+        :compareMode="compareMode"
+        :showOnlyDifferences="showOnlyDifferences"
+      />
+
+      <!-- Bloco FD -->
+      <FDBlock
+        v-if="dadger1Data.FD && dadger2Data.FD"
+        :dadger1Data="dadger1Data"
+        :dadger1Name="dadger1Name"
+        :dadger2Data="dadger2Data"
+        :dadger2Name="dadger2Name"
+        :compareMode="compareMode"
+        :showOnlyDifferences="showOnlyDifferences"
+      />
+
+      <!-- Bloco VE -->
+      <VEBlock
+        v-if="dadger1Data.VE && dadger2Data.VE"
+        :dadger1Data="dadger1Data"
+        :dadger1Name="dadger1Name"
+        :dadger2Data="dadger2Data"
+        :dadger2Name="dadger2Name"
+        :compareMode="compareMode"
+        :showOnlyDifferences="showOnlyDifferences"
+      />
+
       <!-- Futuros blocos virão aqui -->
       <!-- Exemplo de como adicionar novos blocos:
       <OutroBlock
@@ -100,6 +133,9 @@ import CTBlock from './blocks/CTBlock.vue'
 import IABlock from './blocks/IABlock.vue'
 import UHBlock from './blocks/UHBlock.vue'
 import TIBlock from './blocks/TIBlock.vue'
+import MPBlock from './blocks/MPBlock.vue'
+import FDBlock from './blocks/FDBlock.vue'
+import VEBlock from './blocks/VEBlock.vue'
 
 export default {
   name: 'ComparisonView',
@@ -109,7 +145,10 @@ export default {
     CTBlock,
     IABlock,
     UHBlock,
-    TIBlock
+    TIBlock,
+    MPBlock,
+    FDBlock,
+    VEBlock
   },
   props: {
     dadger1Data: {

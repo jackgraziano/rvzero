@@ -10,6 +10,9 @@ import { parseCT } from './ctParser.js'
 import { parseIA } from './iaParser.js'
 import { parseUH } from './uhParser.js'
 import { parseTI } from './tiParser.js'
+import { parseMP } from './mpParser.js'
+import { parseFD } from './fdParser.js'
+import { parseVE } from './veParser.js'
 
 /**
  * Função principal para fazer o parse do dadger
@@ -24,7 +27,10 @@ export function parseDadger(fileContent) {
     CT: [],
     IA: [],
     UH: [],
-    TI: []
+    TI: [],
+    MP: [],
+    FD: [],
+    VE: []
   }
 
   // Dividir o arquivo em linhas
@@ -65,6 +71,15 @@ export function parseDadger(fileContent) {
 
   // Processar bloco TI (todos os estágios são declarados, não precisa expansão)
   result.TI = parseTI(lines)
+
+  // Processar bloco MP (todos os estágios são declarados, não precisa expansão)
+  result.MP = parseMP(lines)
+
+  // Processar bloco FD (todos os estágios são declarados, não precisa expansão)
+  result.FD = parseFD(lines)
+
+  // Processar bloco VE (todos os estágios são declarados, não precisa expansão)
+  result.VE = parseVE(lines)
 
   return result
 }
