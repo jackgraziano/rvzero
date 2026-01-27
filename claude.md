@@ -159,13 +159,69 @@ onlyInOne = true  // Registro não pareado
 → SEMPRE mostrada no filtro "apenas diferenças"
 ```
 
+## Arquitetura de Composables
+
+### useBlockComparison (Base)
+Lógica comum para todos os blocos:
+- Collapse/expand
+- Sincronização de scroll
+- Ordenação de colunas
+- Filtragem por diferenças
+
+**Usado por:** Todos os blocos
+
+### useTemporalComparison (Arrays de 24 valores)
+Para blocos com array fixo de valores por estágio:
+- Estrutura: cada registro tem array[24]
+- Alinhamento por entidade + índice de estágio
+- Exemplos: TI, MP, FD, VE
+
+**Parâmetros:**
+```javascript
+useTemporalComparison(
+  props,
+  'MP',                                    // blockKey
+  'fatores',                               // valueField (nome do array)
+  r => r.numero_usina,                     // getEntityKey
+  (registros, key) => registros.find(...), // findEntity
+  customCompare                            // opcional: função de comparação customizada
+)
+```
+
+### useEntityTemporalComparison (Entidade × Tempo)
+Para blocos com estrutura "entidade × tempo":
+- Estrutura: cada linha = entidade, cada coluna = estágio/data
+- Alinhamento por entidade + busca de registro por estágio
+- Suporta valores complexos (objetos)
+- Exemplo: RE
+
+**Parâmetros:**
+```javascript
+useEntityTemporalComparison(
+  props,
+  'RE',                   // blockKey
+  'numero_restricao',     // entityKey (campo que identifica entidade)
+  getEntityValue,         // função para extrair valor de um registro
+  compareValues           // função para comparar dois valores
+)
+```
+
+**Retorno:**
+```javascript
+{
+  colunasTempo,  // Array de colunas [{ key, label, data/estagio }]
+  alignedData    // Array de rows com { valores: { [colKey]: { valor1, valor2, diff, sameTemporality } } }
+}
+```
+
 ## Tipos de Blocos
 
-### Blocos com Expansão Temporal
+### Blocos com Expansão Temporal (DP, PQ, CT, IA)
 **Características:**
 - Registros podem ter estágios esparsos (ex: estágios 1, 3, 5)
 - Parser faz expansão por forward-fill
-- Exemplos: DP, PQ, CT, IA
+- Cada linha = (estágio × entidade)
+- Usa `alignByEstagio` / `alignByData`
 
 **Chave de agrupamento:** Entidade + Estágio
 ```javascript
@@ -190,17 +246,44 @@ key = `${estagio}-${codigo_usina}`
 }
 ```
 
-### Blocos de Estágio Único
+### Blocos de Estágio Único (UH)
 **Características:**
 - Só existem para estágio 1
 - Não têm dimensão temporal
-- Exemplo: UH
+- Usa `alignByEstagio` / `alignByData`
 
 **Comparação:**
 ```javascript
 // Sempre compara estágio 1 vs estágio 1
 // Sem conceito de temporalidade
 ```
+
+### Blocos Entidade × Tempo (RE)
+**Características:**
+- Estrutura matricial: linhas = entidades, colunas = estágios/datas
+- Valores complexos por célula (objetos com múltiplos campos)
+- Expansão de estágios no parser
+- Usa `useEntityTemporalComparison`
+
+**Estrutura de dados:**
+```javascript
+// Parser retorna array de registros expandidos
+[
+  { numero_restricao: 21, estagio: 1, limites: {...}, fatores_uh: [...] },
+  { numero_restricao: 21, estagio: 2, limites: {...}, fatores_uh: [...] },
+  { numero_restricao: 21, estagio: 3, limites: {...}, fatores_uh: [...] },
+  { numero_restricao: 25, estagio: 1, limites: {...}, fatores_ut: [...] },
+  ...
+]
+
+// Componente agrupa por numero_restricao e distribui em colunas
+```
+
+**Vantagens:**
+- Alinhamento visual perfeito
+- Comparação temporal clara
+- Suporte a valores complexos (limites + fatores)
+- Reutilizável para outros blocos similares
 
 ## Reutilização de Componentes
 
@@ -306,6 +389,349 @@ result.NOME = parseNOME(lines, numeroEstagios)
   :compareMode="compareMode"
   :showOnlyDifferences="showOnlyDifferences"
 />
+```
+
+## Caso de Estudo: Bloco RE (Restrições Elétricas)
+
+O bloco RE é um exemplo completo de bloco complexo com estrutura "entidade × tempo". Esta seção documenta sua implementação para servir como referência para blocos similares.
+
+### Estrutura do Bloco RE
+
+O bloco RE é composto por **múltiplos mnemonicos**:
+
+```
+RE   21   1    4           <- Cabeçalho da restrição
+LU   21   1    55.00 ...   <- Limites por patamar
+LU   21   3    55.00 ...   <- Limites para outro estágio
+FU   21   1    21    1.0   <- Fator usina hidráulica
+FT   21   1    10    0.5   <- Fator usina térmica
+FI   21   1    SE   NE ...  <- Fator interligação
+FE   21   1    5     0.2   <- Fator contrato
+```
+
+**Características:**
+- Cada restrição agrupa múltiplos registros (RE + LU + FU + FT + FI + FE)
+- Estágios podem ser esparsos (ex: LU para estágios 1 e 3, mas não 2)
+- Valores complexos (limites + fatores)
+- Expansão necessária por forward-fill
+
+### Passo 1: Parser (`reParser.js`)
+
+O parser deve:
+1. Agrupar registros por restrição
+2. Parse de cada mnemônico
+3. Expandir estágios faltantes
+
+```javascript
+export function parseRE(lines, numeroEstagios) {
+  const restricoes = []
+  let restricaoAtual = null
+
+  for (const line of lines) {
+    if (line.startsWith('RE ')) {
+      // Salvar restrição anterior se existir
+      if (restricaoAtual) {
+        restricoes.push(restricaoAtual)
+      }
+
+      // Iniciar nova restrição
+      const numero = parseInt(line.substring(4, 8).trim())
+      const estagioInicial = parseInt(line.substring(9, 11).trim())
+      const estagioFinal = parseInt(line.substring(14, 16).trim())
+
+      restricaoAtual = {
+        numero_restricao: numero,
+        estagio_inicial: estagioInicial,
+        estagio_final: estagioFinal,
+        limites: [],
+        fatores_uh: [],
+        fatores_ut: [],
+        fatores_interligacao: [],
+        fatores_contrato: []
+      }
+    } else if (line.startsWith('LU ') && restricaoAtual) {
+      const limite = parseLULine(line)
+      if (limite) restricaoAtual.limites.push(limite)
+    } else if (line.startsWith('FU ') && restricaoAtual) {
+      const fator = parseFULine(line)
+      if (fator) restricaoAtual.fatores_uh.push(fator)
+    }
+    // ... FT, FI, FE similares
+  }
+
+  // Salvar última restrição
+  if (restricaoAtual) {
+    restricoes.push(restricaoAtual)
+  }
+
+  // IMPORTANTE: Expandir estágios
+  return expandirRestricoes(restricoes, numeroEstagios)
+}
+
+function expandirRestricoes(restricoes, numeroEstagios) {
+  const expandidos = []
+
+  for (const restricao of restricoes) {
+    // Criar mapas por estágio
+    const limitePorEstagio = criarMapaEstagio(restricao.limites)
+    const fatoresUhPorEstagio = criarMapaEstagioArray(restricao.fatores_uh)
+    // ... outros fatores
+
+    // Expandir cada estágio de estagio_inicial até estagio_final
+    for (let estagio = restricao.estagio_inicial; estagio <= restricao.estagio_final; estagio++) {
+      const limites = buscarOuHerdar(limitePorEstagio, estagio, restricao.estagio_inicial)
+      const fatores_uh = buscarOuHerdarArray(fatoresUhPorEstagio, estagio, restricao.estagio_inicial)
+
+      // Criar registro expandido
+      expandidos.push({
+        numero_restricao: restricao.numero_restricao,
+        estagio,
+        limites,
+        fatores_uh,
+        fatores_ut,
+        fatores_interligacao,
+        fatores_contrato
+      })
+    }
+  }
+
+  return expandidos
+}
+
+// Buscar valor no mapa ou herdar do estágio anterior (forward-fill)
+function buscarOuHerdar(mapa, estagio, estagioInicial) {
+  if (mapa[estagio]) return mapa[estagio]
+
+  // Buscar último estágio anterior
+  for (let e = estagio - 1; e >= estagioInicial; e--) {
+    if (mapa[e]) return mapa[e]
+  }
+
+  return null
+}
+```
+
+**Resultado do parser:**
+```javascript
+[
+  { numero_restricao: 21, estagio: 1, limites: {...}, fatores_uh: [...] },
+  { numero_restricao: 21, estagio: 2, limites: {...}, fatores_uh: [...] },  // <- expandido
+  { numero_restricao: 21, estagio: 3, limites: {...}, fatores_uh: [...] },
+  { numero_restricao: 21, estagio: 4, limites: {...}, fatores_uh: [...] },
+]
+```
+
+### Passo 2: Componente (`REBlock.vue`)
+
+O componente usa o composable `useEntityTemporalComparison`:
+
+```vue
+<script>
+import { formatNumber } from '../../utils/comparison.js'
+import { useBlockComparison } from '../../composables/useBlockComparison.js'
+import { useEntityTemporalComparison } from '../../composables/useEntityTemporalComparison.js'
+
+export default {
+  name: 'REBlock',
+  props: { /* props padrão */ },
+  setup(props) {
+    // 1. Função para extrair valor de um registro
+    const getEntityValue = (registro) => {
+      if (!registro) return null
+      return {
+        limites: registro.limites,
+        fatores_uh: registro.fatores_uh,
+        fatores_ut: registro.fatores_ut,
+        fatores_interligacao: registro.fatores_interligacao,
+        fatores_contrato: registro.fatores_contrato
+      }
+    }
+
+    // 2. Função para comparar dois valores
+    const compareValues = (val1, val2) => {
+      if (!val1 && !val2) return false
+      if (!val1 || !val2) return true
+
+      // Comparar limites campo a campo
+      const lim1 = val1.limites
+      const lim2 = val2.limites
+      if (lim1 && lim2) {
+        const campos = ['pesado_min', 'pesado_max', 'medio_min', 'medio_max', 'leve_min', 'leve_max']
+        for (const campo of campos) {
+          if (lim1[campo] !== lim2[campo]) return true
+        }
+      } else if (lim1 || lim2) {
+        return true
+      }
+
+      // Comparar quantidade de fatores
+      if ((val1.fatores_uh?.length || 0) !== (val2.fatores_uh?.length || 0)) return true
+      // ... comparar outros fatores
+
+      return false
+    }
+
+    // 3. Usar composable
+    const { colunasTempo, alignedData } = useEntityTemporalComparison(
+      props,
+      'RE',                  // blockKey
+      'numero_restricao',    // entityKey
+      getEntityValue,
+      compareValues
+    )
+
+    // 4. Lógica comum (collapse, scroll, sort, filter)
+    const {
+      collapsed,
+      tableContainer1,
+      tableContainer2,
+      toggleCollapsed,
+      sortBy,
+      getSortIcon,
+      onScroll1,
+      onScroll2,
+      createFilteredData
+    } = useBlockComparison(props, alignedData)
+
+    const filteredData = createFilteredData(['has_diff'])
+
+    return { collapsed, colunasTempo, filteredData, /* ... */ }
+  }
+}
+</script>
+```
+
+### Passo 3: Template
+
+**Estrutura:**
+- Cada LINHA = uma restrição
+- Cada COLUNA = um estágio/data
+- Classes CSS para formatação
+
+```vue
+<template>
+  <div class="re-block">
+    <!-- Header com collapse -->
+    <div class="block-header" @click="toggleCollapsed">
+      <span class="block-icon">{{ collapsed ? '▶' : '▼' }}</span>
+      <h3>BLOCO RE - RESTRIÇÕES ELÉTRICAS</h3>
+    </div>
+
+    <div v-show="!collapsed" class="block-content">
+      <div class="comparison-tables">
+        <!-- Tabela Dadger 1 -->
+        <div class="table-side">
+          <h4>{{ dadger1Name }}</h4>
+          <div class="table-container" :ref="el => tableContainer1 = el" @scroll="onScroll1">
+            <table>
+              <thead>
+                <tr>
+                  <th @click="sortBy('numero_restricao')">Nº Restr{{ getSortIcon('numero_restricao') }}</th>
+                  <th v-for="col in colunasTempo" @click="sortBy(col.key)">
+                    {{ col.label }}{{ getSortIcon(col.key) }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in filteredData" :class="{ 'highlighted': row.onlyInOne }">
+                  <td>{{ row.numero_restricao }}</td>
+                  <td v-for="col in colunasTempo"
+                      :class="{
+                        'diff': row.valores[col.key]?.diff && row.valores[col.key]?.sameTemporality,
+                        'highlighted': row.valores[col.key]?.dataExisteEmAmbos && !row.valores[col.key]?.sameTemporality,
+                        'faded': !row.valores[col.key]?.dataExisteEmAmbos && !row.valores[col.key]?.sameTemporality
+                      }">
+                    <!-- Exibir valores se existirem -->
+                    <div v-if="row.valores[col.key]?.valor1">
+                      <!-- Renderizar limites e fatores -->
+                    </div>
+                    <!-- Placeholder vazio para manter altura -->
+                    <div v-else class="restricao-empty">
+                      <div class="limites-section">
+                        <strong>Limites:</strong>
+                        <div class="limite-row">-</div>
+                        <div class="limite-row">-</div>
+                        <div class="limite-row">-</div>
+                      </div>
+                      <div class="fatores-section"><span>-</span></div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tabela Dadger 2 (idêntica) -->
+      </div>
+    </div>
+  </div>
+</template>
+```
+
+**IMPORTANTE - Placeholder vazio:**
+Para manter alinhamento vertical, quando não há valor, exibir estrutura vazia com mesma altura:
+```vue
+<div v-else class="restricao-empty">
+  <!-- Mesma estrutura mas com "-" -->
+</div>
+```
+
+### Passo 4: CSS
+
+```css
+/* Altura mínima fixa para evitar desalinhamento */
+.restricao-details {
+  min-height: 85px;
+  display: flex;
+  flex-direction: column;
+}
+
+.limites-section {
+  min-height: 60px;
+}
+
+.limite-row {
+  height: 14px;
+}
+
+.fatores-section {
+  min-height: 20px;
+}
+
+.restricao-empty {
+  opacity: 0.3;
+}
+```
+
+### Como Criar um Bloco Similar
+
+Para criar um novo bloco com estrutura "entidade × tempo":
+
+1. **Parser**: Agrupar registros por entidade e expandir estágios
+2. **getEntityValue**: Extrair campos relevantes do registro
+3. **compareValues**: Comparar os campos extraídos
+4. **Template**:
+   - Renderizar valor quando existir
+   - Renderizar placeholder vazio quando não existir
+5. **CSS**: Garantir alturas mínimas fixas
+
+**Exemplo - Bloco AC (Acordos):**
+```javascript
+// Parser retorna
+[
+  { codigo_acordo: 5, estagio: 1, dados_acordo: {...} },
+  { codigo_acordo: 5, estagio: 2, dados_acordo: {...} },
+]
+
+// Componente
+const { colunasTempo, alignedData } = useEntityTemporalComparison(
+  props,
+  'AC',
+  'codigo_acordo',
+  r => r.dados_acordo,
+  (v1, v2) => JSON.stringify(v1) !== JSON.stringify(v2)
+)
 ```
 
 ## Boas Práticas

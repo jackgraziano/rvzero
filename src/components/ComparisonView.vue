@@ -111,6 +111,17 @@
         :showOnlyDifferences="showOnlyDifferences"
       />
 
+      <!-- Bloco RE -->
+      <REBlock
+        v-if="dadger1Data.RE && dadger2Data.RE"
+        :dadger1Data="dadger1Data"
+        :dadger1Name="dadger1Name"
+        :dadger2Data="dadger2Data"
+        :dadger2Name="dadger2Name"
+        :compareMode="compareMode"
+        :showOnlyDifferences="showOnlyDifferences"
+      />
+
       <!-- Futuros blocos virão aqui -->
       <!-- Exemplo de como adicionar novos blocos:
       <OutroBlock
@@ -136,6 +147,7 @@ import TIBlock from './blocks/TIBlock.vue'
 import MPBlock from './blocks/MPBlock.vue'
 import FDBlock from './blocks/FDBlock.vue'
 import VEBlock from './blocks/VEBlock.vue'
+import REBlock from './blocks/REBlock.vue'
 
 export default {
   name: 'ComparisonView',
@@ -148,7 +160,8 @@ export default {
     TIBlock,
     MPBlock,
     FDBlock,
-    VEBlock
+    VEBlock,
+    REBlock
   },
   props: {
     dadger1Data: {

@@ -13,6 +13,7 @@ import { parseTI } from './tiParser.js'
 import { parseMP } from './mpParser.js'
 import { parseFD } from './fdParser.js'
 import { parseVE } from './veParser.js'
+import { parseRE } from './reParser.js'
 
 /**
  * Função principal para fazer o parse do dadger
@@ -30,7 +31,8 @@ export function parseDadger(fileContent) {
     TI: [],
     MP: [],
     FD: [],
-    VE: []
+    VE: [],
+    RE: []
   }
 
   // Dividir o arquivo em linhas
@@ -80,6 +82,9 @@ export function parseDadger(fileContent) {
 
   // Processar bloco VE (todos os estágios são declarados, não precisa expansão)
   result.VE = parseVE(lines)
+
+  // Processar bloco RE (restrições elétricas com expansão de estágios)
+  result.RE = parseRE(lines, numeroEstagios)
 
   return result
 }

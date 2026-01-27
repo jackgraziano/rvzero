@@ -64,7 +64,12 @@ export function useBlockComparison(props, alignedDataComputed) {
   const sortedData = computed(() => {
     const data = alignedDataComputed.value
 
+    // Se não há coluna de sort definida, tentar ordenar por numero_restricao se existir
     if (!sortColumn.value) {
+      // Verificar se os dados têm numero_restricao
+      if (data.length > 0 && 'numero_restricao' in data[0]) {
+        return [...data].sort((a, b) => a.numero_restricao - b.numero_restricao)
+      }
       return data
     }
 
@@ -78,9 +83,12 @@ export function useBlockComparison(props, alignedDataComputed) {
           valB = b.dadger1?.display || b.dadger2?.display || ''
           break
         default:
-          // Para outras colunas, tentar pegar o valor diretamente
-          valA = a.dadger1?.[sortColumn.value] ?? a.dadger2?.[sortColumn.value] ?? 0
-          valB = b.dadger1?.[sortColumn.value] ?? b.dadger2?.[sortColumn.value] ?? 0
+          // Para outras colunas, tentar pegar o valor:
+          // 1. Diretamente da row (ex: numero_restricao)
+          // 2. De dadger1/dadger2
+          // 3. Default 0
+          valA = a[sortColumn.value] ?? a.dadger1?.[sortColumn.value] ?? a.dadger2?.[sortColumn.value] ?? 0
+          valB = b[sortColumn.value] ?? b.dadger1?.[sortColumn.value] ?? b.dadger2?.[sortColumn.value] ?? 0
       }
 
       // Comparar strings vs números
