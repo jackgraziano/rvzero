@@ -64,6 +64,25 @@ export function collectUniqueValues(array1, array2, property) {
 }
 
 /**
+ * Encontra o estágio correspondente a uma data específica
+ * @param {string} data - Data no formato dd/mm/aaaa
+ * @param {object} dadgerData - Dados do dadger
+ * @returns {number|null} Número do estágio ou null se não encontrado
+ */
+export function encontrarEstagioPorDataV2(data, dadgerData) {
+  if (!dadgerData.info_dadger?.datas_estagios) return null
+
+  const datasEstagios = dadgerData.info_dadger.datas_estagios
+  // datasEstagios é um objeto { 1: "01/01/2025", 2: "08/01/2025", ... }
+  for (const [estagio, dataEstagio] of Object.entries(datasEstagios)) {
+    if (dataEstagio === data) {
+      return parseInt(estagio)
+    }
+  }
+  return null
+}
+
+/**
  * Coleta todas as datas únicas presentes nos dois dadgers
  * @param {object} dadger1Data - Dados do primeiro dadger
  * @param {object} dadger2Data - Dados do segundo dadger

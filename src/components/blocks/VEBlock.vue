@@ -31,7 +31,7 @@
                   :key="`d1-${row.key}`"
                   :class="{ 'highlighted': row.onlyInOne }"
                 >
-                  <td class="col-usina">{{ row.numero_usina }}</td>
+                  <td class="col-usina">{{ row.dadger1?.numero_usina || '-' }}</td>
                   <td
                     v-for="col in colunasTempo"
                     :key="`v1-${col.key}`"
@@ -73,7 +73,7 @@
                   :key="`d2-${row.key}`"
                   :class="{ 'highlighted': row.onlyInOne }"
                 >
-                  <td class="col-usina">{{ row.numero_usina }}</td>
+                  <td class="col-usina">{{ row.dadger2?.numero_usina || '-' }}</td>
                   <td
                     v-for="col in colunasTempo"
                     :key="`v2-${col.key}`"
@@ -96,8 +96,10 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
-import { hasDiff, formatNumber } from '../../utils/comparison.js'
+import { computed } from 'vue'
+import { formatNumber } from '../../utils/comparison.js'
+import { useBlockComparison } from '../../composables/useBlockComparison.js'
+import { useTemporalComparison } from '../../composables/useTemporalComparison.js'
 
 export default {
   name: 'VEBlock',
@@ -110,234 +112,39 @@ export default {
     showOnlyDifferences: { type: Boolean, required: true }
   },
   setup(props) {
-    const collapsed = ref(true)
-    const isSyncing = ref(false)
-    const sortColumn = ref(null)
-    const sortDirection = ref('asc')
-    const tableContainer1 = ref(null)
-    const tableContainer2 = ref(null)
+    // Usar composable de comparação temporal
+    const { colunasTempo, alignedData } = useTemporalComparison(
+      props,
+      'VE',  // blockKey
+      'volumes',  // valueField
+      r => r.numero_usina,  // getEntityKey
+      (registros, key) => registros.find(r => r.numero_usina === key)  // findEntity
+    )
 
-    const toggleCollapsed = () => {
-      collapsed.value = !collapsed.value
-    }
-
-    const sortBy = (column) => {
-      if (sortColumn.value === column) {
-        sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
-      } else {
-        sortColumn.value = column
-        sortDirection.value = 'asc'
-      }
-    }
-
-    const getSortIcon = (column) => {
-      if (sortColumn.value !== column) return ''
-      return sortDirection.value === 'asc' ? ' ▲' : ' ▼'
-    }
-
-    const onScroll1 = (event) => {
-      if (isSyncing.value) return
-      isSyncing.value = true
-      const scrollTop = event.target.scrollTop
-      if (tableContainer2.value) {
-        tableContainer2.value.scrollTop = scrollTop
-      }
-      setTimeout(() => {
-        isSyncing.value = false
-      }, 0)
-    }
-
-    const onScroll2 = (event) => {
-      if (isSyncing.value) return
-      isSyncing.value = true
-      const scrollTop = event.target.scrollTop
-      if (tableContainer1.value) {
-        tableContainer1.value.scrollTop = scrollTop
-      }
-      setTimeout(() => {
-        isSyncing.value = false
-      }, 0)
-    }
-
-    // Helper: encontrar estágio por data
-    const encontrarEstagioPorData = (data, dadgerData) => {
-      if (!dadgerData.info_dadger?.datas_estagios) return null
-
-      const datasEstagios = dadgerData.info_dadger.datas_estagios
-      for (const [estagio, dataEstagio] of Object.entries(datasEstagios)) {
-        if (dataEstagio === data) {
-          return parseInt(estagio)
-        }
-      }
-      return null
-    }
-
-    // Helper: coletar datas únicas
-    const collectUniqueDates = () => {
-      const datas = new Set()
-
-      const datas1 = props.dadger1Data.info_dadger?.datas_estagios || {}
-      const datas2 = props.dadger2Data.info_dadger?.datas_estagios || {}
-
-      Object.values(datas1).forEach(d => datas.add(d))
-      Object.values(datas2).forEach(d => datas.add(d))
-
-      return Array.from(datas).sort((a, b) => {
-        const [diaA, mesA, anoA] = a.split('/').map(Number)
-        const [diaB, mesB, anoB] = b.split('/').map(Number)
-        return new Date(anoA, mesA - 1, diaA) - new Date(anoB, mesB - 1, diaB)
-      })
-    }
-
-    // Computed: colunas de tempo baseado no modo de comparação
-    const colunasTempo = computed(() => {
-      const numEstagios1 = props.dadger1Data.info_dadger?.numero_estagios || 0
-      const numEstagios2 = props.dadger2Data.info_dadger?.numero_estagios || 0
-
-      if (props.compareMode === 'data') {
-        const datasUnicas = collectUniqueDates()
-
-        if (datasUnicas.length > 0) {
-          return datasUnicas.map(data => ({
-            key: `data_${data}`,
-            label: data,
-            data: data
-          }))
-        }
-      }
-
-      // Modo ESTAGIO ou fallback
-      const maxEstagios = Math.max(numEstagios1, numEstagios2)
-      const colunas = []
-      for (let i = 1; i <= maxEstagios; i++) {
-        colunas.push({
-          key: `estagio_${i}`,
-          label: `Est ${i}`,
-          estagio: i
-        })
-      }
-      return colunas
+    // Adicionar numero_usina a cada row para exibição
+    const alignedDataWithUsina = computed(() => {
+      return alignedData.value.map(row => ({
+        ...row,
+        numero_usina: row.dadger1?.numero_usina || row.dadger2?.numero_usina
+      }))
     })
 
-    // Computed: dados alinhados
-    const alignedData = computed(() => {
-      const registros1 = props.dadger1Data.VE || []
-      const registros2 = props.dadger2Data.VE || []
+    // Usar composable de comparação base (collapse, sort, scroll, filter)
+    const {
+      collapsed,
+      tableContainer1,
+      tableContainer2,
+      toggleCollapsed,
+      sortBy,
+      getSortIcon,
+      onScroll1,
+      onScroll2,
+      sortedData,
+      createFilteredData
+    } = useBlockComparison(props, alignedDataWithUsina)
 
-      // Coletar todos os números de usina únicos
-      const usinas = new Set()
-      registros1.forEach(r => usinas.add(r.numero_usina))
-      registros2.forEach(r => usinas.add(r.numero_usina))
-
-      const alinhados = []
-
-      for (const numero_usina of usinas) {
-        const reg1 = registros1.find(r => r.numero_usina === numero_usina)
-        const reg2 = registros2.find(r => r.numero_usina === numero_usina)
-
-        const onlyInOne = !reg1 || !reg2
-
-        // Criar objeto de valores alinhados por coluna temporal
-        const valores = {}
-        let temDiferenca = false
-
-        for (const col of colunasTempo.value) {
-          let valor1 = null
-          let valor2 = null
-          let sameTemporality = false
-
-          if (col.data) {
-            // Coluna baseada em DATA
-            const estagio1 = encontrarEstagioPorData(col.data, props.dadger1Data)
-            const estagio2 = encontrarEstagioPorData(col.data, props.dadger2Data)
-
-            const idx1 = estagio1 ? estagio1 - 1 : -1
-            const idx2 = estagio2 ? estagio2 - 1 : -1
-
-            valor1 = idx1 >= 0 ? reg1?.volumes[idx1] ?? null : null
-            valor2 = idx2 >= 0 ? reg2?.volumes[idx2] ?? null : null
-
-            sameTemporality = idx1 >= 0 && idx2 >= 0
-          } else if (col.estagio) {
-            // Coluna baseada em ESTÁGIO
-            const idx = col.estagio - 1
-            valor1 = reg1?.volumes[idx] ?? null
-            valor2 = reg2?.volumes[idx] ?? null
-
-            const temEstagio1 = reg1 && idx < (reg1.volumes?.length || 0)
-            const temEstagio2 = reg2 && idx < (reg2.volumes?.length || 0)
-            sameTemporality = temEstagio1 && temEstagio2
-          }
-
-          const diff = hasDiff(valor1, valor2)
-          if (diff && sameTemporality) temDiferenca = true
-
-          valores[col.key] = {
-            valor1,
-            valor2,
-            diff,
-            sameTemporality
-          }
-        }
-
-        const row = {
-          key: numero_usina,
-          numero_usina,
-          onlyInOne,
-          valores,
-          temDiferenca
-        }
-
-        // Adicionar valores para permitir sort
-        for (const col of colunasTempo.value) {
-          row[col.key] = valores[col.key].valor1 ?? valores[col.key].valor2 ?? 0
-        }
-
-        alinhados.push(row)
-      }
-
-      return alinhados
-    })
-
-    // Computed: dados ordenados
-    const sortedData = computed(() => {
-      const data = alignedData.value
-
-      if (!sortColumn.value) {
-        return data
-      }
-
-      return [...data].sort((a, b) => {
-        let valA = a[sortColumn.value] ?? 0
-        let valB = b[sortColumn.value] ?? 0
-
-        let comparison = 0
-        if (typeof valA === 'string' && typeof valB === 'string') {
-          comparison = valA.toLowerCase().localeCompare(valB.toLowerCase())
-        } else {
-          if (valA > valB) comparison = 1
-          else if (valA < valB) comparison = -1
-        }
-
-        return sortDirection.value === 'asc' ? comparison : -comparison
-      })
-    })
-
-    // Computed: dados filtrados
-    const filteredData = computed(() => {
-      const data = sortedData.value
-
-      if (!props.showOnlyDifferences) {
-        return data
-      }
-
-      return data.filter(row => {
-        if (row.onlyInOne) {
-          return true
-        }
-        return row.temDiferenca
-      })
-    })
+    // Criar dados filtrados
+    const filteredData = createFilteredData([])
 
     return {
       collapsed,
