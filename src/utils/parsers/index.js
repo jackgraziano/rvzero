@@ -7,6 +7,9 @@ import { parseInfoDadger, calcularDatasEstagios, calcularNumeroEstagios } from '
 import { parseDP } from './dpParser.js'
 import { parsePQ } from './pqParser.js'
 import { parseCT } from './ctParser.js'
+import { parseIA } from './iaParser.js'
+import { parseUH } from './uhParser.js'
+import { parseTI } from './tiParser.js'
 
 /**
  * Função principal para fazer o parse do dadger
@@ -18,7 +21,10 @@ export function parseDadger(fileContent) {
     info_dadger: {},
     DP: [],
     PQ: [],
-    CT: []
+    CT: [],
+    IA: [],
+    UH: [],
+    TI: []
   }
 
   // Dividir o arquivo em linhas
@@ -50,6 +56,15 @@ export function parseDadger(fileContent) {
 
   // Processar bloco CT (passa numero_estagios para expansão)
   result.CT = parseCT(lines, numeroEstagios)
+
+  // Processar bloco IA (passa numero_estagios para expansão)
+  result.IA = parseIA(lines, numeroEstagios)
+
+  // Processar bloco UH (só existe para estágio 1, não precisa expansão)
+  result.UH = parseUH(lines)
+
+  // Processar bloco TI (todos os estágios são declarados, não precisa expansão)
+  result.TI = parseTI(lines)
 
   return result
 }

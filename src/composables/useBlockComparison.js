@@ -1,0 +1,146 @@
+import { ref, computed } from 'vue'
+import { formatNumber } from '../utils/comparison.js'
+
+/**
+ * Composable para lógica comum de blocos de comparação
+ * Encapsula: collapse, scroll sync, sorting, filtering
+ */
+export function useBlockComparison(props, alignedDataComputed) {
+  // Estado reativo
+  const collapsed = ref(true)
+  const isSyncing = ref(false)
+  const sortColumn = ref(null)
+  const sortDirection = ref('asc')
+
+  // Refs para containers de scroll
+  const tableContainer1 = ref(null)
+  const tableContainer2 = ref(null)
+
+  // Métodos de controle
+  const toggleCollapsed = () => {
+    collapsed.value = !collapsed.value
+  }
+
+  const sortBy = (column) => {
+    if (sortColumn.value === column) {
+      sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+    } else {
+      sortColumn.value = column
+      sortDirection.value = 'asc'
+    }
+  }
+
+  const getSortIcon = (column) => {
+    if (sortColumn.value !== column) return ''
+    return sortDirection.value === 'asc' ? ' ▲' : ' ▼'
+  }
+
+  // Sincronização de scroll
+  const onScroll1 = (event) => {
+    if (isSyncing.value) return
+    isSyncing.value = true
+    const scrollTop = event.target.scrollTop
+    if (tableContainer2.value) {
+      tableContainer2.value.scrollTop = scrollTop
+    }
+    setTimeout(() => {
+      isSyncing.value = false
+    }, 0)
+  }
+
+  const onScroll2 = (event) => {
+    if (isSyncing.value) return
+    isSyncing.value = true
+    const scrollTop = event.target.scrollTop
+    if (tableContainer1.value) {
+      tableContainer1.value.scrollTop = scrollTop
+    }
+    setTimeout(() => {
+      isSyncing.value = false
+    }, 0)
+  }
+
+  // Computed: dados ordenados
+  const sortedData = computed(() => {
+    const data = alignedDataComputed.value
+
+    if (!sortColumn.value) {
+      return data
+    }
+
+    return [...data].sort((a, b) => {
+      let valA, valB
+
+      // Valores para comparação
+      switch (sortColumn.value) {
+        case 'estagio':
+          valA = a.dadger1?.display || a.dadger2?.display || ''
+          valB = b.dadger1?.display || b.dadger2?.display || ''
+          break
+        default:
+          // Para outras colunas, tentar pegar o valor diretamente
+          valA = a.dadger1?.[sortColumn.value] ?? a.dadger2?.[sortColumn.value] ?? 0
+          valB = b.dadger1?.[sortColumn.value] ?? b.dadger2?.[sortColumn.value] ?? 0
+      }
+
+      // Comparar strings vs números
+      let comparison = 0
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        comparison = valA.toLowerCase().localeCompare(valB.toLowerCase())
+      } else {
+        if (valA > valB) comparison = 1
+        else if (valA < valB) comparison = -1
+      }
+
+      return sortDirection.value === 'asc' ? comparison : -comparison
+    })
+  })
+
+  // Computed: dados filtrados
+  const createFilteredData = (diffFields) => {
+    return computed(() => {
+      const data = sortedData.value
+
+      if (!props.showOnlyDifferences) {
+        return data
+      }
+
+      return data.filter(row => {
+        // Sempre mostrar highlighted (mesma temporalidade, entidade diferente)
+        if (row.onlyInOne && row.sameTemporality) {
+          return true
+        }
+
+        // Não mostrar faded (temporalidade diferente)
+        if (row.onlyInOne && !row.sameTemporality) {
+          return false
+        }
+
+        // Mostrar se tem alguma diferença nos campos especificados
+        return diffFields.some(field => row[field])
+      })
+    })
+  }
+
+  return {
+    // Estado
+    collapsed,
+    isSyncing,
+    sortColumn,
+    sortDirection,
+    tableContainer1,
+    tableContainer2,
+
+    // Métodos
+    toggleCollapsed,
+    sortBy,
+    getSortIcon,
+    onScroll1,
+    onScroll2,
+    formatNumber,
+
+    // Computeds
+    sortedData,
+    createFilteredData
+  }
+}

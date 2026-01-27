@@ -1,6 +1,6 @@
 <template>
   <div class="top-bar">
-    <h1 class="title">RVZero - Dadger Processor</h1>
+    <h1 class="title">RVZero - Comparador de Dadgers</h1>
     <div class="controls">
       <div class="selector-group">
         <label class="selector-label">Comparar por:</label>
@@ -15,7 +15,7 @@
           <span class="switch-label">Mostrar apenas diferenças</span>
         </label>
       </div>
-      <button class="btn btn-clear" @click="onClearAll">Limpar Todos</button>
+      <button class="btn btn-clear" @click="onClearAll">Limpar</button>
     </div>
   </div>
 </template>

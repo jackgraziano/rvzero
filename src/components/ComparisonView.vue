@@ -3,11 +3,11 @@
     <div class="comparison-header">
       <div class="dadger-info">
         <h3>{{ dadger1Name }}</h3>
-        <p>Data base: {{ dadger1Data.info_dadger.data_base }}</p>
+        <p>DT: {{ dadger1Data.info_dadger.data_base }}</p>
       </div>
       <div class="dadger-info">
         <h3>{{ dadger2Name }}</h3>
-        <p>Data base: {{ dadger2Data.info_dadger.data_base }}</p>
+        <p>DT: {{ dadger2Data.info_dadger.data_base }}</p>
       </div>
     </div>
 
@@ -45,6 +45,39 @@
         :showOnlyDifferences="showOnlyDifferences"
       />
 
+      <!-- Bloco IA -->
+      <IABlock
+        v-if="dadger1Data.IA && dadger2Data.IA"
+        :dadger1Data="dadger1Data"
+        :dadger1Name="dadger1Name"
+        :dadger2Data="dadger2Data"
+        :dadger2Name="dadger2Name"
+        :compareMode="compareMode"
+        :showOnlyDifferences="showOnlyDifferences"
+      />
+
+      <!-- Bloco UH -->
+      <UHBlock
+        v-if="dadger1Data.UH && dadger2Data.UH"
+        :dadger1Data="dadger1Data"
+        :dadger1Name="dadger1Name"
+        :dadger2Data="dadger2Data"
+        :dadger2Name="dadger2Name"
+        :compareMode="compareMode"
+        :showOnlyDifferences="showOnlyDifferences"
+      />
+
+      <!-- Bloco TI -->
+      <TIBlock
+        v-if="dadger1Data.TI && dadger2Data.TI"
+        :dadger1Data="dadger1Data"
+        :dadger1Name="dadger1Name"
+        :dadger2Data="dadger2Data"
+        :dadger2Name="dadger2Name"
+        :compareMode="compareMode"
+        :showOnlyDifferences="showOnlyDifferences"
+      />
+
       <!-- Futuros blocos virão aqui -->
       <!-- Exemplo de como adicionar novos blocos:
       <OutroBlock
@@ -64,13 +97,19 @@
 import DPBlock from './blocks/DPBlock.vue'
 import PQBlock from './blocks/PQBlock.vue'
 import CTBlock from './blocks/CTBlock.vue'
+import IABlock from './blocks/IABlock.vue'
+import UHBlock from './blocks/UHBlock.vue'
+import TIBlock from './blocks/TIBlock.vue'
 
 export default {
   name: 'ComparisonView',
   components: {
     DPBlock,
     PQBlock,
-    CTBlock
+    CTBlock,
+    IABlock,
+    UHBlock,
+    TIBlock
   },
   props: {
     dadger1Data: {

@@ -1,0 +1,128 @@
+/* Estilos compartilhados para tabelas de blocos de comparação */
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+}
+
+.data-table thead {
+  position: sticky;
+  top: 0;
+  background: #2d2d2d;
+  z-index: 1;
+}
+
+.data-table th {
+  padding: 6px 8px;
+  text-align: left;
+  font-weight: 700;
+  color: #00ff00;
+  border-bottom: 1px solid #00ff00;
+  font-size: 10px;
+}
+
+.data-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+}
+
+.data-table th.sortable:hover {
+  background: #3d3d3d;
+}
+
+.data-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid #3d3d3d;
+  color: #d4d4d4;
+}
+
+/* Estados de linha */
+.data-table tbody tr:hover {
+  background: #2d2d2d;
+}
+
+.data-table tbody tr.faded {
+  opacity: 0.3;
+}
+
+.data-table tbody tr.faded:hover {
+  opacity: 0.5;
+}
+
+.data-table tbody tr.highlighted {
+  background: #2d0a0a;
+  color: #ff4444;
+}
+
+.data-table tbody tr.highlighted td {
+  color: #ff4444;
+  font-weight: 700;
+}
+
+.data-table tbody tr.highlighted:hover {
+  background: #3d1515;
+}
+
+/* Células com diferenças */
+.data-table td.diff {
+  background: #4a4a00;
+  color: #ffff00;
+  font-weight: 700;
+}
+
+/* Classes utilitárias para colunas */
+.col-stage {
+  font-weight: 700;
+  color: #00ff00;
+}
+
+.col-name {
+  font-family: 'Courier New', monospace;
+  color: #d4d4d4;
+  white-space: nowrap;
+}
+
+.col-number {
+  text-align: right;
+  font-family: 'Courier New', monospace;
+  color: #d4d4d4;
+}
+
+/* Estilos para patamares (blocos CT, DP, etc) */
+.patamar-header {
+  text-align: center !important;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  padding: 8px 4px;
+}
+
+.patamar-pesado {
+  background: #1a2d1a;
+  border-right: 2px solid #00ff00;
+}
+
+.patamar-medio {
+  background: #1a1a2d;
+  border-right: 2px solid #00ff00;
+}
+
+.patamar-leve {
+  background: #2d1a1a;
+}
+
+.header-row-2 th {
+  font-size: 9px;
+  padding: 4px 4px;
+}
+
+.col-pesado-last {
+  border-right: 2px solid #00ff00 !important;
+}
+
+.col-medio-last {
+  border-right: 2px solid #00ff00 !important;
+}

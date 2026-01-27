@@ -7,21 +7,31 @@
 
     <div v-show="!collapsed" class="block-content">
       <div class="comparison-tables">
+        <!-- Tabela Dadger 1 -->
         <div class="table-side">
           <h4 class="table-title">{{ dadger1Name }}</h4>
-          <div class="table-container" ref="tableContainer1" @scroll="onScroll1">
+          <div class="table-container" :ref="el => tableContainer1 = el" @scroll="onScroll1">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>{{ compareMode === 'estagio' ? 'Estágio' : 'Data' }}</th>
-                  <th>Sub</th>
-                  <th>Pesada</th>
-                  <th>Média</th>
-                  <th>Leve</th>
+                  <th @click="sortBy('estagio')" class="sortable">
+                    {{ compareMode === 'estagio' ? 'Estágio' : 'Data' }}{{ getSortIcon('estagio') }}
+                  </th>
+                  <th @click="sortBy('subsistema')" class="sortable">Sub{{ getSortIcon('subsistema') }}</th>
+                  <th @click="sortBy('carga_pesada')" class="sortable">Pesada{{ getSortIcon('carga_pesada') }}</th>
+                  <th @click="sortBy('carga_media')" class="sortable">Média{{ getSortIcon('carga_media') }}</th>
+                  <th @click="sortBy('carga_leve')" class="sortable">Leve{{ getSortIcon('carga_leve') }}</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="row in filteredData" :key="`d1-${row.key}`" :class="{ 'faded': row.onlyInOne && !row.sameTemporality, 'highlighted': row.onlyInOne && row.sameTemporality }">
+                <tr
+                  v-for="row in filteredData"
+                  :key="`d1-${row.key}`"
+                  :class="{
+                    'faded': row.onlyInOne && !row.sameTemporality,
+                    'highlighted': row.onlyInOne && row.sameTemporality
+                  }"
+                >
                   <td class="col-stage">{{ row.dadger1?.display || '-' }}</td>
                   <td>{{ row.dadger1?.subsistema || '-' }}</td>
                   <td :class="{ 'diff': row.diff_pesada && !row.onlyInOne }" class="col-number">
@@ -39,21 +49,31 @@
           </div>
         </div>
 
+        <!-- Tabela Dadger 2 -->
         <div class="table-side">
           <h4 class="table-title">{{ dadger2Name }}</h4>
-          <div class="table-container" ref="tableContainer2" @scroll="onScroll2">
+          <div class="table-container" :ref="el => tableContainer2 = el" @scroll="onScroll2">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>{{ compareMode === 'estagio' ? 'Estágio' : 'Data' }}</th>
-                  <th>Sub</th>
-                  <th>Pesada</th>
-                  <th>Média</th>
-                  <th>Leve</th>
+                  <th @click="sortBy('estagio')" class="sortable">
+                    {{ compareMode === 'estagio' ? 'Estágio' : 'Data' }}{{ getSortIcon('estagio') }}
+                  </th>
+                  <th @click="sortBy('subsistema')" class="sortable">Sub{{ getSortIcon('subsistema') }}</th>
+                  <th @click="sortBy('carga_pesada')" class="sortable">Pesada{{ getSortIcon('carga_pesada') }}</th>
+                  <th @click="sortBy('carga_media')" class="sortable">Média{{ getSortIcon('carga_media') }}</th>
+                  <th @click="sortBy('carga_leve')" class="sortable">Leve{{ getSortIcon('carga_leve') }}</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="row in filteredData" :key="`d2-${row.key}`" :class="{ 'faded': row.onlyInOne && !row.sameTemporality, 'highlighted': row.onlyInOne && row.sameTemporality }">
+                <tr
+                  v-for="row in filteredData"
+                  :key="`d2-${row.key}`"
+                  :class="{
+                    'faded': row.onlyInOne && !row.sameTemporality,
+                    'highlighted': row.onlyInOne && row.sameTemporality
+                  }"
+                >
                   <td class="col-stage">{{ row.dadger2?.display || '-' }}</td>
                   <td>{{ row.dadger2?.subsistema || '-' }}</td>
                   <td :class="{ 'diff': row.diff_pesada && !row.onlyInOne }" class="col-number">
@@ -76,105 +96,57 @@
 </template>
 
 <script>
-import { alignByEstagio, alignByData, hasDiff, formatNumber } from '../../utils/comparison.js'
+import { computed } from 'vue'
+import { alignByEstagio, alignByData, hasDiff } from '../../utils/comparison.js'
+import { useBlockComparison } from '../../composables/useBlockComparison.js'
 
 export default {
   name: 'DPBlock',
   props: {
-    dadger1Data: {
-      type: Object,
-      required: true
-    },
-    dadger1Name: {
-      type: String,
-      required: true
-    },
-    dadger2Data: {
-      type: Object,
-      required: true
-    },
-    dadger2Name: {
-      type: String,
-      required: true
-    },
-    compareMode: {
-      type: String,
-      required: true
-    },
-    showOnlyDifferences: {
-      type: Boolean,
-      required: true
-    }
+    dadger1Data: { type: Object, required: true },
+    dadger1Name: { type: String, required: true },
+    dadger2Data: { type: Object, required: true },
+    dadger2Name: { type: String, required: true },
+    compareMode: { type: String, required: true },
+    showOnlyDifferences: { type: Boolean, required: true }
   },
-  data() {
-    return {
-      collapsed: true,
-      isSyncing: false
-    }
-  },
-  computed: {
-    filteredData() {
-      const data = this.alignedData
-
-      if (!this.showOnlyDifferences) {
-        return data
-      }
-
-      // Filtrar apenas linhas com diferenças
-      return data.filter(row => {
-        // Se a linha é highlighted (subsistema diferente na mesma temporalidade), sempre mostrar
-        if (row.onlyInOne && row.sameTemporality) {
-          return true
-        }
-
-        // Se a linha existe apenas em um arquivo e temporalidade diferente, não mostrar
-        if (row.onlyInOne && !row.sameTemporality) {
-          return false
-        }
-
-        // Se tem alguma diferença nos campos, mostrar
-        return row.diff_pesada || row.diff_media || row.diff_leve
-      })
-    },
-    alignedData() {
-      const registros1 = this.dadger1Data.DP
-      const registros2 = this.dadger2Data.DP
+  setup(props) {
+    // Computed: dados alinhados (lógica específica do bloco DP)
+    const alignedData = computed(() => {
+      const registros1 = props.dadger1Data.DP
+      const registros2 = props.dadger2Data.DP
 
       const transformFn = (reg1, reg2, onlyInOne, sameTemporality, primaryValue, subsistema) => {
-        const diff_pesada = hasDiff(reg1?.carga_pesada, reg2?.carga_pesada)
-        const diff_media = hasDiff(reg1?.carga_media, reg2?.carga_media)
-        const diff_leve = hasDiff(reg1?.carga_leve, reg2?.carga_leve)
-
         return {
           key: `${primaryValue}-${subsistema}`,
           onlyInOne,
           sameTemporality,
           dadger1: reg1 ? {
-            display: this.compareMode === 'estagio' ? `Estágio ${reg1.estagio}` : primaryValue,
+            display: props.compareMode === 'estagio' ? `Estágio ${reg1.estagio}` : primaryValue,
             subsistema: reg1.subsistema,
             carga_pesada: reg1.carga_pesada,
             carga_media: reg1.carga_media,
             carga_leve: reg1.carga_leve
           } : null,
           dadger2: reg2 ? {
-            display: this.compareMode === 'estagio' ? `Estágio ${reg2.estagio}` : primaryValue,
+            display: props.compareMode === 'estagio' ? `Estágio ${reg2.estagio}` : primaryValue,
             subsistema: reg2.subsistema,
             carga_pesada: reg2.carga_pesada,
             carga_media: reg2.carga_media,
             carga_leve: reg2.carga_leve
           } : null,
-          diff_pesada,
-          diff_media,
-          diff_leve
+          diff_pesada: hasDiff(reg1?.carga_pesada, reg2?.carga_pesada),
+          diff_media: hasDiff(reg1?.carga_media, reg2?.carga_media),
+          diff_leve: hasDiff(reg1?.carga_leve, reg2?.carga_leve)
         }
       }
 
-      if (this.compareMode === 'estagio') {
+      if (props.compareMode === 'estagio') {
         return alignByEstagio(
           registros1,
           registros2,
-          this.dadger1Data.info_dadger,
-          this.dadger2Data.info_dadger,
+          props.dadger1Data.info_dadger,
+          props.dadger2Data.info_dadger,
           'subsistema',
           transformFn
         )
@@ -182,44 +154,50 @@ export default {
         return alignByData(
           registros1,
           registros2,
-          this.dadger1Data,
-          this.dadger2Data,
+          props.dadger1Data,
+          props.dadger2Data,
           'subsistema',
           transformFn
         )
       }
+    })
+
+    // Usar composable para lógica comum
+    const {
+      collapsed,
+      tableContainer1,
+      tableContainer2,
+      toggleCollapsed,
+      sortBy,
+      getSortIcon,
+      onScroll1,
+      onScroll2,
+      formatNumber,
+      createFilteredData
+    } = useBlockComparison(props, alignedData)
+
+    // Criar filteredData com os campos de diff específicos do bloco DP
+    const filteredData = createFilteredData(['diff_pesada', 'diff_media', 'diff_leve'])
+
+    return {
+      collapsed,
+      tableContainer1,
+      tableContainer2,
+      toggleCollapsed,
+      sortBy,
+      getSortIcon,
+      onScroll1,
+      onScroll2,
+      formatNumber,
+      filteredData
     }
-  },
-  methods: {
-    toggleCollapsed() {
-      this.collapsed = !this.collapsed
-    },
-    onScroll1(event) {
-      if (this.isSyncing) return
-
-      this.isSyncing = true
-      const scrollTop = event.target.scrollTop
-      this.$refs.tableContainer2.scrollTop = scrollTop
-      this.$nextTick(() => {
-        this.isSyncing = false
-      })
-    },
-    onScroll2(event) {
-      if (this.isSyncing) return
-
-      this.isSyncing = true
-      const scrollTop = event.target.scrollTop
-      this.$refs.tableContainer1.scrollTop = scrollTop
-      this.$nextTick(() => {
-        this.isSyncing = false
-      })
-    },
-    formatNumber
   }
 }
 </script>
 
 <style scoped>
+@import '../../styles/block-tables.css';
+
 .dp-block {
   margin: 8px;
   border: 1px solid #00ff00;
@@ -292,81 +270,8 @@ export default {
   background: #1e1e1e;
 }
 
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 11px;
-  font-family: 'Courier New', monospace;
-}
-
-.data-table thead {
-  position: sticky;
-  top: 0;
-  background: #2d2d2d;
-  z-index: 1;
-}
-
-.data-table th {
-  padding: 6px 8px;
-  text-align: left;
-  font-weight: 700;
-  color: #00ff00;
-  border-bottom: 1px solid #00ff00;
-  font-size: 10px;
-}
-
-.data-table td {
-  padding: 4px 8px;
-  border-bottom: 1px solid #3d3d3d;
-  color: #d4d4d4;
-}
-
-.data-table tbody tr:hover {
-  background: #2d2d2d;
-}
-
-.data-table tbody tr.faded {
-  opacity: 0.3;
-}
-
-.data-table tbody tr.faded:hover {
-  opacity: 0.5;
-}
-
-.data-table tbody tr.highlighted {
-  background: #2d0a0a;
-  color: #ff4444;
-}
-
-.data-table tbody tr.highlighted td {
-  color: #ff4444;
-  font-weight: 700;
-}
-
-.data-table tbody tr.highlighted:hover {
-  background: #3d1515;
-}
-
-.data-table td.diff {
-  background: #4a4a00;
-  color: #ffff00;
-  font-weight: 700;
-}
-
-.col-stage {
-  font-weight: 700;
-  color: #00ff00;
-}
-
-.col-number {
-  text-align: right;
-  font-family: 'Courier New', monospace;
-  color: #d4d4d4;
-}
-
-.data-table th:nth-child(3),
-.data-table th:nth-child(4),
-.data-table th:nth-child(5) {
+/* Alinhar colunas numéricas à direita */
+.data-table th:nth-child(n+3) {
   text-align: right;
 }
 </style>
