@@ -14,6 +14,8 @@ import { parseMP } from './mpParser.js'
 import { parseFD } from './fdParser.js'
 import { parseVE } from './veParser.js'
 import { parseRE } from './reParser.js'
+import { parseHQ } from './hqParser.js'
+import { parseHV } from './hvParser.js'
 
 /**
  * Função principal para fazer o parse do dadger
@@ -32,7 +34,9 @@ export function parseDadger(fileContent) {
     MP: [],
     FD: [],
     VE: [],
-    RE: []
+    RE: [],
+    HQ: [],
+    HV: []
   }
 
   // Dividir o arquivo em linhas
@@ -85,6 +89,12 @@ export function parseDadger(fileContent) {
 
   // Processar bloco RE (restrições elétricas com expansão de estágios)
   result.RE = parseRE(lines, numeroEstagios)
+
+  // Processar bloco HQ (restrições de vazão com expansão de estágios)
+  result.HQ = parseHQ(lines, numeroEstagios)
+
+  // Processar bloco HV (restrições de armazenamento com expansão de estágios)
+  result.HV = parseHV(lines, numeroEstagios)
 
   return result
 }
