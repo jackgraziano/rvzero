@@ -16,6 +16,19 @@
         </label>
       </div>
       <button class="btn btn-clear" @click="onClearAll">Limpar</button>
+      <button class="btn btn-about" @click="showAbout = true">Sobre</button>
+    </div>
+
+    <!-- Modal Sobre -->
+    <div v-if="showAbout" class="modal-overlay" @click="showAbout = false">
+      <div class="modal-content" @click.stop>
+        <h2>Sobre</h2>
+        <p>Comparador de Decks de Decomp 100% vibecodado com Claude Code</p>
+        <a href="https://github.com/jackgraziano/rvzero" target="_blank" rel="noopener noreferrer">
+          github.com/jackgraziano/rvzero
+        </a>
+        <button class="btn btn-close" @click="showAbout = false">Fechar</button>
+      </div>
     </div>
   </div>
 </template>
@@ -26,7 +39,8 @@ export default {
   data() {
     return {
       compareMode: 'data',
-      showOnlyDifferences: true
+      showOnlyDifferences: true,
+      showAbout: false
     }
   },
   methods: {
@@ -133,6 +147,16 @@ export default {
   background: #4d0000;
 }
 
+.btn-about {
+  background: #2d2d2d;
+  border-color: #00ff00;
+  color: #00ff00;
+}
+
+.btn-about:hover {
+  background: #004d00;
+}
+
 .switch-container {
   display: flex;
   align-items: center;
@@ -154,5 +178,58 @@ export default {
   font-weight: 700;
   font-family: 'Courier New', monospace;
   cursor: pointer;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #1e1e1e;
+  border: 2px solid #00ff00;
+  border-radius: 4px;
+  padding: 30px;
+  max-width: 500px;
+  font-family: 'Courier New', monospace;
+}
+
+.modal-content h2 {
+  color: #00ff00;
+  font-size: 18px;
+  margin: 0 0 15px 0;
+  font-weight: 700;
+}
+
+.modal-content p {
+  color: #00ff00;
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 10px 0;
+}
+
+.modal-content a {
+  color: #00ffff;
+  text-decoration: none;
+  font-size: 13px;
+  display: block;
+  margin: 15px 0;
+}
+
+.modal-content a:hover {
+  text-decoration: underline;
+}
+
+.btn-close {
+  margin-top: 20px;
+  width: 100%;
 }
 </style>
