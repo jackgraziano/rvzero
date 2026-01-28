@@ -10,11 +10,17 @@ function rowHasDifferences(row) {
 
   // Apenas logar se for bloco DP
   if (blockType === 'DP') {
+    const allKeys = Object.keys(row)
+    const diffKeys = allKeys.filter(k => k.endsWith('_diff') || k.startsWith('diff_'))
     console.log(`[rowHasDifferences DP] Checking row:`, {
       key: row.key,
       onlyInOne: row.onlyInOne,
       sameTemporality: row.sameTemporality,
-      diffFields: Object.keys(row).filter(k => k.endsWith('_diff')).map(k => `${k}=${row[k]}`)
+      diff_pesada: row.diff_pesada,
+      diff_media: row.diff_media,
+      diff_leve: row.diff_leve,
+      allKeys: allKeys,
+      diffKeys: diffKeys
     })
   }
 
@@ -31,9 +37,10 @@ function rowHasDifferences(row) {
 
   // Para rows que existem em ambos dadgers, verificar diferenças de valores
 
-  // Verificar campos terminados em _diff
-  for (const key in row) {
-    if (key.endsWith('_diff') && row[key]) {
+  // Verificar campos de diferença (terminam em _diff OU começam com diff_)
+  const keys = Object.keys(row)
+  for (const key of keys) {
+    if ((key.endsWith('_diff') || key.startsWith('diff_')) && row[key]) {
       if (blockType === 'DP') {
         console.log('[rowHasDifferences DP] Found diff field:', key, 'PASS')
       }
