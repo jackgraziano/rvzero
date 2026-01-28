@@ -48,6 +48,40 @@ export function formatNumber(value) {
 }
 
 /**
+ * Formata um número para exibição, tratando valores científicos grandes
+ * @param {number} value - Valor numérico
+ * @returns {string} Valor formatado, '∞' para valores >= 1e20, ou '-' se null/undefined
+ */
+export function formatNumberScientific(value) {
+  if (value === null || value === undefined) return '-'
+  if (value >= 1.0e20) return '∞'
+  return formatNumber(value)
+}
+
+/**
+ * Formata um valor limite (wrapper para formatNumber)
+ * @param {number} value - Valor numérico
+ * @returns {string} Valor formatado ou '-' se null/undefined
+ */
+export function formatLimite(value) {
+  if (value === null || value === undefined) return '-'
+  return formatNumber(value)
+}
+
+/**
+ * Formata um range (min-max)
+ * @param {number} min - Valor mínimo
+ * @param {number} max - Valor máximo
+ * @returns {string} Range formatado como "min - max" ou '-' se ambos null
+ */
+export function formatRange(min, max) {
+  if (min === null && max === null) return '-'
+  const minStr = min !== null ? formatNumber(min) : '-'
+  const maxStr = max !== null ? formatNumber(max) : '-'
+  return `${minStr} - ${maxStr}`
+}
+
+/**
  * Coleta todos os valores únicos de uma propriedade em arrays de dois dadgers
  * @param {Array} array1 - Array do primeiro dadger
  * @param {Array} array2 - Array do segundo dadger

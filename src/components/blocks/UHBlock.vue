@@ -118,8 +118,9 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
-import { hasDiff, formatNumber } from '../../utils/comparison.js'
+import { computed } from 'vue'
+import { hasDiff, formatNumberScientific } from '../../utils/comparison.js'
+import { useBlockComparison } from '../../composables/useBlockComparison.js'
 
 export default {
   name: 'UHBlock',
@@ -132,61 +133,6 @@ export default {
     showOnlyDifferences: { type: Boolean, required: true }
   },
   setup(props) {
-    const collapsed = ref(true)
-    const isSyncing = ref(false)
-    const sortColumn = ref(null)
-    const sortDirection = ref('asc')
-    const tableContainer1 = ref(null)
-    const tableContainer2 = ref(null)
-
-    const toggleCollapsed = () => {
-      collapsed.value = !collapsed.value
-    }
-
-    const sortBy = (column) => {
-      if (sortColumn.value === column) {
-        sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
-      } else {
-        sortColumn.value = column
-        sortDirection.value = 'asc'
-      }
-    }
-
-    const getSortIcon = (column) => {
-      if (sortColumn.value !== column) return ''
-      return sortDirection.value === 'asc' ? ' ▲' : ' ▼'
-    }
-
-    const onScroll1 = (event) => {
-      if (isSyncing.value) return
-      isSyncing.value = true
-      const scrollTop = event.target.scrollTop
-      if (tableContainer2.value) {
-        tableContainer2.value.scrollTop = scrollTop
-      }
-      setTimeout(() => {
-        isSyncing.value = false
-      }, 0)
-    }
-
-    const onScroll2 = (event) => {
-      if (isSyncing.value) return
-      isSyncing.value = true
-      const scrollTop = event.target.scrollTop
-      if (tableContainer1.value) {
-        tableContainer1.value.scrollTop = scrollTop
-      }
-      setTimeout(() => {
-        isSyncing.value = false
-      }, 0)
-    }
-
-    const formatNumberScientific = (value) => {
-      if (value === null || value === undefined) return '-'
-      if (value >= 1.0e20) return '∞'
-      return formatNumber(value)
-    }
-
     // Computed: dados alinhados (lógica específica do bloco UH)
     const alignedData = computed(() => {
       const registros1 = props.dadger1Data.UH || []
@@ -223,73 +169,22 @@ export default {
       return alinhados
     })
 
-    // Computed: dados ordenados
-    const sortedData = computed(() => {
-      const data = alignedData.value
+    // Usar composable para lógica comum
+    const {
+      collapsed,
+      tableContainer1,
+      tableContainer2,
+      toggleCollapsed,
+      sortBy,
+      getSortIcon,
+      onScroll1,
+      onScroll2,
+      createFilteredData,
+      hasDifferences
+    } = useBlockComparison(props, alignedData)
 
-      if (!sortColumn.value) {
-        return data
-      }
-
-      return [...data].sort((a, b) => {
-        let valA = a.dadger1?.[sortColumn.value] ?? a.dadger2?.[sortColumn.value] ?? 0
-        let valB = b.dadger1?.[sortColumn.value] ?? b.dadger2?.[sortColumn.value] ?? 0
-
-        let comparison = 0
-        if (typeof valA === 'string' && typeof valB === 'string') {
-          comparison = valA.toLowerCase().localeCompare(valB.toLowerCase())
-        } else {
-          if (valA > valB) comparison = 1
-          else if (valA < valB) comparison = -1
-        }
-
-        return sortDirection.value === 'asc' ? comparison : -comparison
-      })
-    })
-
-    // Computed: dados filtrados
-    const filteredData = computed(() => {
-      const data = sortedData.value
-
-      if (!props.showOnlyDifferences) {
-        return data
-      }
-
-      return data.filter(row => {
-        // Sempre mostrar usinas que existem apenas em um dadger
-        if (row.onlyInOne) {
-          return true
-        }
-
-        // Mostrar se tem alguma diferença
-        return row.diff_volume_armazenado_pct ||
-               row.diff_vazao_defluente_min ||
-               row.diff_chave_evaporacao ||
-               row.diff_estagio_producao ||
-               row.diff_volume_morto ||
-               row.diff_limite_vertimento ||
-               row.diff_chave_balanco_patamar
-      })
-    })
-
-    // Detectar se há diferenças no bloco
-    const hasDifferences = computed(() => {
-      if (!alignedData.value || alignedData.value.length === 0) {
-        return false
-      }
-
-      return alignedData.value.some(row => {
-        // UH não tem temporalidade (sempre estágio 1), então onlyInOne sempre conta
-        if (row.onlyInOne) return true
-        return row.diff_volume_armazenado_pct ||
-               row.diff_vazao_defluente_min ||
-               row.diff_chave_evaporacao ||
-               row.diff_estagio_producao ||
-               row.diff_volume_morto ||
-               row.diff_limite_vertimento ||
-               row.diff_chave_balanco_patamar
-      })
-    })
+    // Criar filteredData
+    const filteredData = createFilteredData()
 
     return {
       collapsed,
@@ -300,7 +195,6 @@ export default {
       getSortIcon,
       onScroll1,
       onScroll2,
-      formatNumber,
       formatNumberScientific,
       filteredData,
       hasDifferences
