@@ -5,7 +5,7 @@ import { formatNumber } from '../utils/comparison.js'
  * Composable para lógica comum de blocos de comparação
  * Encapsula: collapse, scroll sync, sorting, filtering
  */
-export function useBlockComparison(props, alignedDataComputed, blockName = 'Unknown') {
+export function useBlockComparison(props, alignedDataComputed) {
   // Estado reativo
   const collapsed = ref(true)
   const isSyncing = ref(false)
@@ -19,7 +19,9 @@ export function useBlockComparison(props, alignedDataComputed, blockName = 'Unkn
     }
 
     const result = alignedDataComputed.value.some(row => {
-      if (row.onlyInOne) return true
+      // Apenas contar como diferença se onlyInOne E sameTemporality
+      // (highlighted, não faded)
+      if (row.onlyInOne && row.sameTemporality) return true
 
       // Verificar campos terminados em _diff
       for (const key in row) {

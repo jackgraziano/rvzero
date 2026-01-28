@@ -169,6 +169,7 @@ export default {
     const hasDifferences = computed(() => {
       for (const mnem of MNEMONICOS) {
         const comp = comparacoes.value[mnem]
+        // OUTROS não tem temporalidade, então onlyInOne sempre conta
         if (comp.some(c => c.onlyInOne || c.different)) {
           return true
         }

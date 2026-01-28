@@ -279,6 +279,7 @@ export default {
       }
 
       return alignedData.value.some(row => {
+        // UH não tem temporalidade (sempre estágio 1), então onlyInOne sempre conta
         if (row.onlyInOne) return true
         return row.diff_volume_armazenado_pct ||
                row.diff_vazao_defluente_min ||

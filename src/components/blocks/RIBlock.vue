@@ -251,24 +251,7 @@ export default {
       onScroll2,
       createFilteredData,
       hasDifferences
-    } = useBlockComparison(props, alignedData, 'RI')
-
-    // Debug: mostrar estado do RI
-    const debugRI = computed(() => {
-      if (!alignedData.value) return
-      const rowsWithDiff = alignedData.value.filter(row => {
-        return row.onlyInOne ||
-               row.pesado_diff ||
-               row.medio_diff ||
-               row.leve_diff
-      })
-      console.log('[RI] Total rows:', alignedData.value.length,
-                  'Rows with diff:', rowsWithDiff.length,
-                  'hasDifferences:', hasDifferences.value)
-      if (rowsWithDiff.length > 0) {
-        console.log('[RI] First row with diff:', rowsWithDiff[0])
-      }
-    })
+    } = useBlockComparison(props, alignedData)
 
     // Criar filteredData com campos de diferença
     const filteredData = createFilteredData(['pesado_diff', 'medio_diff', 'leve_diff'])
@@ -293,8 +276,7 @@ export default {
       filteredData,
       formatNumber,
       formatRange,
-      hasDifferences,
-      debugRI
+      hasDifferences
     }
   }
 }

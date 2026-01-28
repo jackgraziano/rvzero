@@ -195,6 +195,7 @@ export default {
     // Verificar se há diferenças no bloco
     const hasDifferences = computed(() => {
       for (const comparacoes of Object.values(comparacoesPorUsina.value)) {
+        // AC não tem temporalidade, então onlyInOne sempre conta
         if (comparacoes.some(c => c.onlyInOne || c.different)) {
           return true
         }
