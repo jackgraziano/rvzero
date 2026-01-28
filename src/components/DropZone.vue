@@ -10,14 +10,13 @@
     <div v-if="!file" class="drop-zone-content">
       <div class="icon">📁</div>
       <h3>{{ title }}</h3>
-      <p>Arraste o arquivo .dadger aqui</p>
+      <p>Arraste o arquivo dadger.* aqui</p>
       <span class="or">ou</span>
       <label class="upload-btn">
         Selecionar arquivo
         <input
           type="file"
           @change="onFileSelect"
-          accept=".dadger"
           hidden
         >
       </label>
@@ -92,11 +91,11 @@ export default {
       }
     },
     handleFile(file) {
-      if (file.name.endsWith('.dadger') || file.name.includes('.rv')) {
+      if (file.name.startsWith('dadger.')) {
         this.file = file
         this.readAndParseFile(file)
       } else {
-        alert('Por favor, selecione um arquivo .dadger')
+        alert('Por favor, selecione um arquivo dadger.* (ex: dadger.rv0, dadger.dat)')
       }
     },
     readAndParseFile(file) {
