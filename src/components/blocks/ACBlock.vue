@@ -233,6 +233,8 @@ export default {
 </script>
 
 <style scoped>
+@import '../../styles/block-tables.css';
+
 .ac-block {
   margin: 8px;
   border: 1px solid #00ff00;

@@ -189,6 +189,8 @@ export default {
 </script>
 
 <style scoped>
+@import '../../styles/block-tables.css';
+
 .outros-block {
   margin: 8px;
   border: 1px solid #00ff00;
