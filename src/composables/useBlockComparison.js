@@ -5,7 +5,7 @@ import { formatNumber } from '../utils/comparison.js'
  * Composable para lógica comum de blocos de comparação
  * Encapsula: collapse, scroll sync, sorting, filtering
  */
-export function useBlockComparison(props, alignedDataComputed) {
+export function useBlockComparison(props, alignedDataComputed, blockName = 'Unknown') {
   // Estado reativo
   const collapsed = ref(true)
   const isSyncing = ref(false)
@@ -19,33 +19,20 @@ export function useBlockComparison(props, alignedDataComputed) {
     }
 
     const result = alignedDataComputed.value.some(row => {
-      if (row.onlyInOne) {
-        console.log('hasDifferences: onlyInOne=true', row)
-        return true
-      }
+      if (row.onlyInOne) return true
 
       // Verificar campos terminados em _diff
       for (const key in row) {
-        if (key.endsWith('_diff') && row[key]) {
-          console.log(`hasDifferences: ${key}=true`, row)
-          return true
-        }
+        if (key.endsWith('_diff') && row[key]) return true
       }
 
       // Verificar outros campos de diferença
-      if (row.has_diff) {
-        console.log('hasDifferences: has_diff=true', row)
-        return true
-      }
-      if (row.temDiferenca) {
-        console.log('hasDifferences: temDiferenca=true', row)
-        return true
-      }
+      if (row.has_diff) return true
+      if (row.temDiferenca) return true
 
       return false
     })
 
-    console.log('hasDifferences result:', result, 'rows:', alignedDataComputed.value.length)
     return result
   })
 

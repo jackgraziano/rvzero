@@ -172,13 +172,19 @@ export default {
 
     // Função para comparar um patamar
     const comparaPatamar = (p1, p2) => {
+      // Se ambos são null/undefined, não há diferença
       if (!p1 && !p2) return false
+      // Se apenas um existe, há diferença
       if (!p1 || !p2) return true
-      return hasDiff(p1.p60_min, p2.p60_min) ||
-             hasDiff(p1.p60_max, p2.p60_max) ||
-             hasDiff(p1.p50_min, p2.p50_min) ||
-             hasDiff(p1.p50_max, p2.p50_max) ||
-             hasDiff(p1.carga_ande, p2.carga_ande)
+
+      // Comparar cada campo do patamar
+      const diff = hasDiff(p1.p60_min, p2.p60_min) ||
+                   hasDiff(p1.p60_max, p2.p60_max) ||
+                   hasDiff(p1.p50_min, p2.p50_min) ||
+                   hasDiff(p1.p50_max, p2.p50_max) ||
+                   hasDiff(p1.carga_ande, p2.carga_ande)
+
+      return diff
     }
 
     // Função de transformação para alinhar registros
@@ -245,7 +251,24 @@ export default {
       onScroll2,
       createFilteredData,
       hasDifferences
-    } = useBlockComparison(props, alignedData)
+    } = useBlockComparison(props, alignedData, 'RI')
+
+    // Debug: mostrar estado do RI
+    const debugRI = computed(() => {
+      if (!alignedData.value) return
+      const rowsWithDiff = alignedData.value.filter(row => {
+        return row.onlyInOne ||
+               row.pesado_diff ||
+               row.medio_diff ||
+               row.leve_diff
+      })
+      console.log('[RI] Total rows:', alignedData.value.length,
+                  'Rows with diff:', rowsWithDiff.length,
+                  'hasDifferences:', hasDifferences.value)
+      if (rowsWithDiff.length > 0) {
+        console.log('[RI] First row with diff:', rowsWithDiff[0])
+      }
+    })
 
     // Criar filteredData com campos de diferença
     const filteredData = createFilteredData(['pesado_diff', 'medio_diff', 'leve_diff'])
@@ -270,7 +293,8 @@ export default {
       filteredData,
       formatNumber,
       formatRange,
-      hasDifferences
+      hasDifferences,
+      debugRI
     }
   }
 }
