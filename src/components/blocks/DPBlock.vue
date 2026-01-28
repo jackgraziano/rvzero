@@ -116,6 +116,12 @@ export default {
       const registros1 = props.dadger1Data.DP
       const registros2 = props.dadger2Data.DP
 
+      console.log('[DP alignedData] Computing with:', {
+        registros1_count: registros1?.length || 0,
+        registros2_count: registros2?.length || 0,
+        compareMode: props.compareMode
+      })
+
       const transformFn = (reg1, reg2, onlyInOne, sameTemporality, primaryValue, subsistema) => {
         const diff_pesada = hasDiff(reg1?.carga_pesada, reg2?.carga_pesada)
         const diff_media = hasDiff(reg1?.carga_media, reg2?.carga_media)
@@ -199,6 +205,14 @@ export default {
     // Criar filteredData com os campos de diff específicos do bloco DP
     const filteredData = createFilteredData()
 
+    // Debug: monitorar mudanças no filteredData
+    const debugFilteredData = computed(() => {
+      console.log('[DP filteredData] Count:', filteredData.value.length, 'showOnlyDifferences:', props.showOnlyDifferences)
+      if (filteredData.value.length > 0 && filteredData.value.length <= 5) {
+        console.log('[DP filteredData] Rows:', filteredData.value)
+      }
+    })
+
     return {
       collapsed,
       tableContainer1,
@@ -210,7 +224,8 @@ export default {
       onScroll2,
       formatNumber,
       filteredData,
-      hasDifferences
+      hasDifferences,
+      debugFilteredData
     }
   }
 }
