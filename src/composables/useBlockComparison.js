@@ -6,11 +6,20 @@ import { formatNumber } from '../utils/comparison.js'
  * Fonte única de verdade para detectar diferenças
  */
 function rowHasDifferences(row) {
+  console.log('[rowHasDifferences] Checking row:', {
+    key: row.key,
+    onlyInOne: row.onlyInOne,
+    sameTemporality: row.sameTemporality,
+    diffFields: Object.keys(row).filter(k => k.endsWith('_diff')).map(k => `${k}=${row[k]}`)
+  })
+
   // Se é onlyInOne (existe apenas em um dadger)
   if (row.onlyInOne) {
     // Apenas contar como diferença se também sameTemporality (highlighted)
     // Se não sameTemporality, é faded e não conta
-    return row.sameTemporality === true
+    const result = row.sameTemporality === true
+    console.log('[rowHasDifferences] onlyInOne:', result ? 'PASS' : 'FAIL')
+    return result
   }
 
   // Para rows que existem em ambos dadgers, verificar diferenças de valores
@@ -18,14 +27,22 @@ function rowHasDifferences(row) {
   // Verificar campos terminados em _diff
   for (const key in row) {
     if (key.endsWith('_diff') && row[key]) {
+      console.log('[rowHasDifferences] Found diff field:', key, 'PASS')
       return true
     }
   }
 
   // Verificar outros campos de diferença
-  if (row.has_diff) return true
-  if (row.temDiferenca) return true
+  if (row.has_diff) {
+    console.log('[rowHasDifferences] has_diff=true, PASS')
+    return true
+  }
+  if (row.temDiferenca) {
+    console.log('[rowHasDifferences] temDiferenca=true, PASS')
+    return true
+  }
 
+  console.log('[rowHasDifferences] No differences found, FAIL')
   return false
 }
 
@@ -150,7 +167,16 @@ export function useBlockComparison(props, alignedDataComputed) {
       }
 
       // Usar função única de verdade para filtrar
-      return data.filter(rowHasDifferences)
+      const filtered = data.filter(row => {
+        const hasDiff = rowHasDifferences(row)
+        if (hasDiff) {
+          console.log('[createFilteredData] Row passed filter:', row)
+        }
+        return hasDiff
+      })
+
+      console.log('[createFilteredData] Total rows:', data.length, 'Filtered rows:', filtered.length)
+      return filtered
     })
   }
 
