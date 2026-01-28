@@ -12,6 +12,28 @@
     </div>
 
     <div class="comparison-content">
+      <!-- Bloco UH -->
+      <UHBlock
+        v-if="dadger1Data.UH && dadger2Data.UH"
+        :dadger1Data="dadger1Data"
+        :dadger1Name="dadger1Name"
+        :dadger2Data="dadger2Data"
+        :dadger2Name="dadger2Name"
+        :compareMode="compareMode"
+        :showOnlyDifferences="showOnlyDifferences"
+      />
+
+      <!-- Bloco CT -->
+      <CTBlock
+        v-if="dadger1Data.CT && dadger2Data.CT"
+        :dadger1Data="dadger1Data"
+        :dadger1Name="dadger1Name"
+        :dadger2Data="dadger2Data"
+        :dadger2Name="dadger2Name"
+        :compareMode="compareMode"
+        :showOnlyDifferences="showOnlyDifferences"
+      />
+
       <!-- Bloco DP -->
       <DPBlock
         v-if="dadger1Data.DP && dadger2Data.DP"
@@ -34,9 +56,9 @@
         :showOnlyDifferences="showOnlyDifferences"
       />
 
-      <!-- Bloco CT -->
-      <CTBlock
-        v-if="dadger1Data.CT && dadger2Data.CT"
+      <!-- Bloco RI -->
+      <RIBlock
+        v-if="dadger1Data.RI && dadger2Data.RI"
         :dadger1Data="dadger1Data"
         :dadger1Name="dadger1Name"
         :dadger2Data="dadger2Data"
@@ -48,28 +70,6 @@
       <!-- Bloco IA -->
       <IABlock
         v-if="dadger1Data.IA && dadger2Data.IA"
-        :dadger1Data="dadger1Data"
-        :dadger1Name="dadger1Name"
-        :dadger2Data="dadger2Data"
-        :dadger2Name="dadger2Name"
-        :compareMode="compareMode"
-        :showOnlyDifferences="showOnlyDifferences"
-      />
-
-      <!-- Bloco UH -->
-      <UHBlock
-        v-if="dadger1Data.UH && dadger2Data.UH"
-        :dadger1Data="dadger1Data"
-        :dadger1Name="dadger1Name"
-        :dadger2Data="dadger2Data"
-        :dadger2Name="dadger2Name"
-        :compareMode="compareMode"
-        :showOnlyDifferences="showOnlyDifferences"
-      />
-
-      <!-- Bloco TI -->
-      <TIBlock
-        v-if="dadger1Data.TI && dadger2Data.TI"
         :dadger1Data="dadger1Data"
         :dadger1Name="dadger1Name"
         :dadger2Data="dadger2Data"
@@ -122,9 +122,19 @@
         :showOnlyDifferences="showOnlyDifferences"
       />
 
-      <!-- Bloco HQ -->
-      <HQBlock
-        v-if="dadger1Data.HQ && dadger2Data.HQ"
+      <!-- Bloco AC -->
+      <ACBlock
+        v-if="dadger1Data.AC && dadger2Data.AC"
+        :dadger1Data="dadger1Data"
+        :dadger1Name="dadger1Name"
+        :dadger2Data="dadger2Data"
+        :dadger2Name="dadger2Name"
+        :showOnlyDifferences="showOnlyDifferences"
+      />
+
+      <!-- Bloco TI -->
+      <TIBlock
+        v-if="dadger1Data.TI && dadger2Data.TI"
         :dadger1Data="dadger1Data"
         :dadger1Name="dadger1Name"
         :dadger2Data="dadger2Data"
@@ -144,9 +154,9 @@
         :showOnlyDifferences="showOnlyDifferences"
       />
 
-      <!-- Bloco RI -->
-      <RIBlock
-        v-if="dadger1Data.RI && dadger2Data.RI"
+      <!-- Bloco HQ -->
+      <HQBlock
+        v-if="dadger1Data.HQ && dadger2Data.HQ"
         :dadger1Data="dadger1Data"
         :dadger1Name="dadger1Name"
         :dadger2Data="dadger2Data"
@@ -163,16 +173,6 @@
         :dadger2Data="dadger2Data"
         :dadger2Name="dadger2Name"
         :compareMode="compareMode"
-        :showOnlyDifferences="showOnlyDifferences"
-      />
-
-      <!-- Bloco AC -->
-      <ACBlock
-        v-if="dadger1Data.AC && dadger2Data.AC"
-        :dadger1Data="dadger1Data"
-        :dadger1Name="dadger1Name"
-        :dadger2Data="dadger2Data"
-        :dadger2Name="dadger2Name"
         :showOnlyDifferences="showOnlyDifferences"
       />
 
