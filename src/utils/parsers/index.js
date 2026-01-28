@@ -16,6 +16,9 @@ import { parseVE } from './veParser.js'
 import { parseRE } from './reParser.js'
 import { parseHQ } from './hqParser.js'
 import { parseHV } from './hvParser.js'
+import { parseRI } from './riParser.js'
+import { parseHE } from './heParser.js'
+import { parseOutros } from './outrosParser.js'
 
 /**
  * Função principal para fazer o parse do dadger
@@ -36,7 +39,10 @@ export function parseDadger(fileContent) {
     VE: [],
     RE: [],
     HQ: [],
-    HV: []
+    HV: [],
+    RI: [],
+    HE: [],
+    OUTROS: {}
   }
 
   // Dividir o arquivo em linhas
@@ -95,6 +101,15 @@ export function parseDadger(fileContent) {
 
   // Processar bloco HV (restrições de armazenamento com expansão de estágios)
   result.HV = parseHV(lines, numeroEstagios)
+
+  // Processar bloco RI (restrições de Itaipu com expansão de estágios)
+  result.RI = parseRI(lines, numeroEstagios)
+
+  // Processar bloco HE (restrições de energia armazenada - Vminop)
+  result.HE = parseHE(lines)
+
+  // Processar outros blocos (capturar linhas como strings simples)
+  result.OUTROS = parseOutros(lines)
 
   return result
 }

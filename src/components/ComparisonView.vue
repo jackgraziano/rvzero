@@ -144,6 +144,38 @@
         :showOnlyDifferences="showOnlyDifferences"
       />
 
+      <!-- Bloco RI -->
+      <RIBlock
+        v-if="dadger1Data.RI && dadger2Data.RI"
+        :dadger1Data="dadger1Data"
+        :dadger1Name="dadger1Name"
+        :dadger2Data="dadger2Data"
+        :dadger2Name="dadger2Name"
+        :compareMode="compareMode"
+        :showOnlyDifferences="showOnlyDifferences"
+      />
+
+      <!-- Bloco HE -->
+      <HEBlock
+        v-if="dadger1Data.HE && dadger2Data.HE"
+        :dadger1Data="dadger1Data"
+        :dadger1Name="dadger1Name"
+        :dadger2Data="dadger2Data"
+        :dadger2Name="dadger2Name"
+        :compareMode="compareMode"
+        :showOnlyDifferences="showOnlyDifferences"
+      />
+
+      <!-- Outros Blocos -->
+      <OutrosBlock
+        v-if="dadger1Data.OUTROS || dadger2Data.OUTROS"
+        :dadger1Data="dadger1Data"
+        :dadger1Name="dadger1Name"
+        :dadger2Data="dadger2Data"
+        :dadger2Name="dadger2Name"
+        :showOnlyDifferences="showOnlyDifferences"
+      />
+
       <!-- Futuros blocos virão aqui -->
       <!-- Exemplo de como adicionar novos blocos:
       <OutroBlock
@@ -172,6 +204,9 @@ import VEBlock from './blocks/VEBlock.vue'
 import REBlock from './blocks/REBlock.vue'
 import HQBlock from './blocks/HQBlock.vue'
 import HVBlock from './blocks/HVBlock.vue'
+import RIBlock from './blocks/RIBlock.vue'
+import HEBlock from './blocks/HEBlock.vue'
+import OutrosBlock from './blocks/OutrosBlock.vue'
 
 export default {
   name: 'ComparisonView',
@@ -187,7 +222,10 @@ export default {
     VEBlock,
     REBlock,
     HQBlock,
-    HVBlock
+    HVBlock,
+    RIBlock,
+    HEBlock,
+    OutrosBlock
   },
   props: {
     dadger1Data: {
