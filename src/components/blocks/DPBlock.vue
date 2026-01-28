@@ -98,7 +98,7 @@
 </template>
 
 <script>
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { alignByEstagio, alignByData, hasDiff } from '../../utils/comparison.js'
 import { useBlockComparison } from '../../composables/useBlockComparison.js'
 
@@ -113,6 +113,13 @@ export default {
     showOnlyDifferences: { type: Boolean, required: true }
   },
   setup(props) {
+    console.log('[DP setup] Component mounted!', {
+      hasDP1: !!props.dadger1Data?.DP,
+      hasDP2: !!props.dadger2Data?.DP,
+      dp1Count: props.dadger1Data?.DP?.length,
+      dp2Count: props.dadger2Data?.DP?.length
+    })
+
     // Computed: dados alinhados (lógica específica do bloco DP)
     const alignedData = computed(() => {
       const registros1 = props.dadger1Data.DP
@@ -213,6 +220,13 @@ export default {
       if (filteredData.value.length > 0 && filteredData.value.length <= 5) {
         console.log('[DP filteredData] Rows:', filteredData.value)
       }
+    })
+
+    // Watch para ver quando showOnlyDifferences muda
+    watch(() => props.showOnlyDifferences, (newVal, oldVal) => {
+      console.log('[DP watch] showOnlyDifferences changed:', oldVal, '=>', newVal)
+      console.log('[DP watch] filteredData.length:', filteredData.value.length)
+      console.log('[DP watch] alignedData.length:', alignedData.value.length)
     })
 
     return {
