@@ -15,7 +15,7 @@
             <h5 class="table-title">{{ dadger1Name }}</h5>
             <div class="lines-container">
               <div
-                v-for="(alteracao, idx) in comparacoesPorUsina[usinaNum]"
+                v-for="(alteracao, idx) in comparacoesFiltradas[usinaNum]"
                 :key="`d1-${idx}`"
                 :class="{
                   'line': true,
@@ -32,7 +32,7 @@
                 </div>
                 <div v-else class="alteracao-content alteracao-empty">-</div>
               </div>
-              <div v-if="comparacoesPorUsina[usinaNum].length === 0" class="line empty-line">
+              <div v-if="comparacoesFiltradas[usinaNum].length === 0" class="line empty-line">
                 <span>Sem alterações</span>
               </div>
             </div>
@@ -43,7 +43,7 @@
             <h5 class="table-title">{{ dadger2Name }}</h5>
             <div class="lines-container">
               <div
-                v-for="(alteracao, idx) in comparacoesPorUsina[usinaNum]"
+                v-for="(alteracao, idx) in comparacoesFiltradas[usinaNum]"
                 :key="`d2-${idx}`"
                 :class="{
                   'line': true,
@@ -60,7 +60,7 @@
                 </div>
                 <div v-else class="alteracao-content alteracao-empty">-</div>
               </div>
-              <div v-if="comparacoesPorUsina[usinaNum].length === 0" class="line empty-line">
+              <div v-if="comparacoesFiltradas[usinaNum].length === 0" class="line empty-line">
                 <span>Sem alterações</span>
               </div>
             </div>
@@ -166,24 +166,33 @@ export default {
       return dados1 === dados2
     }
 
+    // Comparações filtradas (filtra linhas individuais quando filtro ativo)
+    const comparacoesFiltradas = computed(() => {
+      const result = {}
+
+      for (const [usina, comparacoes] of Object.entries(comparacoesPorUsina.value)) {
+        if (props.showOnlyDifferences) {
+          // Filtrar apenas linhas com diferenças
+          result[usina] = comparacoes.filter(c => c.onlyInOne || c.different)
+        } else {
+          // Mostrar todas as linhas
+          result[usina] = comparacoes
+        }
+      }
+
+      return result
+    })
+
     // Usinas que devem ser mostradas
     const usinasVisiveis = computed(() => {
       const visiveis = []
 
-      for (const [usinaStr, comparacoes] of Object.entries(comparacoesPorUsina.value)) {
+      for (const [usinaStr, comparacoes] of Object.entries(comparacoesFiltradas.value)) {
         const usina = parseInt(usinaStr)
 
-        // Se não tem dados, não mostrar
+        // Se não tem dados (após filtro), não mostrar
         if (comparacoes.length === 0) {
           continue
-        }
-
-        // Se filtro está ativo, só mostrar se tem diferenças
-        if (props.showOnlyDifferences) {
-          const temDiferenca = comparacoes.some(c => c.onlyInOne || c.different)
-          if (!temDiferenca) {
-            continue
-          }
         }
 
         visiveis.push(usina)
@@ -214,7 +223,7 @@ export default {
     return {
       collapsed,
       toggleCollapsed,
-      comparacoesPorUsina,
+      comparacoesFiltradas,
       usinasVisiveis,
       formatPeriodo,
       hasDifferences
