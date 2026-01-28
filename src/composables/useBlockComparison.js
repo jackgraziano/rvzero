@@ -6,33 +6,11 @@ import { formatNumber } from '../utils/comparison.js'
  * Fonte única de verdade para detectar diferenças
  */
 function rowHasDifferences(row) {
-  const blockType = row.blockType || '?'
-
-  // Apenas logar se for bloco DP
-  if (blockType === 'DP') {
-    const allKeys = Object.keys(row)
-    const diffKeys = allKeys.filter(k => k.endsWith('_diff') || k.startsWith('diff_'))
-    console.log(`[rowHasDifferences DP] Checking row:`, {
-      key: row.key,
-      onlyInOne: row.onlyInOne,
-      sameTemporality: row.sameTemporality,
-      diff_pesada: row.diff_pesada,
-      diff_media: row.diff_media,
-      diff_leve: row.diff_leve,
-      allKeys: allKeys,
-      diffKeys: diffKeys
-    })
-  }
-
   // Se é onlyInOne (existe apenas em um dadger)
   if (row.onlyInOne) {
     // Apenas contar como diferença se também sameTemporality (highlighted)
     // Se não sameTemporality, é faded e não conta
-    const result = row.sameTemporality === true
-    if (blockType === 'DP') {
-      console.log('[rowHasDifferences DP] onlyInOne:', result ? 'PASS' : 'FAIL')
-    }
-    return result
+    return row.sameTemporality === true
   }
 
   // Para rows que existem em ambos dadgers, verificar diferenças de valores
@@ -41,30 +19,14 @@ function rowHasDifferences(row) {
   const keys = Object.keys(row)
   for (const key of keys) {
     if ((key.endsWith('_diff') || key.startsWith('diff_')) && row[key]) {
-      if (blockType === 'DP') {
-        console.log('[rowHasDifferences DP] Found diff field:', key, 'PASS')
-      }
       return true
     }
   }
 
   // Verificar outros campos de diferença
-  if (row.has_diff) {
-    if (blockType === 'DP') {
-      console.log('[rowHasDifferences DP] has_diff=true, PASS')
-    }
-    return true
-  }
-  if (row.temDiferenca) {
-    if (blockType === 'DP') {
-      console.log('[rowHasDifferences DP] temDiferenca=true, PASS')
-    }
-    return true
-  }
+  if (row.has_diff) return true
+  if (row.temDiferenca) return true
 
-  if (blockType === 'DP') {
-    console.log('[rowHasDifferences DP] No differences found, FAIL')
-  }
   return false
 }
 
@@ -189,20 +151,7 @@ export function useBlockComparison(props, alignedDataComputed) {
       }
 
       // Usar função única de verdade para filtrar
-      const filtered = data.filter(row => {
-        const hasDiff = rowHasDifferences(row)
-        const blockType = row.blockType || '?'
-        if (hasDiff && blockType === 'DP') {
-          console.log('[createFilteredData DP] Row passed filter:', row)
-        }
-        return hasDiff
-      })
-
-      // Apenas logar se tiver blockType DP
-      if (data.length > 0 && data[0].blockType === 'DP') {
-        console.log('[createFilteredData DP] Total rows:', data.length, 'Filtered rows:', filtered.length)
-      }
-      return filtered
+      return data.filter(rowHasDifferences)
     })
   }
 

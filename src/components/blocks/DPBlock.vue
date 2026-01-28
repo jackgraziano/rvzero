@@ -6,8 +6,6 @@
     </div>
 
     <div v-show="!collapsed" class="block-content">
-      <!-- Debug invisível para forçar execução do computed -->
-      <span style="display:none">{{ debugFilteredData }}</span>
       <div class="comparison-tables">
         <!-- Tabela Dadger 1 -->
         <div class="table-side">
@@ -98,7 +96,7 @@
 </template>
 
 <script>
-import { computed, watch } from 'vue'
+import { computed } from 'vue'
 import { alignByEstagio, alignByData, hasDiff } from '../../utils/comparison.js'
 import { useBlockComparison } from '../../composables/useBlockComparison.js'
 
@@ -113,23 +111,10 @@ export default {
     showOnlyDifferences: { type: Boolean, required: true }
   },
   setup(props) {
-    console.log('[DP setup] Component mounted!', {
-      hasDP1: !!props.dadger1Data?.DP,
-      hasDP2: !!props.dadger2Data?.DP,
-      dp1Count: props.dadger1Data?.DP?.length,
-      dp2Count: props.dadger2Data?.DP?.length
-    })
-
     // Computed: dados alinhados (lógica específica do bloco DP)
     const alignedData = computed(() => {
       const registros1 = props.dadger1Data.DP
       const registros2 = props.dadger2Data.DP
-
-      console.log('[DP alignedData] Computing with:', {
-        registros1_count: registros1?.length || 0,
-        registros2_count: registros2?.length || 0,
-        compareMode: props.compareMode
-      })
 
       const transformFn = (reg1, reg2, onlyInOne, sameTemporality, primaryValue, subsistema) => {
         const diff_pesada = hasDiff(reg1?.carga_pesada, reg2?.carga_pesada)
@@ -158,18 +143,6 @@ export default {
           diff_pesada,
           diff_media,
           diff_leve
-        }
-
-        // Log apenas rows com diferença
-        if ((diff_pesada || diff_media || diff_leve) && !onlyInOne) {
-          console.log('[DP transformFn] Row with diff (both exist):', {
-            key: row.key,
-            diff_pesada,
-            diff_media,
-            diff_leve,
-            carga1: reg1?.carga_pesada,
-            carga2: reg2?.carga_pesada
-          })
         }
 
         return row
@@ -211,23 +184,8 @@ export default {
       hasDifferences
     } = useBlockComparison(props, alignedData)
 
-    // Criar filteredData com os campos de diff específicos do bloco DP
+    // Criar filteredData
     const filteredData = createFilteredData()
-
-    // Debug: monitorar mudanças no filteredData
-    const debugFilteredData = computed(() => {
-      console.log('[DP filteredData] Count:', filteredData.value.length, 'showOnlyDifferences:', props.showOnlyDifferences)
-      if (filteredData.value.length > 0 && filteredData.value.length <= 5) {
-        console.log('[DP filteredData] Rows:', filteredData.value)
-      }
-    })
-
-    // Watch para ver quando showOnlyDifferences muda
-    watch(() => props.showOnlyDifferences, (newVal, oldVal) => {
-      console.log('[DP watch] showOnlyDifferences changed:', oldVal, '=>', newVal)
-      console.log('[DP watch] filteredData.length:', filteredData.value.length)
-      console.log('[DP watch] alignedData.length:', alignedData.value.length)
-    })
 
     return {
       collapsed,
@@ -240,8 +198,7 @@ export default {
       onScroll2,
       formatNumber,
       filteredData,
-      hasDifferences,
-      debugFilteredData
+      hasDifferences
     }
   }
 }
