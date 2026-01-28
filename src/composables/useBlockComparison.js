@@ -6,7 +6,8 @@ import { formatNumber } from '../utils/comparison.js'
  * Fonte única de verdade para detectar diferenças
  */
 function rowHasDifferences(row) {
-  console.log('[rowHasDifferences] Checking row:', {
+  const blockType = row.blockType || '?'
+  console.log(`[rowHasDifferences ${blockType}] Checking row:`, {
     key: row.key,
     onlyInOne: row.onlyInOne,
     sameTemporality: row.sameTemporality,
