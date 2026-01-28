@@ -146,7 +146,7 @@
 </template>
 
 <script>
-import { formatNumber } from '../../utils/comparison.js'
+import { formatNumber, formatLimite } from '../../utils/comparison.js'
 import { useBlockComparison } from '../../composables/useBlockComparison.js'
 import { useEntityTemporalComparison } from '../../composables/useEntityTemporalComparison.js'
 
@@ -225,11 +225,6 @@ export default {
 
     // Criar filteredData com campo de diferença
     const filteredData = createFilteredData()
-
-    const formatLimite = (value) => {
-      if (value === null || value === undefined) return '-'
-      return formatNumber(value)
-    }
 
     return {
       collapsed,

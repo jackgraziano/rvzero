@@ -151,7 +151,7 @@
 
 <script>
 import { computed } from 'vue'
-import { hasDiff, formatNumber, alignByEstagio, alignByData } from '../../utils/comparison.js'
+import { hasDiff, formatNumber, formatRange, alignByEstagio, alignByData } from '../../utils/comparison.js'
 import { useBlockComparison } from '../../composables/useBlockComparison.js'
 
 export default {
@@ -255,13 +255,6 @@ export default {
 
     // Criar filteredData com campos de diferença
     const filteredData = createFilteredData()
-
-    const formatRange = (min, max) => {
-      if (min === null && max === null) return '-'
-      const minStr = min !== null ? formatNumber(min) : '-'
-      const maxStr = max !== null ? formatNumber(max) : '-'
-      return `${minStr} - ${maxStr}`
-    }
 
     return {
       collapsed,
