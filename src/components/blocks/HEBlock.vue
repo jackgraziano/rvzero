@@ -211,7 +211,7 @@ export default {
     } = useBlockComparison(props, alignedData)
 
     // Criar filteredData com campos de diferença
-    const filteredData = createFilteredData(['limite_diff', 'penalidade_diff', 'coeficientes_diff'])
+    const filteredData = createFilteredData()
 
     const formatTipoLimite = (tipo) => {
       if (tipo === null || tipo === undefined) return '-'

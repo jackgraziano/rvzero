@@ -145,7 +145,7 @@ export default {
     } = useBlockComparison(props, alignedDataWithUsina)
 
     // Criar dados filtrados
-    const filteredData = createFilteredData([])
+    const filteredData = createFilteredData()
 
     return {
       collapsed,

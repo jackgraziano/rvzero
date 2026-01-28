@@ -178,7 +178,7 @@ export default {
     } = useBlockComparison(props, alignedData)
 
     // Criar filteredData com os campos de diff específicos do bloco DP
-    const filteredData = createFilteredData(['diff_pesada', 'diff_media', 'diff_leve'])
+    const filteredData = createFilteredData()
 
     return {
       collapsed,

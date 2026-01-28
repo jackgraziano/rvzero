@@ -265,12 +265,8 @@ export default {
       hasDifferences
     } = useBlockComparison(props, alignedData)
 
-    // Criar filteredData com os campos de diff específicos do bloco CT
-    const filteredData = createFilteredData([
-      'diff_disp_pesado', 'diff_inflex_pesado', 'diff_cvu_pesado',
-      'diff_disp_medio', 'diff_inflex_medio', 'diff_cvu_medio',
-      'diff_disp_leve', 'diff_inflex_leve', 'diff_cvu_leve'
-    ])
+    // Criar filteredData
+    const filteredData = createFilteredData()
 
     return {
       collapsed,

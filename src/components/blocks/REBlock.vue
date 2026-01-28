@@ -224,7 +224,7 @@ export default {
     } = useBlockComparison(props, alignedData)
 
     // Criar filteredData com campo de diferença
-    const filteredData = createFilteredData(['has_diff'])
+    const filteredData = createFilteredData()
 
     const formatLimite = (value) => {
       if (value === null || value === undefined) return '-'

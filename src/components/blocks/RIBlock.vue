@@ -254,7 +254,7 @@ export default {
     } = useBlockComparison(props, alignedData)
 
     // Criar filteredData com campos de diferença
-    const filteredData = createFilteredData(['pesado_diff', 'medio_diff', 'leve_diff'])
+    const filteredData = createFilteredData()
 
     const formatRange = (min, max) => {
       if (min === null && max === null) return '-'

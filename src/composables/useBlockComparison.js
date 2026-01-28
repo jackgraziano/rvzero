@@ -2,6 +2,27 @@ import { ref, computed } from 'vue'
 import { formatNumber } from '../utils/comparison.js'
 
 /**
+ * Verifica se uma row tem diferenças reais (não faded)
+ * Fonte única de verdade para detectar diferenças
+ */
+function rowHasDifferences(row) {
+  // Apenas contar como diferença se onlyInOne E sameTemporality
+  // (highlighted, não faded)
+  if (row.onlyInOne && row.sameTemporality) return true
+
+  // Verificar campos terminados em _diff
+  for (const key in row) {
+    if (key.endsWith('_diff') && row[key]) return true
+  }
+
+  // Verificar outros campos de diferença
+  if (row.has_diff) return true
+  if (row.temDiferenca) return true
+
+  return false
+}
+
+/**
  * Composable para lógica comum de blocos de comparação
  * Encapsula: collapse, scroll sync, sorting, filtering
  */
@@ -12,30 +33,12 @@ export function useBlockComparison(props, alignedDataComputed) {
   const sortColumn = ref(null)
   const sortDirection = ref('asc')
 
-  // Detectar se há diferenças no bloco
+  // Detectar se há diferenças no bloco (usando função única de verdade)
   const hasDifferences = computed(() => {
     if (!alignedDataComputed.value || alignedDataComputed.value.length === 0) {
       return false
     }
-
-    const result = alignedDataComputed.value.some(row => {
-      // Apenas contar como diferença se onlyInOne E sameTemporality
-      // (highlighted, não faded)
-      if (row.onlyInOne && row.sameTemporality) return true
-
-      // Verificar campos terminados em _diff
-      for (const key in row) {
-        if (key.endsWith('_diff') && row[key]) return true
-      }
-
-      // Verificar outros campos de diferença
-      if (row.has_diff) return true
-      if (row.temDiferenca) return true
-
-      return false
-    })
-
-    return result
+    return alignedDataComputed.value.some(rowHasDifferences)
   })
 
   // Refs para containers de scroll
@@ -130,8 +133,8 @@ export function useBlockComparison(props, alignedDataComputed) {
     })
   })
 
-  // Computed: dados filtrados
-  const createFilteredData = (diffFields) => {
+  // Computed: dados filtrados (usa função única de verdade)
+  const createFilteredData = () => {
     return computed(() => {
       const data = sortedData.value
 
@@ -139,20 +142,8 @@ export function useBlockComparison(props, alignedDataComputed) {
         return data
       }
 
-      return data.filter(row => {
-        // Sempre mostrar highlighted (mesma temporalidade, entidade diferente)
-        if (row.onlyInOne && row.sameTemporality) {
-          return true
-        }
-
-        // Não mostrar faded (temporalidade diferente)
-        if (row.onlyInOne && !row.sameTemporality) {
-          return false
-        }
-
-        // Mostrar se tem alguma diferença nos campos especificados
-        return diffFields.some(field => row[field])
-      })
+      // Usar função única de verdade para filtrar
+      return data.filter(rowHasDifferences)
     })
   }
 

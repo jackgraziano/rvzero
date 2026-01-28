@@ -156,7 +156,7 @@ export default {
     } = useBlockComparison(props, alignedData)
 
     // Criar filteredData com os campos de diff específicos do bloco PQ
-    const filteredData = createFilteredData(['diff_geracao_total'])
+    const filteredData = createFilteredData()
 
     return {
       collapsed,

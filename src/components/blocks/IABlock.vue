@@ -348,15 +348,8 @@ export default {
       hasDifferences
     } = useBlockComparison(props, alignedData)
 
-    // Criar filteredData com os campos de diff específicos do bloco IA
-    const filteredData = createFilteredData([
-      'diff_flag_penalidade',
-      'diff_p1_de_para', 'diff_p1_para_de',
-      'diff_p2_de_para', 'diff_p2_para_de',
-      'diff_p3_de_para', 'diff_p3_para_de',
-      'diff_p4_de_para', 'diff_p4_para_de',
-      'diff_p5_de_para', 'diff_p5_para_de'
-    ])
+    // Criar filteredData
+    const filteredData = createFilteredData()
 
     return {
       collapsed,
