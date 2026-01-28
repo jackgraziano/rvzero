@@ -117,7 +117,7 @@ export default {
       const registros2 = props.dadger2Data.DP
 
       const transformFn = (reg1, reg2, onlyInOne, sameTemporality, primaryValue, subsistema) => {
-        return {
+        const row = {
           key: `${primaryValue}-${subsistema}`,
           onlyInOne,
           sameTemporality,
@@ -139,6 +139,13 @@ export default {
           diff_media: hasDiff(reg1?.carga_media, reg2?.carga_media),
           diff_leve: hasDiff(reg1?.carga_leve, reg2?.carga_leve)
         }
+
+        // Debug
+        if (row.diff_pesada || row.diff_media || row.diff_leve) {
+          console.log('[DP] Row with diff:', row)
+        }
+
+        return row
       }
 
       if (props.compareMode === 'estagio') {

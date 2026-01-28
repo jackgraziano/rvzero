@@ -12,7 +12,10 @@ function rowHasDifferences(row) {
 
   // Verificar campos terminados em _diff
   for (const key in row) {
-    if (key.endsWith('_diff') && row[key]) return true
+    if (key.endsWith('_diff') && row[key]) {
+      console.log('[rowHasDifferences] Found diff:', key, '=', row[key], 'in row:', row)
+      return true
+    }
   }
 
   // Verificar outros campos de diferença
