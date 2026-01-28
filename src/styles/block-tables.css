@@ -1,5 +1,10 @@
 /* Estilos compartilhados para tabelas de blocos de comparação */
 
+/* Títulos de blocos */
+.block-name.has-diff {
+  color: #ffaa00 !important;
+}
+
 .data-table {
   width: 100%;
   border-collapse: collapse;

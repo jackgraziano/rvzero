@@ -2,7 +2,7 @@
   <div class="outros-block">
     <div class="block-header" @click="toggleCollapsed">
       <span class="block-icon">{{ collapsed ? '▶' : '▼' }}</span>
-      <h3 class="block-name">OUTROS BLOCOS</h3>
+      <h3 class="block-name" :class="{ 'has-diff': hasDifferences }">OUTROS BLOCOS</h3>
     </div>
 
     <div v-show="!collapsed" class="block-content">
@@ -165,11 +165,23 @@ export default {
       return visiveis
     })
 
+    // Verificar se há diferenças no bloco
+    const hasDifferences = computed(() => {
+      for (const mnem of MNEMONICOS) {
+        const comp = comparacoes.value[mnem]
+        if (comp.some(c => c.onlyInOne || c.different)) {
+          return true
+        }
+      }
+      return false
+    })
+
     return {
       collapsed,
       toggleCollapsed,
       comparacoes: comparacoesFiltradas,
-      mnemonicosVisiveis
+      mnemonicosVisiveis,
+      hasDifferences
     }
   }
 }

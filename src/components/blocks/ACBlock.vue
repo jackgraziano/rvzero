@@ -2,7 +2,7 @@
   <div class="ac-block">
     <div class="block-header" @click="toggleCollapsed">
       <span class="block-icon">{{ collapsed ? '▶' : '▼' }}</span>
-      <h3 class="block-name">BLOCO AC - ALTERAÇÃO DE CADASTRO</h3>
+      <h3 class="block-name" :class="{ 'has-diff': hasDifferences }">BLOCO AC - ALTERAÇÃO DE CADASTRO</h3>
     </div>
 
     <div v-show="!collapsed" class="block-content">
@@ -192,6 +192,16 @@ export default {
       return visiveis.sort((a, b) => a - b)
     })
 
+    // Verificar se há diferenças no bloco
+    const hasDifferences = computed(() => {
+      for (const comparacoes of Object.values(comparacoesPorUsina.value)) {
+        if (comparacoes.some(c => c.onlyInOne || c.different)) {
+          return true
+        }
+      }
+      return false
+    })
+
     const formatPeriodo = (reg) => {
       const partes = []
       if (reg.mes) partes.push(reg.mes)
@@ -205,7 +215,8 @@ export default {
       toggleCollapsed,
       comparacoesPorUsina,
       usinasVisiveis,
-      formatPeriodo
+      formatPeriodo,
+      hasDifferences
     }
   }
 }

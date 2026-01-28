@@ -2,7 +2,7 @@
   <div class="hv-block">
     <div class="block-header" @click="toggleCollapsed">
       <span class="block-icon">{{ collapsed ? '▶' : '▼' }}</span>
-      <h3 class="block-name">BLOCO HV - RESTRIÇÕES DE ARMAZENAMENTO</h3>
+      <h3 class="block-name" :class="{ 'has-diff': hasDifferences }">BLOCO HV - RESTRIÇÕES DE ARMAZENAMENTO</h3>
     </div>
 
     <div v-show="!collapsed" class="block-content">
@@ -201,7 +201,8 @@ export default {
       getSortIcon,
       onScroll1,
       onScroll2,
-      createFilteredData
+      createFilteredData,
+      hasDifferences
     } = useBlockComparison(props, alignedData)
 
     // Criar filteredData com campo de diferença
@@ -223,7 +224,8 @@ export default {
       onScroll2,
       formatLimite,
       colunasTempo,
-      filteredData
+      filteredData,
+      hasDifferences
     }
   }
 }

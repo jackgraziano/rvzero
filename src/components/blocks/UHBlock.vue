@@ -2,7 +2,7 @@
   <div class="uh-block">
     <div class="block-header" @click="toggleCollapsed">
       <span class="block-icon">{{ collapsed ? '▶' : '▼' }}</span>
-      <h3 class="block-name">BLOCO UH - USINAS HIDRÁULICAS</h3>
+      <h3 class="block-name" :class="{ 'has-diff': hasDifferences }">BLOCO UH - USINAS HIDRÁULICAS</h3>
     </div>
 
     <div v-show="!collapsed" class="block-content">
@@ -272,6 +272,24 @@ export default {
       })
     })
 
+    // Detectar se há diferenças no bloco
+    const hasDifferences = computed(() => {
+      if (!alignedData.value || alignedData.value.length === 0) {
+        return false
+      }
+
+      return alignedData.value.some(row => {
+        if (row.onlyInOne) return true
+        return row.diff_volume_armazenado_pct ||
+               row.diff_vazao_defluente_min ||
+               row.diff_chave_evaporacao ||
+               row.diff_estagio_producao ||
+               row.diff_volume_morto ||
+               row.diff_limite_vertimento ||
+               row.diff_chave_balanco_patamar
+      })
+    })
+
     return {
       collapsed,
       tableContainer1,
@@ -283,7 +301,8 @@ export default {
       onScroll2,
       formatNumber,
       formatNumberScientific,
-      filteredData
+      filteredData,
+      hasDifferences
     }
   }
 }

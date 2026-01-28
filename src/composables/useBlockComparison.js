@@ -12,6 +12,26 @@ export function useBlockComparison(props, alignedDataComputed) {
   const sortColumn = ref(null)
   const sortDirection = ref('asc')
 
+  // Detectar se há diferenças no bloco
+  const hasDifferences = computed(() => {
+    if (!alignedDataComputed.value || alignedDataComputed.value.length === 0) {
+      return false
+    }
+
+    return alignedDataComputed.value.some(row => {
+      if (row.onlyInOne) return true
+
+      for (const key in row) {
+        if (key.endsWith('_diff') && row[key]) return true
+      }
+
+      if (row.has_diff) return true
+      if (row.temDiferenca) return true
+
+      return false
+    })
+  })
+
   // Refs para containers de scroll
   const tableContainer1 = ref(null)
   const tableContainer2 = ref(null)
@@ -149,6 +169,7 @@ export function useBlockComparison(props, alignedDataComputed) {
 
     // Computeds
     sortedData,
-    createFilteredData
+    createFilteredData,
+    hasDifferences
   }
 }

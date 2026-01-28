@@ -2,7 +2,7 @@
   <div class="ti-block">
     <div class="block-header" @click="toggleCollapsed">
       <span class="block-icon">{{ collapsed ? '▶' : '▼' }}</span>
-      <h3 class="block-name">BLOCO TI - VAZÃO DESVIADA</h3>
+      <h3 class="block-name" :class="{ 'has-diff': hasDifferences }">BLOCO TI - VAZÃO DESVIADA</h3>
     </div>
 
     <div v-show="!collapsed" class="block-content">
@@ -140,7 +140,8 @@ export default {
       onScroll1,
       onScroll2,
       sortedData,
-      createFilteredData
+      createFilteredData,
+      hasDifferences
     } = useBlockComparison(props, alignedDataWithUsina)
 
     // Criar dados filtrados
@@ -157,7 +158,8 @@ export default {
       onScroll2,
       formatNumber,
       colunasTempo,
-      filteredData
+      filteredData,
+      hasDifferences
     }
   }
 }

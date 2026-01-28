@@ -2,7 +2,7 @@
   <div class="dp-block">
     <div class="block-header" @click="toggleCollapsed">
       <span class="block-icon">{{ collapsed ? '▶' : '▼' }}</span>
-      <h3 class="block-name">BLOCO DP - DEMANDA POR PATAMAR</h3>
+      <h3 class="block-name" :class="{ 'has-diff': hasDifferences }">BLOCO DP - DEMANDA POR PATAMAR</h3>
     </div>
 
     <div v-show="!collapsed" class="block-content">
@@ -173,7 +173,8 @@ export default {
       onScroll1,
       onScroll2,
       formatNumber,
-      createFilteredData
+      createFilteredData,
+      hasDifferences
     } = useBlockComparison(props, alignedData)
 
     // Criar filteredData com os campos de diff específicos do bloco DP
@@ -189,7 +190,8 @@ export default {
       onScroll1,
       onScroll2,
       formatNumber,
-      filteredData
+      filteredData,
+      hasDifferences
     }
   }
 }
