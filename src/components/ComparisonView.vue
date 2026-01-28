@@ -166,6 +166,16 @@
         :showOnlyDifferences="showOnlyDifferences"
       />
 
+      <!-- Bloco AC -->
+      <ACBlock
+        v-if="dadger1Data.AC && dadger2Data.AC"
+        :dadger1Data="dadger1Data"
+        :dadger1Name="dadger1Name"
+        :dadger2Data="dadger2Data"
+        :dadger2Name="dadger2Name"
+        :showOnlyDifferences="showOnlyDifferences"
+      />
+
       <!-- Outros Blocos -->
       <OutrosBlock
         v-if="dadger1Data.OUTROS || dadger2Data.OUTROS"
@@ -206,6 +216,7 @@ import HQBlock from './blocks/HQBlock.vue'
 import HVBlock from './blocks/HVBlock.vue'
 import RIBlock from './blocks/RIBlock.vue'
 import HEBlock from './blocks/HEBlock.vue'
+import ACBlock from './blocks/ACBlock.vue'
 import OutrosBlock from './blocks/OutrosBlock.vue'
 
 export default {
@@ -225,6 +236,7 @@ export default {
     HVBlock,
     RIBlock,
     HEBlock,
+    ACBlock,
     OutrosBlock
   },
   props: {

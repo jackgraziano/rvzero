@@ -18,6 +18,7 @@ import { parseHQ } from './hqParser.js'
 import { parseHV } from './hvParser.js'
 import { parseRI } from './riParser.js'
 import { parseHE } from './heParser.js'
+import { parseAC } from './acParser.js'
 import { parseOutros } from './outrosParser.js'
 
 /**
@@ -42,6 +43,7 @@ export function parseDadger(fileContent) {
     HV: [],
     RI: [],
     HE: [],
+    AC: [],
     OUTROS: {}
   }
 
@@ -107,6 +109,9 @@ export function parseDadger(fileContent) {
 
   // Processar bloco HE (restrições de energia armazenada - Vminop)
   result.HE = parseHE(lines)
+
+  // Processar bloco AC (alteração de cadastro)
+  result.AC = parseAC(lines)
 
   // Processar outros blocos (capturar linhas como strings simples)
   result.OUTROS = parseOutros(lines)
