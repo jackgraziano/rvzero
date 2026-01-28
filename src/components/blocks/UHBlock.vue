@@ -119,7 +119,7 @@
 
 <script>
 import { computed } from 'vue'
-import { hasDiff, formatNumberScientific } from '../../utils/comparison.js'
+import { hasDiff, formatNumber, formatNumberScientific } from '../../utils/comparison.js'
 import { useBlockComparison } from '../../composables/useBlockComparison.js'
 
 export default {
@@ -195,6 +195,7 @@ export default {
       getSortIcon,
       onScroll1,
       onScroll2,
+      formatNumber,
       formatNumberScientific,
       filteredData,
       hasDifferences
