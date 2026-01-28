@@ -6,6 +6,8 @@
     </div>
 
     <div v-show="!collapsed" class="block-content">
+      <!-- Debug invisível para forçar execução do computed -->
+      <span style="display:none">{{ debugFilteredData }}</span>
       <div class="comparison-tables">
         <!-- Tabela Dadger 1 -->
         <div class="table-side">
