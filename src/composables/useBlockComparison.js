@@ -6,14 +6,18 @@ import { formatNumber } from '../utils/comparison.js'
  * Fonte única de verdade para detectar diferenças
  */
 function rowHasDifferences(row) {
-  // Apenas contar como diferença se onlyInOne E sameTemporality
-  // (highlighted, não faded)
-  if (row.onlyInOne && row.sameTemporality) return true
+  // Se é onlyInOne (existe apenas em um dadger)
+  if (row.onlyInOne) {
+    // Apenas contar como diferença se também sameTemporality (highlighted)
+    // Se não sameTemporality, é faded e não conta
+    return row.sameTemporality === true
+  }
+
+  // Para rows que existem em ambos dadgers, verificar diferenças de valores
 
   // Verificar campos terminados em _diff
   for (const key in row) {
     if (key.endsWith('_diff') && row[key]) {
-      console.log('[rowHasDifferences] Found diff:', key, '=', row[key], 'in row:', row)
       return true
     }
   }
