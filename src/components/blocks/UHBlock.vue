@@ -278,16 +278,26 @@ export default {
         return false
       }
 
-      return alignedData.value.some(row => {
-        if (row.onlyInOne) return true
-        return row.diff_volume_armazenado_pct ||
-               row.diff_vazao_defluente_min ||
-               row.diff_chave_evaporacao ||
-               row.diff_estagio_producao ||
-               row.diff_volume_morto ||
-               row.diff_limite_vertimento ||
-               row.diff_chave_balanco_patamar
+      const result = alignedData.value.some(row => {
+        if (row.onlyInOne) {
+          console.log('[UH] hasDifferences: onlyInOne=true', row)
+          return true
+        }
+        const hasDiff = row.diff_volume_armazenado_pct ||
+                       row.diff_vazao_defluente_min ||
+                       row.diff_chave_evaporacao ||
+                       row.diff_estagio_producao ||
+                       row.diff_volume_morto ||
+                       row.diff_limite_vertimento ||
+                       row.diff_chave_balanco_patamar
+        if (hasDiff) {
+          console.log('[UH] hasDifferences: has diff fields', row)
+        }
+        return hasDiff
       })
+
+      console.log('[UH] hasDifferences result:', result, 'rows:', alignedData.value.length)
+      return result
     })
 
     return {
