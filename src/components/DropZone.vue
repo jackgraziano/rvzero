@@ -10,7 +10,8 @@
     <div v-if="!file" class="drop-zone-content">
       <div class="icon">📁</div>
       <h3>{{ title }}</h3>
-      <p>Arraste o arquivo dadger.* aqui</p>
+      <p>Arraste um arquivo aqui</p>
+      <p class="supported-types">Tipos suportados: {{ supportedTypesText }}</p>
       <span class="or">ou</span>
       <label class="upload-btn">
         Selecionar arquivo
@@ -44,7 +45,7 @@
 </template>
 
 <script>
-import { parseDadger } from '../utils/dadgerParser.js'
+import { detectFileType, parseFile, getSupportedTypes } from '../utils/fileTypeRegistry.js'
 
 export default {
   name: 'DropZone',
@@ -62,7 +63,14 @@ export default {
     return {
       isDragging: false,
       file: null,
-      parsedData: null
+      parsedData: null,
+      fileType: null
+    }
+  },
+  computed: {
+    supportedTypesText() {
+      const types = getSupportedTypes()
+      return types.map(t => t.name).join(', ')
     }
   },
   methods: {
@@ -91,25 +99,38 @@ export default {
       }
     },
     handleFile(file) {
-      if (file.name.startsWith('dadger.')) {
+      const detectedType = detectFileType(file.name)
+
+      if (detectedType) {
         this.file = file
+        this.fileType = detectedType
         this.readAndParseFile(file)
       } else {
-        alert('Por favor, selecione um arquivo dadger.* (ex: dadger.rv0, dadger.dat)')
+        alert(`Tipo de arquivo não suportado.\nArquivos aceitos: ${this.supportedTypesText}`)
       }
     },
     readAndParseFile(file) {
       const reader = new FileReader()
       reader.onload = (e) => {
         const content = e.target.result
-        this.parsedData = parseDadger(content)
-        this.$emit('data-parsed', this.parsedData, file.name)
+        try {
+          this.parsedData = parseFile(file.name, content)
+          this.$emit('data-parsed', {
+            type: this.fileType,
+            name: file.name,
+            data: this.parsedData
+          })
+        } catch (error) {
+          alert(`Erro ao processar arquivo: ${error.message}`)
+          this.removeFile()
+        }
       }
       reader.readAsText(file)
     },
     removeFile() {
       this.file = null
       this.parsedData = null
+      this.fileType = null
       this.$emit('file-removed')
     },
     formatFileSize(bytes) {
@@ -177,6 +198,12 @@ export default {
   margin-bottom: 15px;
   font-size: 12px;
   font-family: 'Courier New', monospace;
+}
+
+.supported-types {
+  font-size: 10px !important;
+  opacity: 0.7;
+  margin-bottom: 10px !important;
 }
 
 .or {

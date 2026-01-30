@@ -1,6 +1,6 @@
-# RVZero - Comparador de Dadgers
+# RVZero - Comparador de Arquivos
 
-Sistema de comparação visual de arquivos DADGER para planejamento energético.
+Sistema de comparação visual de arquivos de planejamento energético (DADGER, RENOVÁVEIS, etc).
 
 ## Organização do Código
 
@@ -23,17 +23,19 @@ src/
 │   └── TopBar.vue          # Barra superior com controles
 ├── utils/
 │   ├── parsers/
-│   │   ├── index.js      # Orquestrador principal de parsing
-│   │   ├── infoParser.js # Parser de informações gerais
-│   │   ├── dpParser.js   # Parser do bloco DP
-│   │   ├── pqParser.js   # Parser do bloco PQ
-│   │   ├── ctParser.js   # Parser do bloco CT
-│   │   ├── iaParser.js   # Parser do bloco IA
-│   │   ├── uhParser.js   # Parser do bloco UH
-│   │   ├── tiParser.js   # Parser do bloco TI
-│   │   ├── mpParser.js   # Parser do bloco MP
-│   │   └── fdParser.js   # Parser do bloco FD
-│   └── comparison.js     # Utilitários de comparação
+│   │   ├── index.js            # Orquestrador principal de parsing DADGER
+│   │   ├── renovaveisParser.js # Parser de arquivos RENOVÁVEIS
+│   │   ├── infoParser.js       # Parser de informações gerais
+│   │   ├── dpParser.js         # Parser do bloco DP
+│   │   ├── pqParser.js         # Parser do bloco PQ
+│   │   ├── ctParser.js         # Parser do bloco CT
+│   │   ├── iaParser.js         # Parser do bloco IA
+│   │   ├── uhParser.js         # Parser do bloco UH
+│   │   ├── tiParser.js         # Parser do bloco TI
+│   │   ├── mpParser.js         # Parser do bloco MP
+│   │   └── fdParser.js         # Parser do bloco FD
+│   ├── fileTypeRegistry.js     # Sistema de detecção e registro de tipos
+│   └── comparison.js           # Utilitários de comparação
 ├── styles/
 │   └── block-tables.css  # Estilos compartilhados entre blocos
 └── App.vue               # Componente raiz
@@ -41,11 +43,60 @@ src/
 
 ### Fluxo de Dados
 
-1. **Upload**: `FileUploader.vue` → lê arquivos DADGER
-2. **Parsing**: `parsers/index.js` → orquestra todos os parsers específicos
-3. **Armazenamento**: `App.vue` → mantém estado dos dois dadgers
-4. **Visualização**: `ComparisonView.vue` → distribui dados para blocos
-5. **Comparação**: Cada bloco compara e destaca diferenças
+1. **Upload**: `DropZone.vue` → lê arquivos (DADGER, RENOVÁVEIS, etc)
+2. **Detecção de Tipo**: `fileTypeRegistry.js` → identifica tipo do arquivo
+3. **Parsing**: Parser específico (DADGER, RENOVÁVEIS) → processa conteúdo
+4. **Armazenamento**: `App.vue` → mantém estado dos dois arquivos
+5. **Roteamento**: `App.vue` → decide qual view mostrar baseado no tipo
+6. **Visualização**: View específica (ComparisonView, etc) → distribui dados
+7. **Comparação**: Cada bloco compara e destaca diferenças
+
+## Sistema de Tipos de Arquivo
+
+### Registro de Tipos (`fileTypeRegistry.js`)
+
+O sistema suporta múltiplos tipos de arquivo através de um registro centralizado:
+
+```javascript
+export const FILE_TYPES = {
+  DADGER: {
+    id: 'dadger',
+    name: 'DADGER',
+    pattern: /^dadger\./i,
+    parser: parseDadger,
+    icon: '📊'
+  },
+  RENOVAVEIS: {
+    id: 'renovaveis',
+    name: 'RENOVÁVEIS',
+    pattern: /^renovaveis\./i,
+    parser: parseRenovaveis,
+    icon: '🌱'
+  }
+}
+```
+
+### Adicionar Novo Tipo de Arquivo
+
+1. Criar parser em `utils/parsers/novoTipoParser.js`
+2. Registrar tipo em `fileTypeRegistry.js`:
+   ```javascript
+   NOVO_TIPO: {
+     id: 'novo_tipo',
+     name: 'NOVO TIPO',
+     pattern: /^novo_tipo\./i,
+     parser: parseNovoTipo,
+     icon: '🎯'
+   }
+   ```
+3. Criar view de comparação (se necessário)
+4. Adicionar roteamento em `App.vue`
+
+### Validação de Compatibilidade
+
+O sistema valida se dois arquivos são compatíveis para comparação:
+- Ambos devem ser do mesmo tipo (DADGER com DADGER, etc)
+- Mensagem de erro automática para tipos incompatíveis
 
 ## Comparação: Data vs Estágio
 
@@ -756,3 +807,12 @@ const { colunasTempo, alignedData } = useEntityTemporalComparison(
 - Scroll das duas tabelas deve ser sincronizado
 - Formatação consistente: `faded`, `diff`, `highlighted`
 - Valores numéricos alinhados à direita
+
+## Política de Commits
+
+**IMPORTANTE:** Nunca fazer commits automaticamente. Sempre aguardar solicitação explícita do usuário.
+
+- Apenas criar commits quando o usuário pedir explicitamente
+- Mensagens de commit devem ser descritivas e seguir o padrão do projeto
+- Incluir `Co-Authored-By: Claude <noreply@anthropic.com>` no corpo do commit
+- Usar HEREDOC para mensagens de commit multi-linha
