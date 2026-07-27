@@ -2,15 +2,15 @@
 
 [![Deploy to GitHub Pages](https://github.com/jackgraziano/rvzero/actions/workflows/deploy.yml/badge.svg)](https://github.com/jackgraziano/rvzero/actions/workflows/deploy.yml)
 
-Comparador aberto de decks DADGER do DECOMP, executado inteiramente no
-navegador.
+Comparador aberto de arquivos DADGER e renováveis do DECOMP, executado
+inteiramente no navegador.
 
 **Aplicação:** [rv0.com.br](https://rv0.com.br/)
 
-O RVZero lê dois decks, interpreta seus blocos posicionais e destaca as
+O RVZero lê dois conjuntos de arquivos, interpreta seus registros e destaca as
 alterações lado a lado. Seu principal cuidado é alinhar os dados pelo período
-correto do calendário, em vez de assumir que estágios com o mesmo número
-representam a mesma semana.
+correto do calendário, em vez de assumir que estágios ou períodos com o mesmo
+número representam a mesma semana.
 
 ## Por que comparar pela data?
 
@@ -47,7 +47,10 @@ dos patamares do bloco `DP`.
   a exibição de objetos internos como texto corrido.
 - Suporte a campos opcionais, valores zero e registros repetidos.
 - Detecção dinâmica de blocos simples ainda sem parser estruturado.
-- Comparação adicional de arquivos `renovaveis.*`.
+- Upload simultâneo de um DADGER e um arquivo `renovaveis.*` por deck.
+- Comparação de renováveis por `PerIni` quando usados isoladamente.
+- Associação de `PerIni` à data do estágio correspondente quando cada lado
+  também possui um DADGER.
 - Processamento local: os arquivos são lidos pelo navegador e não são enviados
   para um servidor.
 
@@ -79,13 +82,16 @@ passadas usadas no tempo de viagem, e não estágios futuros do horizonte.
 ## Como usar
 
 1. Abra o RVZero.
-2. Arraste um DADGER para cada uma das duas áreas de upload.
-3. Escolha a comparação por **Data** ou **Estágio**.
-4. Expanda os blocos que deseja analisar.
-5. Ative ou desative **Mostrar apenas diferenças** conforme necessário.
+2. Em cada lado, arraste um DADGER, um arquivo de renováveis ou ambos.
+3. Com somente renováveis, compare diretamente pelo número do período.
+4. Com um DADGER em cada lado, escolha a comparação por **Data** ou
+   **Estágio**. No modo Data, o `PerIni` dos renováveis usa o calendário do
+   DADGER do mesmo lado.
+5. Expanda os blocos que deseja analisar.
+6. Ative ou desative **Mostrar apenas diferenças** conforme necessário.
 
-Arquivos inválidos, sem `DT` ou sem registros `DP` válidos, são rejeitados para
-evitar comparações temporais silenciosamente incorretas.
+DADGERs sem `DT` ou sem registros `DP` válidos são rejeitados para evitar
+comparações temporais silenciosamente incorretas.
 
 ## Executar localmente
 
@@ -142,10 +148,11 @@ A suíte usa `node:test` e cobre, entre outros casos:
 ## Arquitetura
 
 ```text
-Arquivo
+Conjunto de arquivos por revisão
   → detecção do tipo
-  → parser do bloco
-  → calendário DT + DP
+  → parser DADGER e/ou renováveis
+  → calendário DT + DP, quando disponível
+  → associação PerIni → data
   → alinhamento por data/estágio
   → comparação semântica
   → componentes Vue

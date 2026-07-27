@@ -9,7 +9,7 @@
     </div>
 
     <div class="controls">
-      <fieldset v-if="showTemporalControls" class="mode-control">
+      <fieldset class="mode-control">
         <legend>Alinhamento</legend>
         <button
           v-for="option in compareOptions"
@@ -17,7 +17,8 @@
           type="button"
           :class="{ active: compareMode === option.value }"
           :aria-pressed="compareMode === option.value"
-          :title="option.description"
+          :disabled="option.value === 'data' && !dateModeAvailable"
+          :title="modeDescription(option)"
           @click="$emit('compare-mode-changed', option.value)"
         >
           {{ option.label }}
@@ -38,7 +39,7 @@
         type="button"
         class="icon-button clear-button"
         :disabled="!hasFiles"
-        title="Remover os dois arquivos"
+        title="Remover todos os arquivos"
         @click="$emit('clear-all')"
       >
         Limpar
@@ -81,9 +82,10 @@
         <h2 id="about-title">Sobre o RVZero</h2>
         <p>
           O RVZero é uma ferramenta de código aberto destinada à análise
-          comparativa de arquivos DADGER do DECOMP. A aplicação alinha revisões
-          por períodos equivalentes do calendário e processa os dados
-          localmente, sem enviá-los a servidores.
+          comparativa de arquivos DADGER e renováveis do DECOMP. Quando o
+          DADGER está disponível, a aplicação associa os períodos ao calendário
+          da revisão; todo o processamento ocorre localmente, sem envio dos
+          arquivos a servidores.
         </p>
         <a
           href="https://github.com/jackgraziano/rvzero"
@@ -109,7 +111,7 @@ export default {
     compareMode: { type: String, required: true },
     showOnlyDifferences: { type: Boolean, required: true },
     hasFiles: { type: Boolean, default: false },
-    showTemporalControls: { type: Boolean, default: true }
+    dateModeAvailable: { type: Boolean, default: false }
   },
   data() {
     return {
@@ -123,9 +125,17 @@ export default {
         {
           value: 'estagio',
           label: 'Estágio',
-          description: 'Modo diagnóstico: compara o mesmo número de estágio'
+          description: 'Compara diretamente o mesmo estágio ou PerIni'
         }
       ]
+    }
+  },
+  methods: {
+    modeDescription(option) {
+      if (option.value === 'data' && !this.dateModeAvailable) {
+        return 'Adicione um DADGER a cada deck para habilitar o alinhamento por data'
+      }
+      return option.description
     }
   }
 }
@@ -228,6 +238,17 @@ export default {
 .mode-control button.active {
   color: var(--background);
   background: var(--accent);
+}
+
+.mode-control button:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.mode-control button:disabled:hover {
+  color: var(--muted);
+  background: transparent;
 }
 
 .difference-toggle {

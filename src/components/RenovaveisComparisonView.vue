@@ -4,17 +4,26 @@
       <span>Resultado da comparação</span>
       <h2>Geração renovável</h2>
       <p>
-        Valores agregados por submercado, período e patamar.
+        <template v-if="compareMode === 'data'">
+          Cada PerIni foi associado à data do estágio correspondente no DADGER
+          do mesmo deck.
+        </template>
+        <template v-else>
+          Comparação direta pelo número do período informado em cada arquivo.
+        </template>
         {{ showOnlyDifferences ? 'Somente diferenças estão visíveis.' : 'Todos os registros estão visíveis.' }}
       </p>
     </header>
 
     <RenovaveisGeracaoBlock
-      :renovaveis1Data="renovaveis1Data"
-      :renovaveis1Name="renovaveis1Name"
-      :renovaveis2Data="renovaveis2Data"
-      :renovaveis2Name="renovaveis2Name"
-      :showOnlyDifferences="showOnlyDifferences"
+      :renovaveis1-data="renovaveis1Data"
+      :renovaveis1-name="renovaveis1Name"
+      :renovaveis2-data="renovaveis2Data"
+      :renovaveis2-name="renovaveis2Name"
+      :dadger1-data="dadger1Data"
+      :dadger2-data="dadger2Data"
+      :compare-mode="compareMode"
+      :show-only-differences="showOnlyDifferences"
     />
   </div>
 </template>
@@ -32,6 +41,9 @@ export default {
     renovaveis1Name: { type: String, required: true },
     renovaveis2Data: { type: Object, required: true },
     renovaveis2Name: { type: String, required: true },
+    dadger1Data: { type: Object, default: null },
+    dadger2Data: { type: Object, default: null },
+    compareMode: { type: String, required: true },
     showOnlyDifferences: { type: Boolean, required: true }
   }
 }

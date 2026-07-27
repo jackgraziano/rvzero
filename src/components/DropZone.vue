@@ -3,7 +3,7 @@
     class="drop-zone"
     :class="{
       'drag-over': isDragging,
-      'has-file': file,
+      'has-file': files.length > 0,
       'is-reading': isReading,
       'has-error': errorMessage
     }"
@@ -13,48 +13,63 @@
     @dragleave.prevent="onDragLeave"
     @drop.prevent="onDrop"
   >
-    <div v-if="!file" class="drop-zone-content">
-      <div class="upload-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" role="img">
-          <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 13v5.5A1.5 1.5 0 006.5 20h11a1.5 1.5 0 001.5-1.5V13"/>
-        </svg>
+    <div class="drop-zone-content">
+      <div class="upload-row">
+        <div class="upload-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" role="img">
+            <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 13v5.5A1.5 1.5 0 006.5 20h11a1.5 1.5 0 001.5-1.5V13"/>
+          </svg>
+        </div>
+        <div class="upload-copy">
+          <span class="slot-label">{{ title }}</span>
+          <h2>
+            {{ files.length ? 'Adicione arquivos a este conjunto' : 'Arraste os arquivos para cá' }}
+          </h2>
+          <p>{{ supportedTypesText }} · até um de cada tipo · processamento local</p>
+        </div>
+        <label class="upload-button">
+          {{ files.length ? 'Adicionar ou substituir' : 'Escolher arquivos' }}
+          <input ref="fileInput" type="file" multiple @change="onFileSelect">
+        </label>
       </div>
-      <div class="upload-copy">
-        <span class="slot-label">{{ title }}</span>
-        <h2>Arraste o arquivo para cá</h2>
-        <p>{{ supportedTypesText }} · processamento local</p>
+
+      <p v-if="isReading" class="reading-message" role="status">
+        Validando {{ pendingCount }} {{ pendingCount === 1 ? 'arquivo' : 'arquivos' }}…
+      </p>
+
+      <div v-if="files.length" class="file-list">
+        <article
+          v-for="file in files"
+          :key="file.type.id"
+          class="file-loaded"
+        >
+          <div class="file-type" aria-hidden="true">
+            {{ file.type.id === 'dadger' ? 'DG' : 'RN' }}
+          </div>
+          <div class="file-details">
+            <span class="file-kind">{{ file.type.name }}</span>
+            <h3 :title="file.name">{{ file.name }}</h3>
+            <p>
+              {{ fileStatus(file) }}
+              <span aria-hidden="true">·</span>
+              {{ formatFileSize(file.size) }}
+            </p>
+          </div>
+          <button
+            type="button"
+            class="remove-button"
+            :aria-label="`Remover ${file.name}`"
+            title="Remover arquivo"
+            @click="removeFile(file.type.id)"
+          >
+            ×
+          </button>
+        </article>
       </div>
-      <label class="upload-button">
-        Escolher arquivo
-        <input ref="fileInput" type="file" @change="onFileSelect">
-      </label>
+
       <p v-if="errorMessage" class="error-message" role="alert">
         {{ errorMessage }}
       </p>
-    </div>
-
-    <div v-else class="file-loaded">
-      <div class="file-type" :class="{ loading: isReading }" aria-hidden="true">
-        {{ isReading ? '···' : fileType?.id === 'dadger' ? 'DG' : 'RN' }}
-      </div>
-      <div class="file-details">
-        <span class="slot-label">{{ title }}</span>
-        <h2 :title="file.name">{{ file.name }}</h2>
-        <p>
-          {{ isReading ? 'Validando arquivo…' : fileStatus }}
-          <span aria-hidden="true">·</span>
-          {{ formatFileSize(file.size) }}
-        </p>
-      </div>
-      <button
-        type="button"
-        class="remove-button"
-        :aria-label="`Remover ${file.name}`"
-        title="Remover arquivo"
-        @click="removeFile"
-      >
-        ×
-      </button>
     </div>
   </section>
 </template>
@@ -68,26 +83,23 @@ export default {
   props: {
     title: { type: String, required: true },
     index: { type: Number, required: true },
-    comparisonReady: { type: Boolean, default: false }
+    readyTypes: { type: Array, default: () => [] }
   },
   data() {
     return {
       isDragging: false,
-      isReading: false,
+      pendingCount: 0,
+      readGeneration: 0,
       errorMessage: '',
-      file: null,
-      parsedData: null,
-      fileType: null
+      files: []
     }
   },
   computed: {
+    isReading() {
+      return this.pendingCount > 0
+    },
     supportedTypesText() {
       return getSupportedTypes().map(type => type.name).join(' ou ')
-    },
-    fileStatus() {
-      return this.comparisonReady
-        ? 'Pronto para comparar'
-        : 'Arquivo validado · aguardando o outro deck'
     }
   },
   methods: {
@@ -98,65 +110,94 @@ export default {
     },
     onDrop(event) {
       this.isDragging = false
-      const [file] = event.dataTransfer.files
-      if (file) this.handleFile(file)
+      this.handleFiles(event.dataTransfer.files)
     },
     onFileSelect(event) {
-      const [file] = event.target.files
-      if (file) this.handleFile(file)
+      this.handleFiles(event.target.files)
     },
-    handleFile(file) {
+    async handleFiles(fileList) {
+      const selectedFiles = [...fileList]
+      if (selectedFiles.length === 0) return
+
+      const generation = this.readGeneration
       this.errorMessage = ''
-      const detectedType = detectFileType(file.name)
+      const errors = []
+      const supportedFiles = selectedFiles
+        .map(file => ({ file, type: detectFileType(file.name) }))
+        .filter(({ file, type }) => {
+          if (type) return true
+          errors.push(`${file.name}: tipo não suportado`)
+          return false
+        })
 
-      if (!detectedType) {
-        this.errorMessage = `Tipo não suportado. Selecione um arquivo ${this.supportedTypesText}.`
-        this.resetInput()
-        return
-      }
-
-      this.file = file
-      this.fileType = detectedType
-      this.isReading = true
-      this.readAndParseFile(file)
-    },
-    readAndParseFile(file) {
-      const reader = new FileReader()
-      reader.onload = event => {
+      this.pendingCount += supportedFiles.length
+      for (const { file, type: detectedType } of supportedFiles) {
         try {
-          this.parsedData = parseFile(file.name, event.target.result)
-          this.isReading = false
-          this.$emit('data-parsed', {
-            type: this.fileType,
+          const content = await this.readFile(file)
+          if (generation !== this.readGeneration) continue
+
+          const parsedData = parseFile(file.name, content)
+          const fileInfo = {
+            type: detectedType,
             name: file.name,
-            data: this.parsedData
-          })
+            size: file.size,
+            data: parsedData
+          }
+          const existingIndex = this.files.findIndex(
+            item => item.type.id === detectedType.id
+          )
+
+          if (existingIndex === -1) {
+            this.files.push(fileInfo)
+          } else {
+            this.files.splice(existingIndex, 1, fileInfo)
+          }
+
+          this.$emit('data-parsed', fileInfo)
         } catch (error) {
-          this.failReading(`Não foi possível processar o arquivo: ${error.message}`)
+          if (generation === this.readGeneration) {
+            errors.push(`${file.name}: ${error.message}`)
+          }
+        } finally {
+          if (generation === this.readGeneration) {
+            this.pendingCount = Math.max(0, this.pendingCount - 1)
+          }
         }
       }
-      reader.onerror = () => {
-        this.failReading('Não foi possível ler o arquivo. Tente selecioná-lo novamente.')
+
+      if (generation !== this.readGeneration) return
+      if (errors.length > 0) {
+        this.errorMessage = `Não foi possível processar: ${errors.join('; ')}.`
       }
-      reader.readAsText(file)
-    },
-    failReading(message) {
-      this.errorMessage = message
-      this.file = null
-      this.parsedData = null
-      this.fileType = null
-      this.isReading = false
       this.resetInput()
-      this.$emit('file-removed')
     },
-    removeFile() {
-      this.file = null
-      this.parsedData = null
-      this.fileType = null
-      this.isReading = false
+    readFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = event => resolve(event.target.result)
+        reader.onerror = () => reject(
+          new Error('não foi possível ler o arquivo; selecione-o novamente')
+        )
+        reader.readAsText(file)
+      })
+    },
+    fileStatus(file) {
+      return this.readyTypes.includes(file.type.id)
+        ? 'Pronto para comparar'
+        : 'Validado · aguardando arquivo correspondente'
+    },
+    removeFile(typeId) {
+      this.files = this.files.filter(file => file.type.id !== typeId)
       this.errorMessage = ''
       this.resetInput()
-      this.$emit('file-removed')
+      this.$emit('file-removed', typeId)
+    },
+    clearFiles() {
+      this.readGeneration += 1
+      this.files = []
+      this.pendingCount = 0
+      this.errorMessage = ''
+      this.resetInput()
     },
     resetInput() {
       if (this.$refs.fileInput) this.$refs.fileInput.value = ''
@@ -178,7 +219,7 @@ export default {
 <style scoped>
 .drop-zone {
   min-width: 0;
-  min-height: 210px;
+  min-height: 220px;
   display: flex;
   align-items: stretch;
   overflow: hidden;
@@ -201,7 +242,7 @@ export default {
 }
 
 .drop-zone.has-file {
-  min-height: 82px;
+  min-height: 180px;
   border-style: solid;
 }
 
@@ -211,11 +252,19 @@ export default {
 
 .drop-zone-content {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  padding: clamp(18px, 3vw, 28px);
+}
+
+.upload-row {
+  min-width: 0;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 18px;
-  padding: clamp(22px, 4vw, 38px);
+  gap: 16px;
 }
 
 .upload-icon {
@@ -248,7 +297,7 @@ export default {
 }
 
 .upload-copy h2,
-.file-details h2 {
+.file-details h3 {
   margin: 0;
   color: var(--text);
   font: 650 14px/1.3 var(--font-ui);
@@ -293,19 +342,32 @@ export default {
 }
 
 .error-message {
-  grid-column: 2 / -1;
-  margin: -7px 0 0;
+  margin: 0;
   color: var(--danger);
   font: 600 11px/1.45 var(--font-ui);
 }
 
+.reading-message {
+  margin: 0;
+  color: var(--accent-strong);
+  font: 600 10px/1.4 var(--font-mono);
+}
+
+.file-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
 .file-loaded {
-  width: 100%;
   min-width: 0;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 10px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 7px;
 }
 
 .file-type {
@@ -320,17 +382,20 @@ export default {
   font: 800 10px/1 var(--font-mono);
 }
 
-.file-type.loading {
-  color: var(--accent);
-  background: var(--surface-elevated);
-}
-
 .file-details {
   min-width: 0;
   flex: 1;
 }
 
-.file-details h2 {
+.file-kind {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--accent-strong);
+  font: 750 8px/1.2 var(--font-mono);
+  letter-spacing: 0.08em;
+}
+
+.file-details h3 {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -361,12 +426,16 @@ export default {
 }
 
 @media (max-width: 700px) {
-  .drop-zone-content {
+  .upload-row {
     grid-template-columns: auto 1fr;
   }
 
   .upload-button {
     grid-column: 1 / -1;
+  }
+
+  .file-list {
+    grid-template-columns: 1fr;
   }
 }
 </style>

@@ -1,9 +1,9 @@
 # Arquitetura do RVZero
 
-O RVZero lê dois DADGERs, transforma os registros posicionais em estruturas
-semânticas e os alinha por estágio ou por data de início do estágio. O modo por
-data é o padrão porque revisões diferentes não atribuem o mesmo período do
-calendário ao mesmo número de estágio.
+O RVZero lê dois conjuntos que podem conter um DADGER, um arquivo de renováveis
+ou ambos. Ele transforma os registros em estruturas semânticas e os alinha por
+índice ou por data de início. O alinhamento por data exige um DADGER em cada
+lado, pois é o `DT` do DADGER que ancora o calendário da revisão.
 
 ## Regra temporal
 
@@ -20,6 +20,11 @@ calendário ao mesmo número de estágio.
   diferenças.
 - No modo `estagio`, a comparação é numérica e serve como diagnóstico do
   arquivo; ela não representa necessariamente o mesmo período do calendário.
+- Em `renovaveis.*`, `PerIni` é o índice do período. Sem DADGERs, os arquivos
+  são comparados diretamente por esse índice.
+- Quando os dois lados têm DADGER, cada `PerIni` é convertido pela tabela
+  `info_dadger.datas_estagios` do próprio lado. Assim, por exemplo, o período 2
+  de uma revisão pode ser comparado ao período 1 da revisão seguinte.
 - `UH` contém condições iniciais. No modo `data`, dois blocos UH só são
   comparáveis quando os dois `DT` são iguais.
 
@@ -41,11 +46,13 @@ Modo estágio: estágio 3 ↔ estágio 3
 
 ```text
 DropZone
+  → conjunto por lado (DADGER + renováveis)
   → fileTypeRegistry
-  → parseDadger
+  → parseDadger / parseRenovaveis
       → parser de cada bloco
       → calendário DT + DP
-  → ComparisonView
+  → ComparisonView / RenovaveisComparisonView
+      → associação PerIni → data do DADGER
       → alinhamento temporal
       → comparação semântica
       → filtro de diferenças comparáveis
@@ -92,6 +99,8 @@ valor por estágio e é temporal.
 renderiza TI, MP, FD, VE e RQ sem componentes duplicados.
 `useEntityTemporalComparison` atende RE, HQ e HV.
 `useBlockComparison` é a fonte única para ordenação, scroll, filtro e indicação
+de diferenças. `renovaveisComparison.js` concentra a associação de `PerIni` ao
+calendário e mantém períodos fora do horizonte compartilhado fora do conjunto
 de diferenças.
 
 ## Estrutura principal
@@ -112,6 +121,7 @@ src/
 └── utils/
     ├── parsers/
     ├── comparison.js
+    ├── renovaveisComparison.js
     └── temporal.js
 ```
 

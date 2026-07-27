@@ -16,6 +16,7 @@ import {
   rowHasDifferences,
   useBlockComparison
 } from '../src/composables/useBlockComparison.js'
+import { alignRenovaveisGeneration } from '../src/utils/renovaveisComparison.js'
 
 function deck(baseDate, dates, block = []) {
   return {
@@ -88,6 +89,100 @@ test('modo data alinha estágios diferentes que começam no mesmo dia', () => {
     sameTemporality: true,
     date: '07/03/2026'
   }])
+})
+
+test('renováveis associa PerIni ao calendário do DADGER de cada revisão', () => {
+  const first = deck('18/07/2026', {
+    1: '18/07/2026',
+    2: '25/07/2026',
+    3: '01/08/2026'
+  })
+  const second = deck('25/07/2026', {
+    1: '25/07/2026',
+    2: '01/08/2026'
+  })
+  const renewables1 = {
+    geracaoAgregada: [
+      {
+        periodo: 1,
+        submercado: 1,
+        patamar: 1,
+        geracaoMedia: 90,
+        numPEEs: 2,
+        numCenarios: 3
+      },
+      {
+        periodo: 2,
+        submercado: 1,
+        patamar: 1,
+        geracaoMedia: 100,
+        numPEEs: 2,
+        numCenarios: 3
+      }
+    ]
+  }
+  const renewables2 = {
+    geracaoAgregada: [{
+      periodo: 1,
+      submercado: 1,
+      patamar: 1,
+      geracaoMedia: 100,
+      numPEEs: 2,
+      numCenarios: 3
+    }]
+  }
+
+  const aligned = alignRenovaveisGeneration(
+    renewables1,
+    renewables2,
+    {
+      compareMode: 'data',
+      dadger1Data: first,
+      dadger2Data: second
+    }
+  )
+  const sharedDate = aligned.find(row => row.date === '25/07/2026')
+  const exclusiveDate = aligned.find(row => row.date === '18/07/2026')
+
+  assert.equal(sharedDate.ren1.periodo, 2)
+  assert.equal(sharedDate.ren2.periodo, 1)
+  assert.equal(sharedDate.has_diff, false)
+  assert.equal(sharedDate.sameTemporality, true)
+  assert.equal(exclusiveDate.onlyInOne, true)
+  assert.equal(exclusiveDate.sameTemporality, false)
+  assert.equal(exclusiveDate.has_diff, false)
+})
+
+test('renováveis sem DADGER compara diretamente pelo número do período', () => {
+  const first = {
+    geracaoAgregada: [{
+      periodo: 1,
+      submercado: 2,
+      patamar: 1,
+      geracaoMedia: 100,
+      numPEEs: 1,
+      numCenarios: 1
+    }]
+  }
+  const second = {
+    geracaoAgregada: [{
+      periodo: 1,
+      submercado: 2,
+      patamar: 1,
+      geracaoMedia: 110,
+      numPEEs: 1,
+      numCenarios: 1
+    }]
+  }
+
+  const [aligned] = alignRenovaveisGeneration(first, second, {
+    compareMode: 'estagio'
+  })
+
+  assert.equal(aligned.period, 1)
+  assert.equal(aligned.sameTemporality, true)
+  assert.equal(aligned.diff_geracaoMedia, true)
+  assert.equal(aligned.has_diff, true)
 })
 
 test('arrays temporais só contam diferenças no horizonte comparável', () => {

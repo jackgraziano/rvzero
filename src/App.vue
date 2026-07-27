@@ -1,10 +1,10 @@
 <template>
   <div id="app">
     <TopBar
-      :compare-mode="compareMode"
+      :compare-mode="activeCompareMode"
       :show-only-differences="showOnlyDifferences"
       :has-files="anyFileLoaded"
-      :show-temporal-controls="showTemporalControls"
+      :date-mode-available="dateModeAvailable"
       @compare-mode-changed="compareMode = $event"
       @show-only-differences-changed="showOnlyDifferences = $event"
       @clear-all="handleClearAll"
@@ -16,32 +16,30 @@
           ref="dropZone1"
           title="Deck A"
           :index="0"
-          :comparison-ready="comparisonReady"
+          :ready-types="pairedTypeIds"
           @data-parsed="handleDataParsed(0, $event)"
-          @file-removed="handleFileRemove(0)"
+          @file-removed="handleFileRemove(0, $event)"
         />
         <DropZone
           ref="dropZone2"
           title="Deck B"
           :index="1"
-          :comparison-ready="comparisonReady"
+          :ready-types="pairedTypeIds"
           @data-parsed="handleDataParsed(1, $event)"
-          @file-removed="handleFileRemove(1)"
+          @file-removed="handleFileRemove(1, $event)"
         />
       </div>
 
       <aside
-        v-if="bothFilesLoaded && !filesAreCompatible"
+        v-for="message in unpairedFileMessages"
+        :key="message"
         class="incompatible-message"
-        role="alert"
+        role="status"
       >
         <span class="message-icon" aria-hidden="true">!</span>
         <div>
-          <h2>Os arquivos têm tipos diferentes</h2>
-          <p>
-            O Deck A é {{ fileData[0].type.name }} e o Deck B é
-            {{ fileData[1].type.name }}. Substitua um deles para continuar.
-          </p>
+          <h2>Arquivo sem correspondente</h2>
+          <p>{{ message }}</p>
         </div>
       </aside>
 
@@ -51,22 +49,48 @@
         class="comparison-container"
         aria-label="Resultado da comparação"
       >
+        <header class="comparison-files" aria-label="Arquivos em comparação">
+          <div
+            v-for="(deck, index) in deckFiles"
+            :key="`files-${index}`"
+            class="comparison-file-set"
+          >
+            <span>Deck {{ index === 0 ? 'A' : 'B' }}</span>
+            <div class="comparison-file-list">
+              <div
+                v-for="file in loadedFiles(deck)"
+                :key="file.type.id"
+                class="comparison-file"
+              >
+                <strong>{{ file.type.name }}</strong>
+                <span :title="file.name">{{ file.name }}</span>
+                <small v-if="fileCalendarLabel(file)">
+                  {{ fileCalendarLabel(file) }}
+                </small>
+              </div>
+            </div>
+          </div>
+        </header>
+
         <ComparisonView
-          v-if="bothFilesAreDADGER"
-          :dadger1-data="fileData[0].data"
-          :dadger1-name="fileData[0].name"
-          :dadger2-data="fileData[1].data"
-          :dadger2-name="fileData[1].name"
-          :compare-mode="compareMode"
+          v-if="hasDadgerComparison"
+          :dadger1-data="deckFiles[0].dadger.data"
+          :dadger1-name="deckFiles[0].dadger.name"
+          :dadger2-data="deckFiles[1].dadger.data"
+          :dadger2-name="deckFiles[1].dadger.name"
+          :compare-mode="activeCompareMode"
           :show-only-differences="showOnlyDifferences"
         />
 
         <RenovaveisComparisonView
-          v-else-if="bothFilesAreRenovaveis"
-          :renovaveis1-data="fileData[0].data"
-          :renovaveis1-name="fileData[0].name"
-          :renovaveis2-data="fileData[1].data"
-          :renovaveis2-name="fileData[1].name"
+          v-if="hasRenovaveisComparison"
+          :renovaveis1-data="deckFiles[0].renovaveis.data"
+          :renovaveis1-name="deckFiles[0].renovaveis.name"
+          :renovaveis2-data="deckFiles[1].renovaveis.data"
+          :renovaveis2-name="deckFiles[1].renovaveis.name"
+          :dadger1-data="deckFiles[0].dadger?.data ?? null"
+          :dadger2-data="deckFiles[1].dadger?.data ?? null"
+          :compare-mode="activeCompareMode"
           :show-only-differences="showOnlyDifferences"
         />
       </section>
@@ -80,10 +104,9 @@ import DropZone from './components/DropZone.vue'
 import ComparisonView from './components/ComparisonView.vue'
 import RenovaveisComparisonView from './components/RenovaveisComparisonView.vue'
 
-const emptyFile = index => ({
-  type: null,
-  name: `Deck ${index === 0 ? 'A' : 'B'}`,
-  data: null
+const emptyDeck = () => ({
+  dadger: null,
+  renovaveis: null
 })
 
 export default {
@@ -96,50 +119,84 @@ export default {
   },
   data() {
     return {
-      fileData: [emptyFile(0), emptyFile(1)],
+      deckFiles: [emptyDeck(), emptyDeck()],
       compareMode: 'data',
       showOnlyDifferences: true
     }
   },
   computed: {
     anyFileLoaded() {
-      return this.fileData.some(file => file.data !== null)
+      return this.deckFiles.some(deck => this.loadedFiles(deck).length > 0)
     },
-    bothFilesLoaded() {
-      return this.fileData.every(file => file.data !== null)
+    hasDadgerComparison() {
+      return this.deckFiles.every(deck => deck.dadger !== null)
     },
-    bothFilesAreDADGER() {
-      return this.fileData.every(file => file.type?.id === 'dadger')
+    hasRenovaveisComparison() {
+      return this.deckFiles.every(deck => deck.renovaveis !== null)
     },
-    bothFilesAreRenovaveis() {
-      return this.fileData.every(file => file.type?.id === 'renovaveis')
-    },
-    filesAreCompatible() {
-      if (!this.bothFilesLoaded) return true
-      return this.fileData[0].type?.id === this.fileData[1].type?.id
+    pairedTypeIds() {
+      return [
+        ...(this.hasDadgerComparison ? ['dadger'] : []),
+        ...(this.hasRenovaveisComparison ? ['renovaveis'] : [])
+      ]
     },
     comparisonReady() {
-      return this.bothFilesLoaded && this.filesAreCompatible
+      return this.hasDadgerComparison || this.hasRenovaveisComparison
     },
-    showTemporalControls() {
-      return !this.bothFilesLoaded || this.bothFilesAreDADGER
+    dateModeAvailable() {
+      return this.hasDadgerComparison
+    },
+    activeCompareMode() {
+      return this.dateModeAvailable ? this.compareMode : 'estagio'
+    },
+    unpairedFileMessages() {
+      const messages = []
+      const typeIds = ['dadger', 'renovaveis']
+
+      typeIds.forEach(typeId => {
+        const first = this.deckFiles[0][typeId]
+        const second = this.deckFiles[1][typeId]
+        if (Boolean(first) === Boolean(second)) return
+
+        const sourceIndex = first ? 0 : 1
+        const targetIndex = first ? 1 : 0
+        const typeName = (first ?? second).type.name
+        messages.push(
+          `${typeName} foi adicionado somente ao Deck ${sourceIndex === 0 ? 'A' : 'B'}. ` +
+          `Adicione um arquivo do mesmo tipo ao Deck ${targetIndex === 0 ? 'A' : 'B'} para compará-lo.`
+        )
+      })
+
+      return messages
     }
   },
   methods: {
     handleDataParsed(index, fileInfo) {
-      this.fileData[index] = {
+      this.deckFiles[index][fileInfo.type.id] = {
         type: fileInfo.type,
         name: fileInfo.name,
         data: fileInfo.data
       }
     },
-    handleFileRemove(index) {
-      this.fileData[index] = emptyFile(index)
+    handleFileRemove(index, typeId) {
+      if (typeId in this.deckFiles[index]) {
+        this.deckFiles[index][typeId] = null
+      }
     },
     handleClearAll() {
-      this.fileData = [emptyFile(0), emptyFile(1)]
-      this.$refs.dropZone1?.removeFile()
-      this.$refs.dropZone2?.removeFile()
+      this.deckFiles = [emptyDeck(), emptyDeck()]
+      this.$refs.dropZone1?.clearFiles()
+      this.$refs.dropZone2?.clearFiles()
+    },
+    loadedFiles(deck) {
+      return ['dadger', 'renovaveis']
+        .map(typeId => deck[typeId])
+        .filter(Boolean)
+    },
+    fileCalendarLabel(file) {
+      if (file.type.id !== 'dadger') return ''
+      const baseDate = file.data.info_dadger?.data_base
+      return baseDate ? `DT ${baseDate}` : ''
     }
   }
 }
@@ -229,6 +286,74 @@ button {
   margin-top: 18px;
 }
 
+.comparison-container > * + * {
+  margin-top: 12px;
+}
+
+.comparison-files {
+  max-width: 1400px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0 auto 12px;
+  overflow: hidden;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+
+.comparison-file-set {
+  min-width: 0;
+  padding: 12px;
+  background: var(--surface);
+}
+
+.comparison-file-set > span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--accent);
+  font: 750 9px/1.2 var(--font-ui);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.comparison-file-list {
+  display: grid;
+  gap: 6px;
+}
+
+.comparison-file {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 9px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+}
+
+.comparison-file strong {
+  color: var(--accent-strong);
+  font-size: 9px;
+}
+
+.comparison-file span {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.comparison-file small {
+  color: var(--muted);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
 .incompatible-message {
   max-width: 760px;
   display: flex;
@@ -270,6 +395,18 @@ button {
 @media (max-width: 760px) {
   .columns {
     grid-template-columns: 1fr;
+  }
+
+  .comparison-files {
+    grid-template-columns: 1fr;
+  }
+
+  .comparison-file {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .comparison-file small {
+    grid-column: 2;
   }
 }
 </style>

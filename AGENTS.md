@@ -2,9 +2,10 @@
 
 ## Objetivo do projeto
 
-O RVZero compara arquivos DADGER do DECOMP bloco a bloco. O modo padrão deve
-comparar o mesmo período do calendário, mesmo quando esse período possui
-números de estágio diferentes em revisões distintas.
+O RVZero compara arquivos DADGER e renováveis do DECOMP bloco a bloco. Quando
+há DADGER nos dois lados, o modo por data deve comparar o mesmo período do
+calendário, mesmo quando esse período possui índices diferentes em revisões
+distintas.
 
 Antes de alterar regras de negócio, leia `ARCHITECTURE.md`.
 
@@ -44,6 +45,11 @@ Antes de concluir uma alteração:
   devem contar como diferença.
 - No modo `estagio`, compare o índice numérico diretamente. Esse modo é
   diagnóstico e não garante equivalência de calendário.
+- Para `renovaveis.*`, `PerIni` só pode ser convertido em data quando há um
+  DADGER em cada lado. Use `info_dadger.datas_estagios` do mesmo lado; nunca
+  associe o arquivo de renováveis ao calendário do deck oposto.
+- Sem os dois DADGERs, a comparação de renováveis deve permanecer disponível,
+  mas somente pelo número de `PerIni`.
 - `UH` representa condições iniciais. No modo `data`, compare UH apenas quando
   os dois arquivos possuem o mesmo `DT`.
 - `RQ` é temporal, com um valor por estágio.
@@ -147,6 +153,9 @@ Os parsers estruturados ficam em `src/utils/parsers`.
 - Zero é um valor visível. Em templates, prefira `??` a `||` ao aplicar o
   placeholder `-`.
 - Estados de erro de upload devem aparecer junto ao campo; não use `alert`.
+- Cada área de upload representa um conjunto e aceita até um arquivo por tipo.
+  Substituir ou remover o DADGER não pode remover silenciosamente o arquivo de
+  renováveis, nem o inverso.
 - Valide tabelas lado a lado em desktop e empilhadas abaixo de 900 px.
 
 ## Testes

@@ -3,7 +3,7 @@
     <ComparisonBlockHeader
       :collapsed="collapsed"
       :has-differences="hasDifferences"
-      title="GERAÇÃO RENOVÁVEL — SUBMERCADO, PERÍODO E PATAMAR"
+      :title="blockTitle"
       @toggle="toggleCollapsed"
     />
 
@@ -16,7 +16,7 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th @click="sortBy('periodo')" class="sortable col-number" v-sortable-header>Período{{ getSortIcon('periodo') }}</th>
+                  <th @click="sortBy('timeOrder')" class="sortable col-number" v-sortable-header>{{ temporalColumnLabel }}{{ getSortIcon('timeOrder') }}</th>
                   <th @click="sortBy('submercado')" class="sortable col-number" v-sortable-header>Subm{{ getSortIcon('submercado') }}</th>
                   <th @click="sortBy('patamar')" class="sortable col-number" v-sortable-header>Pat{{ getSortIcon('patamar') }}</th>
                   <th @click="sortBy('geracaoMedia')" class="sortable col-number" v-sortable-header>Geração (MW){{ getSortIcon('geracaoMedia') }}</th>
@@ -28,18 +28,26 @@
                 <tr
                   v-for="row in filteredData"
                   :key="`r1-${row.key}`"
-                  :class="{ highlighted: row.onlyInOne }"
+                  :class="{
+                    highlighted: row.onlyInOne && row.sameTemporality,
+                    faded: !row.sameTemporality
+                  }"
                 >
-                  <td class="col-number">{{ row.ren1?.periodo ?? '-' }}</td>
+                  <td class="col-number temporal-cell">
+                    <strong>{{ row.periodLabel }}</strong>
+                    <span v-if="compareMode === 'data' && row.ren1">
+                      PerIni {{ row.ren1.periodo }}
+                    </span>
+                  </td>
                   <td class="col-number">{{ row.ren1?.submercado ?? '-' }}</td>
                   <td class="col-number">{{ row.ren1?.patamar ?? '-' }}</td>
-                  <td class="col-number" :class="{ diff: row.diff_geracaoMedia && !row.onlyInOne }">
+                  <td class="col-number" :class="{ diff: row.diff_geracaoMedia && !row.onlyInOne && row.sameTemporality }">
                     {{ formatNumber(row.ren1?.geracaoMedia) }}
                   </td>
-                  <td class="col-number" :class="{ diff: row.diff_numPEEs && !row.onlyInOne }">
+                  <td class="col-number" :class="{ diff: row.diff_numPEEs && !row.onlyInOne && row.sameTemporality }">
                     {{ row.ren1?.numPEEs ?? '-' }}
                   </td>
-                  <td class="col-number" :class="{ diff: row.diff_numCenarios && !row.onlyInOne }">
+                  <td class="col-number" :class="{ diff: row.diff_numCenarios && !row.onlyInOne && row.sameTemporality }">
                     {{ row.ren1?.numCenarios ?? '-' }}
                   </td>
                 </tr>
@@ -55,7 +63,7 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th @click="sortBy('periodo')" class="sortable col-number" v-sortable-header>Período{{ getSortIcon('periodo') }}</th>
+                  <th @click="sortBy('timeOrder')" class="sortable col-number" v-sortable-header>{{ temporalColumnLabel }}{{ getSortIcon('timeOrder') }}</th>
                   <th @click="sortBy('submercado')" class="sortable col-number" v-sortable-header>Subm{{ getSortIcon('submercado') }}</th>
                   <th @click="sortBy('patamar')" class="sortable col-number" v-sortable-header>Pat{{ getSortIcon('patamar') }}</th>
                   <th @click="sortBy('geracaoMedia')" class="sortable col-number" v-sortable-header>Geração (MW){{ getSortIcon('geracaoMedia') }}</th>
@@ -67,18 +75,26 @@
                 <tr
                   v-for="row in filteredData"
                   :key="`r2-${row.key}`"
-                  :class="{ highlighted: row.onlyInOne }"
+                  :class="{
+                    highlighted: row.onlyInOne && row.sameTemporality,
+                    faded: !row.sameTemporality
+                  }"
                 >
-                  <td class="col-number">{{ row.ren2?.periodo ?? '-' }}</td>
+                  <td class="col-number temporal-cell">
+                    <strong>{{ row.periodLabel }}</strong>
+                    <span v-if="compareMode === 'data' && row.ren2">
+                      PerIni {{ row.ren2.periodo }}
+                    </span>
+                  </td>
                   <td class="col-number">{{ row.ren2?.submercado ?? '-' }}</td>
                   <td class="col-number">{{ row.ren2?.patamar ?? '-' }}</td>
-                  <td class="col-number" :class="{ diff: row.diff_geracaoMedia && !row.onlyInOne }">
+                  <td class="col-number" :class="{ diff: row.diff_geracaoMedia && !row.onlyInOne && row.sameTemporality }">
                     {{ formatNumber(row.ren2?.geracaoMedia) }}
                   </td>
-                  <td class="col-number" :class="{ diff: row.diff_numPEEs && !row.onlyInOne }">
+                  <td class="col-number" :class="{ diff: row.diff_numPEEs && !row.onlyInOne && row.sameTemporality }">
                     {{ row.ren2?.numPEEs ?? '-' }}
                   </td>
-                  <td class="col-number" :class="{ diff: row.diff_numCenarios && !row.onlyInOne }">
+                  <td class="col-number" :class="{ diff: row.diff_numCenarios && !row.onlyInOne && row.sameTemporality }">
                     {{ row.ren2?.numCenarios ?? '-' }}
                   </td>
                 </tr>
@@ -93,7 +109,8 @@
 
 <script>
 import { computed } from 'vue'
-import { hasDiff, formatNumber } from '../../utils/comparison.js'
+import { formatNumber } from '../../utils/comparison.js'
+import { alignRenovaveisGeneration } from '../../utils/renovaveisComparison.js'
 import { useBlockComparison } from '../../composables/useBlockComparison.js'
 
 export default {
@@ -103,58 +120,30 @@ export default {
     renovaveis1Name: { type: String, required: true },
     renovaveis2Data: { type: Object, required: true },
     renovaveis2Name: { type: String, required: true },
+    dadger1Data: { type: Object, default: null },
+    dadger2Data: { type: Object, default: null },
+    compareMode: { type: String, required: true },
     showOnlyDifferences: { type: Boolean, required: true }
   },
   setup(props) {
-    // Computed: dados alinhados
-    const alignedData = computed(() => {
-      const dados1 = props.renovaveis1Data.geracaoAgregada || []
-      const dados2 = props.renovaveis2Data.geracaoAgregada || []
-
-      // Criar mapa de chaves
-      const mapaChaves = new Map()
-
-      dados1.forEach(d => {
-        const key = `${d.submercado}-${d.periodo}-${d.patamar}`
-        mapaChaves.set(key, { ren1: d, ren2: null })
-      })
-
-      dados2.forEach(d => {
-        const key = `${d.submercado}-${d.periodo}-${d.patamar}`
-        if (mapaChaves.has(key)) {
-          mapaChaves.get(key).ren2 = d
-        } else {
-          mapaChaves.set(key, { ren1: null, ren2: d })
-        }
-      })
-
-      // Converter para array
-      const alinhados = []
-      for (const [key, { ren1, ren2 }] of mapaChaves) {
-        const onlyInOne = !ren1 || !ren2
-        const diff_geracaoMedia = hasDiff(ren1?.geracaoMedia, ren2?.geracaoMedia)
-        const diff_numPEEs = hasDiff(ren1?.numPEEs, ren2?.numPEEs)
-        const diff_numCenarios = hasDiff(ren1?.numCenarios, ren2?.numCenarios)
-
-        alinhados.push({
-          key,
-          ren1,
-          ren2,
-          periodo: ren1?.periodo ?? ren2?.periodo,
-          submercado: ren1?.submercado ?? ren2?.submercado,
-          patamar: ren1?.patamar ?? ren2?.patamar,
-          geracaoMedia: ren1?.geracaoMedia ?? ren2?.geracaoMedia,
-          onlyInOne,
-          diff_geracaoMedia,
-          diff_numPEEs,
-          diff_numCenarios
-        })
+    const alignedData = computed(() => alignRenovaveisGeneration(
+      props.renovaveis1Data,
+      props.renovaveis2Data,
+      {
+        compareMode: props.compareMode,
+        dadger1Data: props.dadger1Data,
+        dadger2Data: props.dadger2Data
       }
+    ))
+    const temporalColumnLabel = computed(
+      () => props.compareMode === 'data' ? 'Data / PerIni' : 'Período'
+    )
+    const blockTitle = computed(
+      () => props.compareMode === 'data'
+        ? 'GERAÇÃO RENOVÁVEL — SUBMERCADO, DATA E PATAMAR'
+        : 'GERAÇÃO RENOVÁVEL — SUBMERCADO, PERÍODO E PATAMAR'
+    )
 
-      return alinhados
-    })
-
-    // Usar composable para lógica comum
     const {
       collapsed,
       tableContainer1,
@@ -168,7 +157,6 @@ export default {
       hasDifferences
     } = useBlockComparison(props, alignedData)
 
-    // Criar filteredData
     const filteredData = createFilteredData()
 
     return {
@@ -182,7 +170,9 @@ export default {
       onScroll2,
       formatNumber,
       filteredData,
-      hasDifferences
+      hasDifferences,
+      temporalColumnLabel,
+      blockTitle
     }
   }
 }
@@ -230,5 +220,17 @@ export default {
   max-height: 500px;
   overflow: auto;
   background: var(--surface);
+}
+
+.temporal-cell strong,
+.temporal-cell span {
+  display: block;
+  white-space: nowrap;
+}
+
+.temporal-cell span {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 9px;
 }
 </style>
