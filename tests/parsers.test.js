@@ -2,11 +2,16 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import { parseDadger } from '../src/utils/parsers/index.js'
+import { parseAC } from '../src/utils/parsers/acParser.js'
 import { parseHE } from '../src/utils/parsers/heParser.js'
 import { parsePQ } from '../src/utils/parsers/pqParser.js'
 import { parseRE } from '../src/utils/parsers/reParser.js'
 import { parseUH } from '../src/utils/parsers/uhParser.js'
 import { parseRenovaveis } from '../src/utils/parsers/renovaveisParser.js'
+import {
+  buildCotvolSnapshots,
+  cotvolSignature
+} from '../src/utils/cotvol.js'
 
 function fixedLine(length, fields) {
   const characters = Array(length).fill(' ')
@@ -148,6 +153,82 @@ test('fatores de RE são herdados individualmente e preservam alterações parci
   assert.deepEqual(
     restrictions[2].fatores_uh.map(factor => [factor.numero_usina, factor.fator]),
     [[1, 1.5], [2, 2]]
+  )
+})
+
+test('COTVOL preserva coeficientes e alinha a semana relativa ao calendário do deck', () => {
+  const cotvol = (plant, coefficient, value, month, week, year = 2026) =>
+    fixedLine(80, [
+      [0, 'AC'],
+      [4, String(plant).padStart(3)],
+      [9, 'COTVOL'],
+      [23, String(coefficient)],
+      [33, String(value).padStart(6)],
+      [69, month],
+      [74, String(week)],
+      [76, String(year)]
+    ])
+  const calendar4 = [
+    { numero: 1, data_inicio: '18/07/2026' },
+    { numero: 2, data_inicio: '25/07/2026' },
+    { numero: 3, data_inicio: '01/08/2026' }
+  ]
+  const calendar5 = [
+    { numero: 1, data_inicio: '25/07/2026' },
+    { numero: 2, data_inicio: '01/08/2026' }
+  ]
+  const records4 = parseAC([
+    cotvol(285, 1, '86.25', 'JUL', 1),
+    cotvol(285, 1, '85.20', 'JUL', 2),
+    cotvol(285, 1, '83.01', 'AGO', 1),
+    cotvol(288, 1, '96.98', 'JUL', 1),
+    cotvol(288, 1, '97.00', 'AGO', 1)
+  ], calendar4)
+  const records5 = parseAC([
+    cotvol(285, 1, '85.20', 'JUL', 1),
+    cotvol(285, 1, '83.01', 'AGO', 1),
+    cotvol(288, 1, '96.98', 'JUL', 1),
+    cotvol(288, 1, '97.00', 'AGO', 1)
+  ], calendar5)
+
+  assert.deepEqual(
+    records4.find(record =>
+      record.usina === 285 &&
+      record.mes === 'JUL' &&
+      record.semana === 2
+    ),
+    {
+      usina: 285,
+      mnemonico: 'COTVOL',
+      dados: '    1          85.20',
+      mes: 'JUL',
+      semana: 2,
+      ano: 2026,
+      linha_original: cotvol(285, 1, '85.20', 'JUL', 2),
+      indice_coeficiente: 1,
+      valor_coeficiente: 85.2,
+      estagio: 2,
+      data_inicio: '25/07/2026'
+    }
+  )
+
+  const snapshots4 = buildCotvolSnapshots(records4, { estagios: calendar4 })
+  const snapshots5 = buildCotvolSnapshots(records5, { estagios: calendar5 })
+  const snapshot = (snapshots, plant, date) => snapshots.find(record =>
+    record.usina === plant && record.data_inicio === date
+  )
+
+  assert.equal(
+    cotvolSignature(snapshot(snapshots4, 285, '25/07/2026')),
+    cotvolSignature(snapshot(snapshots5, 285, '25/07/2026'))
+  )
+  assert.equal(
+    cotvolSignature(snapshot(snapshots4, 285, '01/08/2026')),
+    cotvolSignature(snapshot(snapshots5, 285, '01/08/2026'))
+  )
+  assert.equal(
+    cotvolSignature(snapshot(snapshots4, 288, '25/07/2026')),
+    cotvolSignature(snapshot(snapshots5, 288, '25/07/2026'))
   )
 })
 

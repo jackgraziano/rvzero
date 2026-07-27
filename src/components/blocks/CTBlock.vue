@@ -1,9 +1,11 @@
 <template>
   <div class="ct-block">
-    <div class="block-header" @click="toggleCollapsed">
-      <span class="block-icon">{{ collapsed ? '▶' : '▼' }}</span>
-      <h3 class="block-name" :class="{ 'has-diff': hasDifferences }">BLOCO CT - USINAS TÉRMICAS</h3>
-    </div>
+    <ComparisonBlockHeader
+      :collapsed="collapsed"
+      :has-differences="hasDifferences"
+      title="BLOCO CT — USINAS TÉRMICAS"
+      @toggle="toggleCollapsed"
+    />
 
     <div v-show="!collapsed" class="block-content">
       <div class="comparison-tables">
@@ -14,26 +16,26 @@
             <table class="data-table">
               <thead>
                 <tr class="header-row-1">
-                  <th rowspan="2" @click="sortBy('estagio')" class="sortable">
+                  <th rowspan="2" @click="sortBy('estagio')" class="sortable" v-sortable-header>
                     {{ compareMode === 'estagio' ? 'Estágio' : 'Data' }}{{ getSortIcon('estagio') }}
                   </th>
-                  <th rowspan="2" @click="sortBy('codigo_usina')" class="sortable">Cód{{ getSortIcon('codigo_usina') }}</th>
-                  <th rowspan="2" @click="sortBy('nome_termica')" class="sortable">Nome{{ getSortIcon('nome_termica') }}</th>
-                  <th rowspan="2" @click="sortBy('subsistema')" class="sortable">Sub{{ getSortIcon('subsistema') }}</th>
+                  <th rowspan="2" @click="sortBy('codigo_usina')" class="sortable" v-sortable-header>Cód{{ getSortIcon('codigo_usina') }}</th>
+                  <th rowspan="2" @click="sortBy('nome_termica')" class="sortable" v-sortable-header>Nome{{ getSortIcon('nome_termica') }}</th>
+                  <th rowspan="2" @click="sortBy('subsistema')" class="sortable" v-sortable-header>Sub{{ getSortIcon('subsistema') }}</th>
                   <th colspan="3" class="patamar-header patamar-pesado">Pesado</th>
                   <th colspan="3" class="patamar-header patamar-medio">Médio</th>
                   <th colspan="3" class="patamar-header patamar-leve">Leve</th>
                 </tr>
                 <tr class="header-row-2">
-                  <th @click="sortBy('disp_pesado')" class="sortable col-pesado">Disp{{ getSortIcon('disp_pesado') }}</th>
-                  <th @click="sortBy('inflex_pesado')" class="sortable col-pesado">Inflx{{ getSortIcon('inflex_pesado') }}</th>
-                  <th @click="sortBy('cvu_pesado')" class="sortable col-pesado-last">CVU{{ getSortIcon('cvu_pesado') }}</th>
-                  <th @click="sortBy('disp_medio')" class="sortable col-medio">Disp{{ getSortIcon('disp_medio') }}</th>
-                  <th @click="sortBy('inflex_medio')" class="sortable col-medio">Inflx{{ getSortIcon('inflex_medio') }}</th>
-                  <th @click="sortBy('cvu_medio')" class="sortable col-medio-last">CVU{{ getSortIcon('cvu_medio') }}</th>
-                  <th @click="sortBy('disp_leve')" class="sortable col-leve">Disp{{ getSortIcon('disp_leve') }}</th>
-                  <th @click="sortBy('inflex_leve')" class="sortable col-leve">Inflx{{ getSortIcon('inflex_leve') }}</th>
-                  <th @click="sortBy('cvu_leve')" class="sortable col-leve-last">CVU{{ getSortIcon('cvu_leve') }}</th>
+                  <th @click="sortBy('disp_pesado')" class="sortable col-pesado" v-sortable-header>Disp{{ getSortIcon('disp_pesado') }}</th>
+                  <th @click="sortBy('inflex_pesado')" class="sortable col-pesado" v-sortable-header>Inflx{{ getSortIcon('inflex_pesado') }}</th>
+                  <th @click="sortBy('cvu_pesado')" class="sortable col-pesado-last" v-sortable-header>CVU{{ getSortIcon('cvu_pesado') }}</th>
+                  <th @click="sortBy('disp_medio')" class="sortable col-medio" v-sortable-header>Disp{{ getSortIcon('disp_medio') }}</th>
+                  <th @click="sortBy('inflex_medio')" class="sortable col-medio" v-sortable-header>Inflx{{ getSortIcon('inflex_medio') }}</th>
+                  <th @click="sortBy('cvu_medio')" class="sortable col-medio-last" v-sortable-header>CVU{{ getSortIcon('cvu_medio') }}</th>
+                  <th @click="sortBy('disp_leve')" class="sortable col-leve" v-sortable-header>Disp{{ getSortIcon('disp_leve') }}</th>
+                  <th @click="sortBy('inflex_leve')" class="sortable col-leve" v-sortable-header>Inflx{{ getSortIcon('inflex_leve') }}</th>
+                  <th @click="sortBy('cvu_leve')" class="sortable col-leve-last" v-sortable-header>CVU{{ getSortIcon('cvu_leve') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -45,9 +47,9 @@
                     'highlighted': row.onlyInOne && row.sameTemporality
                   }"
                 >
-                  <td class="col-stage">{{ row.dadger1?.display || '-' }}</td>
-                  <td>{{ row.dadger1?.codigo_usina || '-' }}</td>
-                  <td class="col-name" :class="{ diff: row.diff_nome_termica && !row.onlyInOne }">{{ row.dadger1?.nome_termica || '-' }}</td>
+                  <td class="col-stage">{{ row.dadger1?.display ?? '-' }}</td>
+                  <td>{{ row.dadger1?.codigo_usina ?? '-' }}</td>
+                  <td class="col-name" :class="{ diff: row.diff_nome_termica && !row.onlyInOne }">{{ row.dadger1?.nome_termica ?? '-' }}</td>
                   <td :class="{ diff: row.diff_subsistema && !row.onlyInOne }">{{ row.dadger1?.subsistema ?? '-' }}</td>
                   <td :class="{ 'diff': row.diff_disp_pesado && !row.onlyInOne }" class="col-number col-pesado">
                     {{ formatNumber(row.dadger1?.disp_pesado) }}
@@ -89,26 +91,26 @@
             <table class="data-table">
               <thead>
                 <tr class="header-row-1">
-                  <th rowspan="2" @click="sortBy('estagio')" class="sortable">
+                  <th rowspan="2" @click="sortBy('estagio')" class="sortable" v-sortable-header>
                     {{ compareMode === 'estagio' ? 'Estágio' : 'Data' }}{{ getSortIcon('estagio') }}
                   </th>
-                  <th rowspan="2" @click="sortBy('codigo_usina')" class="sortable">Cód{{ getSortIcon('codigo_usina') }}</th>
-                  <th rowspan="2" @click="sortBy('nome_termica')" class="sortable">Nome{{ getSortIcon('nome_termica') }}</th>
-                  <th rowspan="2" @click="sortBy('subsistema')" class="sortable">Sub{{ getSortIcon('subsistema') }}</th>
+                  <th rowspan="2" @click="sortBy('codigo_usina')" class="sortable" v-sortable-header>Cód{{ getSortIcon('codigo_usina') }}</th>
+                  <th rowspan="2" @click="sortBy('nome_termica')" class="sortable" v-sortable-header>Nome{{ getSortIcon('nome_termica') }}</th>
+                  <th rowspan="2" @click="sortBy('subsistema')" class="sortable" v-sortable-header>Sub{{ getSortIcon('subsistema') }}</th>
                   <th colspan="3" class="patamar-header patamar-pesado">Pesado</th>
                   <th colspan="3" class="patamar-header patamar-medio">Médio</th>
                   <th colspan="3" class="patamar-header patamar-leve">Leve</th>
                 </tr>
                 <tr class="header-row-2">
-                  <th @click="sortBy('disp_pesado')" class="sortable col-pesado">Disp{{ getSortIcon('disp_pesado') }}</th>
-                  <th @click="sortBy('inflex_pesado')" class="sortable col-pesado">Inflx{{ getSortIcon('inflex_pesado') }}</th>
-                  <th @click="sortBy('cvu_pesado')" class="sortable col-pesado-last">CVU{{ getSortIcon('cvu_pesado') }}</th>
-                  <th @click="sortBy('disp_medio')" class="sortable col-medio">Disp{{ getSortIcon('disp_medio') }}</th>
-                  <th @click="sortBy('inflex_medio')" class="sortable col-medio">Inflx{{ getSortIcon('inflex_medio') }}</th>
-                  <th @click="sortBy('cvu_medio')" class="sortable col-medio-last">CVU{{ getSortIcon('cvu_medio') }}</th>
-                  <th @click="sortBy('disp_leve')" class="sortable col-leve">Disp{{ getSortIcon('disp_leve') }}</th>
-                  <th @click="sortBy('inflex_leve')" class="sortable col-leve">Inflx{{ getSortIcon('inflex_leve') }}</th>
-                  <th @click="sortBy('cvu_leve')" class="sortable col-leve-last">CVU{{ getSortIcon('cvu_leve') }}</th>
+                  <th @click="sortBy('disp_pesado')" class="sortable col-pesado" v-sortable-header>Disp{{ getSortIcon('disp_pesado') }}</th>
+                  <th @click="sortBy('inflex_pesado')" class="sortable col-pesado" v-sortable-header>Inflx{{ getSortIcon('inflex_pesado') }}</th>
+                  <th @click="sortBy('cvu_pesado')" class="sortable col-pesado-last" v-sortable-header>CVU{{ getSortIcon('cvu_pesado') }}</th>
+                  <th @click="sortBy('disp_medio')" class="sortable col-medio" v-sortable-header>Disp{{ getSortIcon('disp_medio') }}</th>
+                  <th @click="sortBy('inflex_medio')" class="sortable col-medio" v-sortable-header>Inflx{{ getSortIcon('inflex_medio') }}</th>
+                  <th @click="sortBy('cvu_medio')" class="sortable col-medio-last" v-sortable-header>CVU{{ getSortIcon('cvu_medio') }}</th>
+                  <th @click="sortBy('disp_leve')" class="sortable col-leve" v-sortable-header>Disp{{ getSortIcon('disp_leve') }}</th>
+                  <th @click="sortBy('inflex_leve')" class="sortable col-leve" v-sortable-header>Inflx{{ getSortIcon('inflex_leve') }}</th>
+                  <th @click="sortBy('cvu_leve')" class="sortable col-leve-last" v-sortable-header>CVU{{ getSortIcon('cvu_leve') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -120,9 +122,9 @@
                     'highlighted': row.onlyInOne && row.sameTemporality
                   }"
                 >
-                  <td class="col-stage">{{ row.dadger2?.display || '-' }}</td>
-                  <td>{{ row.dadger2?.codigo_usina || '-' }}</td>
-                  <td class="col-name" :class="{ diff: row.diff_nome_termica && !row.onlyInOne }">{{ row.dadger2?.nome_termica || '-' }}</td>
+                  <td class="col-stage">{{ row.dadger2?.display ?? '-' }}</td>
+                  <td>{{ row.dadger2?.codigo_usina ?? '-' }}</td>
+                  <td class="col-name" :class="{ diff: row.diff_nome_termica && !row.onlyInOne }">{{ row.dadger2?.nome_termica ?? '-' }}</td>
                   <td :class="{ diff: row.diff_subsistema && !row.onlyInOne }">{{ row.dadger2?.subsistema ?? '-' }}</td>
                   <td :class="{ 'diff': row.diff_disp_pesado && !row.onlyInOne }" class="col-number col-pesado">
                     {{ formatNumber(row.dadger2?.disp_pesado) }}
@@ -288,58 +290,27 @@ export default {
 </script>
 
 <style scoped>
-@import '../../styles/block-tables.css';
 
 .ct-block {
   margin: 8px;
-  border: 1px solid #00ff00;
-  background: #1e1e1e;
-}
-
-.block-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: #2d2d2d;
-  cursor: pointer;
-  user-select: none;
-  border-bottom: 1px solid #00ff00;
-}
-
-.block-header:hover {
-  background: #3d3d3d;
-}
-
-.block-icon {
-  color: #00ff00;
-  font-size: 12px;
-  font-family: monospace;
-}
-
-.block-name {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  color: #00ff00;
-  font-family: 'Courier New', monospace;
-  letter-spacing: 0.5px;
+  border: 1px solid var(--border);
+  background: var(--surface);
 }
 
 .block-content {
-  background: #1e1e1e;
+  background: var(--surface);
 }
 
 .comparison-tables {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4px;
-  background: #ffffff;
+  background: var(--border);
   overflow: hidden;
 }
 
 .table-side {
-  background: #1e1e1e;
+  background: var(--surface);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -347,19 +318,19 @@ export default {
 
 .table-title {
   padding: 8px 12px;
-  background: #2d2d2d;
+  background: var(--surface-elevated);
   margin: 0;
   font-size: 11px;
   font-weight: 700;
-  color: #00ff00;
-  border-bottom: 1px solid #00ff00;
-  font-family: 'Courier New', monospace;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
 }
 
 .table-container {
   max-height: 500px;
   overflow: auto;
-  background: #1e1e1e;
+  background: var(--surface);
 }
 
 /* Alinhar colunas numéricas à direita */

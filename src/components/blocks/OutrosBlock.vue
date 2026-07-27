@@ -1,9 +1,11 @@
 <template>
   <div class="outros-block">
-    <div class="block-header" @click="toggleCollapsed">
-      <span class="block-icon">{{ collapsed ? '▶' : '▼' }}</span>
-      <h3 class="block-name" :class="{ 'has-diff': hasDifferences }">OUTROS BLOCOS</h3>
-    </div>
+    <ComparisonBlockHeader
+      :collapsed="collapsed"
+      :has-differences="hasDifferences"
+      title="OUTROS BLOCOS"
+      @toggle="toggleCollapsed"
+    />
 
     <div v-show="!collapsed" class="block-content">
       <div v-for="mnem in mnemonicosVisiveis" :key="mnem" class="mnemonic-section">
@@ -162,50 +164,19 @@ export default {
 </script>
 
 <style scoped>
-@import '../../styles/block-tables.css';
 
 .outros-block {
   margin: 8px;
-  border: 1px solid #00ff00;
-  background: #1e1e1e;
-}
-
-.block-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: #2d2d2d;
-  cursor: pointer;
-  user-select: none;
-  border-bottom: 1px solid #00ff00;
-}
-
-.block-header:hover {
-  background: #3d3d3d;
-}
-
-.block-icon {
-  color: #00ff00;
-  font-size: 12px;
-  font-family: monospace;
-}
-
-.block-name {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  color: #00ff00;
-  font-family: 'Courier New', monospace;
-  letter-spacing: 0.5px;
+  border: 1px solid var(--border);
+  background: var(--surface);
 }
 
 .block-content {
-  background: #1e1e1e;
+  background: var(--surface);
 }
 
 .mnemonic-section {
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border);
 }
 
 .mnemonic-section:last-child {
@@ -215,36 +186,36 @@ export default {
 .mnemonic-title {
   padding: 8px 12px;
   margin: 0;
-  background: #2d2d2d;
-  color: #00ff00;
+  background: var(--surface-elevated);
+  color: var(--accent);
   font-size: 12px;
   font-weight: 700;
-  font-family: 'Courier New', monospace;
-  border-bottom: 1px solid #444;
+  font-family: var(--font-mono);
+  border-bottom: 1px solid var(--border);
 }
 
 .comparison-tables {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2px;
-  background: #000;
+  background: var(--background);
 }
 
 .table-side {
-  background: #1e1e1e;
+  background: var(--surface);
   display: flex;
   flex-direction: column;
 }
 
 .table-title {
   padding: 6px 12px;
-  background: #2d2d2d;
+  background: var(--surface-elevated);
   margin: 0;
   font-size: 10px;
   font-weight: 700;
-  color: #00ff00;
-  border-bottom: 1px solid #444;
-  font-family: 'Courier New', monospace;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
 }
 
 .lines-container {
@@ -257,37 +228,37 @@ export default {
 .line {
   display: flex;
   padding: 4px 8px;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
-  border-bottom: 1px solid #2d2d2d;
+  border-bottom: 1px solid var(--surface-elevated);
   min-height: 24px;
 }
 
 .line:hover {
-  background: #2d2d2d;
+  background: var(--surface-elevated);
 }
 
 .line.highlighted {
   background: rgba(255, 0, 0, 0.15);
-  border-left: 3px solid #ff0000;
+  border-left: 3px solid var(--danger);
 }
 
 .line.diff {
   background: rgba(255, 255, 0, 0.15);
-  border-left: 3px solid #ffff00;
+  border-left: 3px solid var(--warning);
 }
 
 .line-number {
   display: inline-block;
   width: 40px;
-  color: #666;
+  color: var(--muted);
   text-align: right;
   margin-right: 12px;
   flex-shrink: 0;
 }
 
 .line-content {
-  color: #00ff00;
+  color: var(--accent);
   white-space: pre;
   overflow-x: auto;
   flex: 1;
@@ -300,8 +271,8 @@ export default {
 .empty-message {
   padding: 40px;
   text-align: center;
-  color: #00ff00;
-  font-family: 'Courier New', monospace;
+  color: var(--accent);
+  font-family: var(--font-mono);
   font-size: 12px;
   opacity: 0.6;
 }

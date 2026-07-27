@@ -1,47 +1,62 @@
 <template>
-  <div
+  <section
     class="drop-zone"
-    :class="{ 'drag-over': isDragging, 'has-file': file }"
-    @dragenter.prevent="onDragEnter"
-    @dragover.prevent="onDragOver"
+    :class="{
+      'drag-over': isDragging,
+      'has-file': file,
+      'is-reading': isReading,
+      'has-error': errorMessage
+    }"
+    :aria-busy="String(isReading)"
+    @dragenter.prevent="isDragging = true"
+    @dragover.prevent="isDragging = true"
     @dragleave.prevent="onDragLeave"
     @drop.prevent="onDrop"
   >
     <div v-if="!file" class="drop-zone-content">
-      <div class="icon">📁</div>
-      <h3>{{ title }}</h3>
-      <p>Arraste um arquivo aqui</p>
-      <p class="supported-types">Tipos suportados: {{ supportedTypesText }}</p>
-      <span class="or">ou</span>
-      <label class="upload-btn">
-        Selecionar arquivo
-        <input
-          type="file"
-          @change="onFileSelect"
-          hidden
-        >
+      <div class="upload-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" role="img">
+          <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 13v5.5A1.5 1.5 0 006.5 20h11a1.5 1.5 0 001.5-1.5V13"/>
+        </svg>
+      </div>
+      <div class="upload-copy">
+        <span class="slot-label">{{ title }}</span>
+        <h2>Arraste o arquivo para cá</h2>
+        <p>{{ supportedTypesText }} · processamento local</p>
+      </div>
+      <label class="upload-button">
+        Escolher arquivo
+        <input ref="fileInput" type="file" @change="onFileSelect">
       </label>
+      <p v-if="errorMessage" class="error-message" role="alert">
+        {{ errorMessage }}
+      </p>
     </div>
 
     <div v-else class="file-loaded">
-      <div class="file-header">
-        <div class="file-icon">✓</div>
-        <div class="file-details">
-          <h4>{{ file.name }}</h4>
-          <p>{{ formatFileSize(file.size) }}</p>
-        </div>
-        <button class="remove-btn" @click="removeFile">✕</button>
+      <div class="file-type" :class="{ loading: isReading }" aria-hidden="true">
+        {{ isReading ? '···' : fileType?.id === 'dadger' ? 'DG' : 'RN' }}
       </div>
-
-      <div class="data-display">
-        <div class="loaded-message">
-          <div class="check-icon">✓</div>
-          <p>Arquivo carregado com sucesso!</p>
-          <p class="hint">Carregue o segundo arquivo para iniciar a comparação</p>
-        </div>
+      <div class="file-details">
+        <span class="slot-label">{{ title }}</span>
+        <h2 :title="file.name">{{ file.name }}</h2>
+        <p>
+          {{ isReading ? 'Validando arquivo…' : fileStatus }}
+          <span aria-hidden="true">·</span>
+          {{ formatFileSize(file.size) }}
+        </p>
       </div>
+      <button
+        type="button"
+        class="remove-button"
+        :aria-label="`Remover ${file.name}`"
+        title="Remover arquivo"
+        @click="removeFile"
+      >
+        ×
+      </button>
     </div>
-  </div>
+  </section>
 </template>
 
 <script>
@@ -49,19 +64,17 @@ import { detectFileType, parseFile, getSupportedTypes } from '../utils/fileTypeR
 
 export default {
   name: 'DropZone',
+  emits: ['data-parsed', 'file-removed'],
   props: {
-    title: {
-      type: String,
-      required: true
-    },
-    index: {
-      type: Number,
-      required: true
-    }
+    title: { type: String, required: true },
+    index: { type: Number, required: true },
+    comparisonReady: { type: Boolean, default: false }
   },
   data() {
     return {
       isDragging: false,
+      isReading: false,
+      errorMessage: '',
       file: null,
       parsedData: null,
       fileType: null
@@ -69,76 +82,94 @@ export default {
   },
   computed: {
     supportedTypesText() {
-      const types = getSupportedTypes()
-      return types.map(t => t.name).join(', ')
+      return getSupportedTypes().map(type => type.name).join(' ou ')
+    },
+    fileStatus() {
+      return this.comparisonReady
+        ? 'Pronto para comparar'
+        : 'Arquivo validado · aguardando o outro deck'
     }
   },
   methods: {
-    onDragEnter() {
-      this.isDragging = true
-    },
-    onDragOver() {
-      this.isDragging = true
-    },
-    onDragLeave(e) {
-      if (e.target.className === 'drop-zone') {
+    onDragLeave(event) {
+      if (!event.currentTarget.contains(event.relatedTarget)) {
         this.isDragging = false
       }
     },
-    onDrop(e) {
+    onDrop(event) {
       this.isDragging = false
-      const files = e.dataTransfer.files
-      if (files.length > 0) {
-        this.handleFile(files[0])
-      }
+      const [file] = event.dataTransfer.files
+      if (file) this.handleFile(file)
     },
-    onFileSelect(e) {
-      const files = e.target.files
-      if (files.length > 0) {
-        this.handleFile(files[0])
-      }
+    onFileSelect(event) {
+      const [file] = event.target.files
+      if (file) this.handleFile(file)
     },
     handleFile(file) {
+      this.errorMessage = ''
       const detectedType = detectFileType(file.name)
 
-      if (detectedType) {
-        this.file = file
-        this.fileType = detectedType
-        this.readAndParseFile(file)
-      } else {
-        alert(`Tipo de arquivo não suportado.\nArquivos aceitos: ${this.supportedTypesText}`)
+      if (!detectedType) {
+        this.errorMessage = `Tipo não suportado. Selecione um arquivo ${this.supportedTypesText}.`
+        this.resetInput()
+        return
       }
+
+      this.file = file
+      this.fileType = detectedType
+      this.isReading = true
+      this.readAndParseFile(file)
     },
     readAndParseFile(file) {
       const reader = new FileReader()
-      reader.onload = (e) => {
-        const content = e.target.result
+      reader.onload = event => {
         try {
-          this.parsedData = parseFile(file.name, content)
+          this.parsedData = parseFile(file.name, event.target.result)
+          this.isReading = false
           this.$emit('data-parsed', {
             type: this.fileType,
             name: file.name,
             data: this.parsedData
           })
         } catch (error) {
-          alert(`Erro ao processar arquivo: ${error.message}`)
-          this.removeFile()
+          this.failReading(`Não foi possível processar o arquivo: ${error.message}`)
         }
       }
+      reader.onerror = () => {
+        this.failReading('Não foi possível ler o arquivo. Tente selecioná-lo novamente.')
+      }
       reader.readAsText(file)
+    },
+    failReading(message) {
+      this.errorMessage = message
+      this.file = null
+      this.parsedData = null
+      this.fileType = null
+      this.isReading = false
+      this.resetInput()
+      this.$emit('file-removed')
     },
     removeFile() {
       this.file = null
       this.parsedData = null
       this.fileType = null
+      this.isReading = false
+      this.errorMessage = ''
+      this.resetInput()
       this.$emit('file-removed')
     },
+    resetInput() {
+      if (this.$refs.fileInput) this.$refs.fileInput.value = ''
+    },
     formatFileSize(bytes) {
-      if (bytes === 0) return '0 Bytes'
-      const k = 1024
-      const sizes = ['Bytes', 'KB', 'MB', 'GB']
-      const i = Math.floor(Math.log(bytes) / Math.log(k))
-      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+      if (bytes === 0) return '0 bytes'
+      const units = ['bytes', 'KB', 'MB', 'GB']
+      const unitIndex = Math.min(
+        Math.floor(Math.log(bytes) / Math.log(1024)),
+        units.length - 1
+      )
+      const value = bytes / Math.pow(1024, unitIndex)
+      return `${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} ${units[unitIndex]}`
     }
   }
 }
@@ -146,200 +177,196 @@ export default {
 
 <style scoped>
 .drop-zone {
-  flex: 1;
-  min-height: 400px;
-  border: 2px dashed #00ff00;
-  border-radius: 4px;
+  min-width: 0;
+  min-height: 210px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  background: #1e1e1e;
-  position: relative;
-  font-family: 'Courier New', monospace;
+  align-items: stretch;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+  transition: 160ms ease;
 }
 
-.drop-zone:hover {
-  border-color: #00ff00;
-  background: #2d2d2d;
+.drop-zone:hover,
+.drop-zone.drag-over {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--surface) 88%, var(--accent) 12%);
 }
 
 .drop-zone.drag-over {
-  border-color: #00ff00;
-  background: #3d3d3d;
   border-style: solid;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+  transform: translateY(-2px);
 }
 
 .drop-zone.has-file {
-  border-color: #00ff00;
-  background: #1e1e1e;
+  min-height: 82px;
+  border-style: solid;
+}
+
+.drop-zone.has-error {
+  border-color: var(--danger);
 }
 
 .drop-zone-content {
-  text-align: center;
-  padding: 40px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+  padding: clamp(22px, 4vw, 38px);
 }
 
-.icon {
-  font-size: 48px;
-  margin-bottom: 20px;
+.upload-icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+  border-radius: 10px;
 }
 
-.drop-zone-content h3 {
-  color: #00ff00;
-  font-size: 16px;
-  margin-bottom: 10px;
-  font-weight: 700;
-  font-family: 'Courier New', monospace;
+.upload-icon svg {
+  width: 23px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
 }
 
-.drop-zone-content p {
-  color: #00ff00;
-  margin-bottom: 15px;
-  font-size: 12px;
-  font-family: 'Courier New', monospace;
-}
-
-.supported-types {
-  font-size: 10px !important;
-  opacity: 0.7;
-  margin-bottom: 10px !important;
-}
-
-.or {
+.slot-label {
   display: block;
-  color: #00ff00;
-  margin: 15px 0;
-  font-size: 11px;
-  opacity: 0.6;
-  font-family: 'Courier New', monospace;
+  margin-bottom: 4px;
+  color: var(--accent);
+  font: 750 9px/1.2 var(--font-ui);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-.upload-btn {
-  display: inline-block;
-  padding: 8px 20px;
-  background: #2d2d2d;
-  color: #00ff00;
-  border: 1px solid #00ff00;
-  border-radius: 2px;
+.upload-copy h2,
+.file-details h2 {
+  margin: 0;
+  color: var(--text);
+  font: 650 14px/1.3 var(--font-ui);
+}
+
+.upload-copy p,
+.file-details p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font: 500 10px/1.4 var(--font-ui);
+}
+
+.upload-button {
+  position: relative;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 13px;
+  color: var(--background);
+  background: var(--accent);
+  border-radius: 7px;
   cursor: pointer;
-  font-weight: 700;
-  font-size: 11px;
-  font-family: 'Courier New', monospace;
-  transition: all 0.2s ease;
+  font: 700 11px/1 var(--font-ui);
+  white-space: nowrap;
 }
 
-.upload-btn:hover {
-  background: #3d3d3d;
+.upload-button:hover {
+  background: var(--accent-strong);
+}
+
+.upload-button:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.upload-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.error-message {
+  grid-column: 2 / -1;
+  margin: -7px 0 0;
+  color: var(--danger);
+  font: 600 11px/1.45 var(--font-ui);
 }
 
 .file-loaded {
-  display: flex;
-  flex-direction: column;
   width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-.file-header {
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 12px;
-  border-bottom: 1px solid #00ff00;
-  background: #2d2d2d;
+  gap: 12px;
+  padding: 14px 16px;
 }
 
-.file-icon {
+.file-type {
   width: 40px;
   height: 40px;
-  background: #00ff00;
-  color: #1e1e1e;
-  border-radius: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  font-weight: 700;
-  flex-shrink: 0;
-  font-family: 'Courier New', monospace;
+  flex: 0 0 40px;
+  display: grid;
+  place-items: center;
+  color: var(--background);
+  background: var(--accent);
+  border-radius: 8px;
+  font: 800 10px/1 var(--font-mono);
+}
+
+.file-type.loading {
+  color: var(--accent);
+  background: var(--surface-elevated);
 }
 
 .file-details {
+  min-width: 0;
   flex: 1;
-  text-align: left;
 }
 
-.file-details h4 {
-  color: #00ff00;
-  font-size: 13px;
-  margin: 0 0 3px 0;
-  word-break: break-word;
-  font-family: 'Courier New', monospace;
-  font-weight: 700;
-}
-
-.file-details p {
-  color: #00ff00;
-  margin: 0;
-  font-size: 10px;
-  opacity: 0.7;
-  font-family: 'Courier New', monospace;
-}
-
-.remove-btn {
-  width: 28px;
-  height: 28px;
-  background: #2d2d2d;
-  color: #ff0000;
-  border: 1px solid #ff0000;
-  border-radius: 2px;
-  cursor: pointer;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-  font-family: 'Courier New', monospace;
-  font-weight: 700;
-}
-
-.remove-btn:hover {
-  background: #4d0000;
-}
-
-.data-display {
-  flex: 1;
+.file-details h2 {
   overflow: hidden;
-  background: #1e1e1e;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.loaded-message {
-  text-align: center;
-  padding: 40px;
+.remove-button {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+  font: 400 20px/1 var(--font-ui);
 }
 
-.check-icon {
-  font-size: 64px;
-  color: #00ff00;
-  margin-bottom: 20px;
+.remove-button:hover {
+  color: var(--danger);
+  border-color: var(--danger);
 }
 
-.loaded-message p {
-  color: #00ff00;
-  font-family: 'Courier New', monospace;
-  font-size: 14px;
-  margin: 10px 0;
-  font-weight: 700;
+.remove-button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
-.loaded-message .hint {
-  font-size: 12px;
-  opacity: 0.6;
-  font-weight: 400;
+@media (max-width: 700px) {
+  .drop-zone-content {
+    grid-template-columns: auto 1fr;
+  }
+
+  .upload-button {
+    grid-column: 1 / -1;
+  }
 }
 </style>

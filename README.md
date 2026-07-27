@@ -43,6 +43,8 @@ dos patamares do bloco `DP`.
   como diferenças.
 - Filtro para mostrar apenas diferenças reais.
 - Tabelas sincronizadas, ordenáveis e organizadas por bloco.
+- Fatores e coeficientes extensos são agrupados por tipo e contexto para evitar
+  a exibição de objetos internos como texto corrido.
 - Suporte a campos opcionais, valores zero e registros repetidos.
 - Detecção dinâmica de blocos simples ainda sem parser estruturado.
 - Comparação adicional de arquivos `renovaveis.*`.
@@ -228,3 +230,7 @@ incorporar regras conjunturais específicas de um deck.
 O RVZero está em desenvolvimento ativo. DADGER é um formato amplo e possui
 registros menos frequentes que podem ainda aparecer em `OUTROS`. Relatos com
 exemplos mínimos e sem dados sensíveis ajudam bastante a ampliar a cobertura.
+
+## Licença
+
+Distribuído sob a [licença MIT](LICENSE). Copyright © 2026 Jackson Graziano.

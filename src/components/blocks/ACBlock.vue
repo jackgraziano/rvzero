@@ -1,9 +1,11 @@
 <template>
   <div class="ac-block">
-    <div class="block-header" @click="toggleCollapsed">
-      <span class="block-icon">{{ collapsed ? '▶' : '▼' }}</span>
-      <h3 class="block-name" :class="{ 'has-diff': hasDifferences }">BLOCO AC - ALTERAÇÃO DE CADASTRO</h3>
-    </div>
+    <ComparisonBlockHeader
+      :collapsed="collapsed"
+      :has-differences="hasDifferences"
+      title="BLOCO AC — ALTERAÇÃO DE CADASTRO"
+      @toggle="toggleCollapsed"
+    />
 
     <div v-show="!collapsed" class="block-content">
       <div v-for="usinaNum in usinasVisiveis" :key="usinaNum" class="usina-section">
@@ -19,14 +21,26 @@
                 :key="`d1-${idx}`"
                 :class="{
                   'line': true,
-                  'highlighted': alteracao.onlyInOne,
-                  'diff': alteracao.different && !alteracao.onlyInOne
+                  'faded': !alteracao.sameTemporality,
+                  'highlighted': alteracao.onlyInOne && alteracao.sameTemporality,
+                  'diff': alteracao.different && alteracao.sameTemporality && !alteracao.onlyInOne
                 }"
               >
                 <div v-if="alteracao.reg1" class="alteracao-content">
                   <span class="mnemonico">{{ alteracao.reg1.mnemonico }}</span>
-                  <span class="dados">{{ alteracao.reg1.dados }}</span>
-                  <span class="periodo" v-if="alteracao.reg1.mes || alteracao.reg1.ano">
+                  <span v-if="alteracao.reg1.cotvol" class="cotvol-coefficients">
+                    <span
+                      v-for="coefficient in alteracao.reg1.coeficientes"
+                      :key="coefficient.indice"
+                      class="cotvol-coefficient"
+                      :title="coefficient.indice === 1 ? 'Termo independente' : `Coeficiente ${coefficient.indice}`"
+                    >
+                      C{{ coefficient.indice }}
+                      <strong>{{ formatCompactNumber(coefficient.valor) }}</strong>
+                    </span>
+                  </span>
+                  <span v-else class="dados">{{ alteracao.reg1.dados }}</span>
+                  <span class="periodo" v-if="hasPeriod(alteracao.reg1)">
                     {{ formatPeriodo(alteracao.reg1) }}
                   </span>
                 </div>
@@ -47,14 +61,26 @@
                 :key="`d2-${idx}`"
                 :class="{
                   'line': true,
-                  'highlighted': alteracao.onlyInOne,
-                  'diff': alteracao.different && !alteracao.onlyInOne
+                  'faded': !alteracao.sameTemporality,
+                  'highlighted': alteracao.onlyInOne && alteracao.sameTemporality,
+                  'diff': alteracao.different && alteracao.sameTemporality && !alteracao.onlyInOne
                 }"
               >
                 <div v-if="alteracao.reg2" class="alteracao-content">
                   <span class="mnemonico">{{ alteracao.reg2.mnemonico }}</span>
-                  <span class="dados">{{ alteracao.reg2.dados }}</span>
-                  <span class="periodo" v-if="alteracao.reg2.mes || alteracao.reg2.ano">
+                  <span v-if="alteracao.reg2.cotvol" class="cotvol-coefficients">
+                    <span
+                      v-for="coefficient in alteracao.reg2.coeficientes"
+                      :key="coefficient.indice"
+                      class="cotvol-coefficient"
+                      :title="coefficient.indice === 1 ? 'Termo independente' : `Coeficiente ${coefficient.indice}`"
+                    >
+                      C{{ coefficient.indice }}
+                      <strong>{{ formatCompactNumber(coefficient.valor) }}</strong>
+                    </span>
+                  </span>
+                  <span v-else class="dados">{{ alteracao.reg2.dados }}</span>
+                  <span class="periodo" v-if="hasPeriod(alteracao.reg2)">
                     {{ formatPeriodo(alteracao.reg2) }}
                   </span>
                 </div>
@@ -78,6 +104,12 @@
 <script>
 import { ref, computed } from 'vue'
 import { alignSequences } from '../../utils/comparison.js'
+import { rowHasDifferences } from '../../composables/useBlockComparison.js'
+import {
+  buildCotvolSnapshots,
+  cotvolSignature
+} from '../../utils/cotvol.js'
+import { formatCompactNumber } from '../../utils/restrictionDisplay.js'
 
 export default {
   name: 'ACBlock',
@@ -86,6 +118,7 @@ export default {
     dadger1Name: { type: String, required: true },
     dadger2Data: { type: Object, required: true },
     dadger2Name: { type: String, required: true },
+    compareMode: { type: String, required: true },
     showOnlyDifferences: { type: Boolean, required: true }
   },
   setup(props) {
@@ -95,12 +128,20 @@ export default {
       collapsed.value = !collapsed.value
     }
 
+    const normalizedRecords = (dadgerData) => [
+      ...buildCotvolSnapshots(
+        dadgerData.AC ?? [],
+        dadgerData.info_dadger
+      ),
+      ...(dadgerData.AC ?? []).filter(record => record.mnemonico !== 'COTVOL')
+    ]
+
     // Comparações agrupadas por usina
     const comparacoesPorUsina = computed(() => {
       const result = {}
 
-      const registros1 = props.dadger1Data.AC || []
-      const registros2 = props.dadger2Data.AC || []
+      const registros1 = normalizedRecords(props.dadger1Data)
+      const registros2 = normalizedRecords(props.dadger2Data)
 
       // Coletar todas as usinas
       const usinas = new Set()
@@ -122,16 +163,23 @@ export default {
           const pairs = alignSequences(
             group1,
             group2,
-            record => record.dados.trimEnd()
+            comparableValue
           )
 
           pairs.forEach(({ left: reg1, right: reg2 }, index) => {
+            const sameTemporality = recordsShareHorizon(reg1, reg2)
+            const onlyInOne = !reg1 || !reg2
+            const different = Boolean(
+              reg1 && reg2 && !compararAlteracoes(reg1, reg2)
+            )
             comparacoes.push({
               chave: `${chave}-${index}`,
               reg1,
               reg2,
-              onlyInOne: !reg1 || !reg2,
-              different: Boolean(reg1 && reg2 && !compararAlteracoes(reg1, reg2))
+              onlyInOne,
+              different,
+              sameTemporality,
+              has_diff: sameTemporality && (onlyInOne || different)
             })
           })
         }
@@ -144,16 +192,46 @@ export default {
 
     // Criar chave única para cada alteração (usina + mnemônico + período)
     const criarChave = (reg) => {
+      if (reg.cotvol) {
+        if (reg.estagio === null) return 'COTVOL-estatico'
+        const period = props.compareMode === 'data'
+          ? reg.data_inicio
+          : `estagio-${reg.estagio}`
+        return `COTVOL-${period}`
+      }
+
       const periodo = `${reg.mes || ''}-${reg.semana || ''}-${reg.ano || ''}`
       return `${reg.mnemonico}-${periodo}`
     }
 
+    const comparableValue = (record) => record.cotvol
+      ? cotvolSignature(record)
+      : record.dados.trimEnd()
+
     // Comparar duas alterações
     const compararAlteracoes = (reg1, reg2) => {
-      // Comparar dados sem espaços finais
-      const dados1 = reg1.dados.trimEnd()
-      const dados2 = reg2.dados.trimEnd()
-      return dados1 === dados2
+      return comparableValue(reg1) === comparableValue(reg2)
+    }
+
+    const recordsShareHorizon = (reg1, reg2) => {
+      const record = reg1 ?? reg2
+      if (!record?.cotvol || record.estagio === null) return true
+
+      if (props.compareMode === 'data') {
+        const dates1 = Object.values(
+          props.dadger1Data.info_dadger?.datas_estagios ?? {}
+        )
+        const dates2 = Object.values(
+          props.dadger2Data.info_dadger?.datas_estagios ?? {}
+        )
+        return dates1.includes(record.data_inicio) &&
+          dates2.includes(record.data_inicio)
+      }
+
+      return record.estagio <=
+        (props.dadger1Data.info_dadger?.numero_estagios ?? 0) &&
+        record.estagio <=
+        (props.dadger2Data.info_dadger?.numero_estagios ?? 0)
     }
 
     // Comparações filtradas (filtra linhas individuais quando filtro ativo)
@@ -163,7 +241,7 @@ export default {
       for (const [usina, comparacoes] of Object.entries(comparacoesPorUsina.value)) {
         if (props.showOnlyDifferences) {
           // Filtrar apenas linhas com diferenças
-          result[usina] = comparacoes.filter(c => c.onlyInOne || c.different)
+          result[usina] = comparacoes.filter(rowHasDifferences)
         } else {
           // Mostrar todas as linhas
           result[usina] = comparacoes
@@ -194,8 +272,7 @@ export default {
     // Verificar se há diferenças no bloco
     const hasDifferences = computed(() => {
       for (const comparacoes of Object.values(comparacoesPorUsina.value)) {
-        // AC não tem temporalidade, então onlyInOne sempre conta
-        if (comparacoes.some(c => c.onlyInOne || c.different)) {
+        if (comparacoes.some(rowHasDifferences)) {
           return true
         }
       }
@@ -203,6 +280,12 @@ export default {
     })
 
     const formatPeriodo = (reg) => {
+      if (reg.cotvol && reg.data_inicio) {
+        return props.compareMode === 'data'
+          ? `[${reg.data_inicio} · Estágio ${reg.estagio}]`
+          : `[Estágio ${reg.estagio} · ${reg.data_inicio}]`
+      }
+
       const partes = []
       if (reg.mes) partes.push(reg.mes)
       if (reg.semana) partes.push(`S${reg.semana}`)
@@ -210,63 +293,38 @@ export default {
       return partes.length > 0 ? `[${partes.join(' ')}]` : ''
     }
 
+    const hasPeriod = (record) => Boolean(
+      record.data_inicio || record.mes || record.ano
+    )
+
     return {
       collapsed,
       toggleCollapsed,
       comparacoesFiltradas,
       usinasVisiveis,
       formatPeriodo,
-      hasDifferences
+      formatCompactNumber,
+      hasDifferences,
+      hasPeriod
     }
   }
 }
 </script>
 
 <style scoped>
-@import '../../styles/block-tables.css';
 
 .ac-block {
   margin: 8px;
-  border: 1px solid #00ff00;
-  background: #1e1e1e;
-}
-
-.block-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: #2d2d2d;
-  cursor: pointer;
-  user-select: none;
-  border-bottom: 1px solid #00ff00;
-}
-
-.block-header:hover {
-  background: #3d3d3d;
-}
-
-.block-icon {
-  color: #00ff00;
-  font-size: 12px;
-  font-family: monospace;
-}
-
-.block-name {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  color: #00ff00;
-  font-family: 'Courier New', monospace;
-  letter-spacing: 0.5px;
+  border: 1px solid var(--border);
+  background: var(--surface);
 }
 
 .block-content {
-  background: #1e1e1e;
+  background: var(--surface);
 }
 
 .usina-section {
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border);
 }
 
 .usina-section:last-child {
@@ -276,36 +334,36 @@ export default {
 .usina-title {
   padding: 8px 12px;
   margin: 0;
-  background: #2d2d2d;
-  color: #00ff00;
+  background: var(--surface-elevated);
+  color: var(--accent);
   font-size: 12px;
   font-weight: 700;
-  font-family: 'Courier New', monospace;
-  border-bottom: 1px solid #444;
+  font-family: var(--font-mono);
+  border-bottom: 1px solid var(--border);
 }
 
 .comparison-tables {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2px;
-  background: #000;
+  background: var(--background);
 }
 
 .table-side {
-  background: #1e1e1e;
+  background: var(--surface);
   display: flex;
   flex-direction: column;
 }
 
 .table-title {
   padding: 6px 12px;
-  background: #2d2d2d;
+  background: var(--surface-elevated);
   margin: 0;
   font-size: 10px;
   font-weight: 700;
-  color: #00ff00;
-  border-bottom: 1px solid #444;
-  font-family: 'Courier New', monospace;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
 }
 
 .lines-container {
@@ -318,24 +376,28 @@ export default {
 .line {
   display: flex;
   padding: 6px 8px;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
-  border-bottom: 1px solid #2d2d2d;
+  border-bottom: 1px solid var(--surface-elevated);
   min-height: 32px;
 }
 
 .line:hover {
-  background: #2d2d2d;
+  background: var(--surface-elevated);
 }
 
 .line.highlighted {
   background: rgba(255, 0, 0, 0.15);
-  border-left: 3px solid #ff0000;
+  border-left: 3px solid var(--danger);
 }
 
 .line.diff {
   background: rgba(255, 255, 0, 0.15);
-  border-left: 3px solid #ffff00;
+  border-left: 3px solid var(--warning);
+}
+
+.line.faded {
+  opacity: 0.42;
 }
 
 .alteracao-content {
@@ -350,19 +412,42 @@ export default {
 }
 
 .mnemonico {
-  color: #00ccff;
+  color: var(--accent-strong);
   font-weight: 700;
   min-width: 80px;
 }
 
 .dados {
-  color: #00ff00;
+  color: var(--accent);
   flex: 1;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-mono);
+}
+
+.cotvol-coefficients {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.cotvol-coefficient {
+  display: inline-flex;
+  gap: 5px;
+  align-items: baseline;
+  padding: 2px 6px;
+  color: var(--muted);
+  background: var(--chip);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.cotvol-coefficient strong {
+  color: var(--text);
+  font-weight: 600;
 }
 
 .periodo {
-  color: #ffaa00;
+  color: var(--warning);
   font-size: 10px;
   white-space: nowrap;
 }
@@ -374,8 +459,8 @@ export default {
 .empty-message {
   padding: 40px;
   text-align: center;
-  color: #00ff00;
-  font-family: 'Courier New', monospace;
+  color: var(--accent);
+  font-family: var(--font-mono);
   font-size: 12px;
   opacity: 0.6;
 }

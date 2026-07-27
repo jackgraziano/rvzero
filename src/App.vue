@@ -1,60 +1,76 @@
 <template>
   <div id="app">
     <TopBar
-      @compare-mode-changed="handleCompareModeChange"
-      @show-only-differences-changed="handleShowOnlyDifferencesChange"
+      :compare-mode="compareMode"
+      :show-only-differences="showOnlyDifferences"
+      :has-files="anyFileLoaded"
+      :show-temporal-controls="showTemporalControls"
+      @compare-mode-changed="compareMode = $event"
+      @show-only-differences-changed="showOnlyDifferences = $event"
       @clear-all="handleClearAll"
     />
 
-    <div class="main-content">
-      <!-- DropZones sempre visíveis -->
+    <main class="main-content">
       <div class="columns">
         <DropZone
           ref="dropZone1"
-          title="Arquivo 1"
+          title="Deck A"
           :index="0"
-          @data-parsed="(fileInfo) => handleDataParsed(0, fileInfo)"
+          :comparison-ready="comparisonReady"
+          @data-parsed="handleDataParsed(0, $event)"
           @file-removed="handleFileRemove(0)"
         />
         <DropZone
           ref="dropZone2"
-          title="Arquivo 2"
+          title="Deck B"
           :index="1"
-          @data-parsed="(fileInfo) => handleDataParsed(1, fileInfo)"
+          :comparison-ready="comparisonReady"
+          @data-parsed="handleDataParsed(1, $event)"
           @file-removed="handleFileRemove(1)"
         />
       </div>
 
-      <!-- Mensagem de incompatibilidade -->
-      <div v-if="bothDadgersLoaded && !filesAreCompatible" class="incompatible-message">
-        <p>⚠️ Arquivos incompatíveis: {{ fileData[0].type.name }} e {{ fileData[1].type.name }}</p>
-        <p>Por favor, selecione dois arquivos do mesmo tipo para comparar.</p>
-      </div>
+      <aside
+        v-if="bothFilesLoaded && !filesAreCompatible"
+        class="incompatible-message"
+        role="alert"
+      >
+        <span class="message-icon" aria-hidden="true">!</span>
+        <div>
+          <h2>Os arquivos têm tipos diferentes</h2>
+          <p>
+            O Deck A é {{ fileData[0].type.name }} e o Deck B é
+            {{ fileData[1].type.name }}. Substitua um deles para continuar.
+          </p>
+        </div>
+      </aside>
 
-      <!-- ComparisonView quando ambos os arquivos estão carregados e são compatíveis -->
-      <div v-if="bothDadgersLoaded && filesAreCompatible" class="comparison-container">
-        <!-- Mostrar comparação de DADGER -->
+      <section
+        v-if="comparisonReady"
+        ref="comparison"
+        class="comparison-container"
+        aria-label="Resultado da comparação"
+      >
         <ComparisonView
           v-if="bothFilesAreDADGER"
-          :dadger1Data="fileData[0].data"
-          :dadger1Name="fileData[0].name"
-          :dadger2Data="fileData[1].data"
-          :dadger2Name="fileData[1].name"
-          :compareMode="compareMode"
-          :showOnlyDifferences="showOnlyDifferences"
+          :dadger1-data="fileData[0].data"
+          :dadger1-name="fileData[0].name"
+          :dadger2-data="fileData[1].data"
+          :dadger2-name="fileData[1].name"
+          :compare-mode="compareMode"
+          :show-only-differences="showOnlyDifferences"
         />
 
-        <!-- Mostrar comparação de RENOVÁVEIS -->
         <RenovaveisComparisonView
           v-else-if="bothFilesAreRenovaveis"
-          :renovaveis1Data="fileData[0].data"
-          :renovaveis1Name="fileData[0].name"
-          :renovaveis2Data="fileData[1].data"
-          :renovaveis2Name="fileData[1].name"
-          :showOnlyDifferences="showOnlyDifferences"
+          :renovaveis1-data="fileData[0].data"
+          :renovaveis1-name="fileData[0].name"
+          :renovaveis2-data="fileData[1].data"
+          :renovaveis2-name="fileData[1].name"
+          :show-only-differences="showOnlyDifferences"
         />
-      </div>
-    </div>
+      </section>
+    </main>
   </div>
 </template>
 
@@ -63,6 +79,12 @@ import TopBar from './components/TopBar.vue'
 import DropZone from './components/DropZone.vue'
 import ComparisonView from './components/ComparisonView.vue'
 import RenovaveisComparisonView from './components/RenovaveisComparisonView.vue'
+
+const emptyFile = index => ({
+  type: null,
+  name: `Deck ${index === 0 ? 'A' : 'B'}`,
+  data: null
+})
 
 export default {
   name: 'App',
@@ -74,27 +96,33 @@ export default {
   },
   data() {
     return {
-      fileData: [
-        { type: null, name: 'Arquivo 1', data: null },
-        { type: null, name: 'Arquivo 2', data: null }
-      ],
+      fileData: [emptyFile(0), emptyFile(1)],
       compareMode: 'data',
       showOnlyDifferences: true
     }
   },
   computed: {
-    bothDadgersLoaded() {
-      return this.fileData[0].data !== null && this.fileData[1].data !== null
+    anyFileLoaded() {
+      return this.fileData.some(file => file.data !== null)
+    },
+    bothFilesLoaded() {
+      return this.fileData.every(file => file.data !== null)
     },
     bothFilesAreDADGER() {
-      return this.fileData[0].type?.id === 'dadger' && this.fileData[1].type?.id === 'dadger'
+      return this.fileData.every(file => file.type?.id === 'dadger')
     },
     bothFilesAreRenovaveis() {
-      return this.fileData[0].type?.id === 'renovaveis' && this.fileData[1].type?.id === 'renovaveis'
+      return this.fileData.every(file => file.type?.id === 'renovaveis')
     },
     filesAreCompatible() {
-      if (!this.bothDadgersLoaded) return true
+      if (!this.bothFilesLoaded) return true
       return this.fileData[0].type?.id === this.fileData[1].type?.id
+    },
+    comparisonReady() {
+      return this.bothFilesLoaded && this.filesAreCompatible
+    },
+    showTemporalControls() {
+      return !this.bothFilesLoaded || this.bothFilesAreDADGER
     }
   },
   methods: {
@@ -106,99 +134,140 @@ export default {
       }
     },
     handleFileRemove(index) {
-      this.fileData[index] = {
-        type: null,
-        name: `Arquivo ${index + 1}`,
-        data: null
-      }
-    },
-    handleCompareModeChange(mode) {
-      this.compareMode = mode
-    },
-    handleShowOnlyDifferencesChange(value) {
-      this.showOnlyDifferences = value
+      this.fileData[index] = emptyFile(index)
     },
     handleClearAll() {
-      this.fileData = [
-        { type: null, name: 'Arquivo 1', data: null },
-        { type: null, name: 'Arquivo 2', data: null }
-      ]
-      if (this.$refs.dropZone1) {
-        this.$refs.dropZone1.removeFile()
-      }
-      if (this.$refs.dropZone2) {
-        this.$refs.dropZone2.removeFile()
-      }
+      this.fileData = [emptyFile(0), emptyFile(1)]
+      this.$refs.dropZone1?.removeFile()
+      this.$refs.dropZone2?.removeFile()
     }
   }
 }
 </script>
 
 <style>
+@import './styles/block-tables.css';
+
+:root {
+  color-scheme: dark;
+  --background: #050607;
+  --surface: #0b0d0f;
+  --surface-elevated: #111418;
+  --surface-hover: #191d22;
+  --chip: #111820;
+  --border: #292f35;
+  --border-strong: #48515a;
+  --text: #f2f0e6;
+  --muted: #8e969d;
+  --accent: #ff9f1c;
+  --accent-strong: #00d8ff;
+  --focus: #00d8ff;
+  --warning: #ffd166;
+  --danger: #ff4d5a;
+  --positive: #59f08a;
+  --font-ui: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
 * {
-  margin: 0;
-  padding: 0;
   box-sizing: border-box;
 }
 
+html {
+  min-width: 320px;
+  background: var(--background);
+}
+
 body {
-  font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
-  background: #0a0a0a;
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  color: var(--text);
+  background: var(--background);
+  font-family: var(--font-ui);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  color: var(--background);
+  background: var(--accent);
+}
+
+* {
+  scrollbar-color: var(--border-strong) var(--surface);
+  scrollbar-width: thin;
 }
 
 #app {
   min-height: 100vh;
-  background: #0a0a0a;
-  display: flex;
-  flex-direction: column;
 }
 
 .main-content {
-  flex: 1;
-  padding: 20px;
-  overflow: auto;
-  background: #0a0a0a;
+  width: min(1880px, 100%);
+  margin: 0 auto;
+  padding: clamp(18px, 2.5vw, 34px);
 }
 
 .columns {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 30px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
   max-width: 1400px;
   margin: 0 auto;
 }
 
 .comparison-container {
-  max-width: 1800px;
-  margin: 20px auto 0;
-  height: calc(100vh - 300px);
+  margin-top: 18px;
 }
 
 .incompatible-message {
-  max-width: 800px;
-  margin: 40px auto;
-  padding: 30px;
-  background: rgba(255, 0, 0, 0.1);
-  border: 2px solid #ff0000;
-  border-radius: 4px;
-  text-align: center;
+  max-width: 760px;
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  margin: 24px auto;
+  padding: 18px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--danger) 50%, var(--border));
+  border-radius: 9px;
+}
+
+.message-icon {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  display: grid;
+  place-items: center;
+  color: var(--background);
+  background: var(--danger);
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.incompatible-message h2 {
+  margin: 0 0 4px;
+  font-size: 14px;
 }
 
 .incompatible-message p {
-  color: #ff0000;
-  font-family: 'Courier New', monospace;
-  font-size: 14px;
-  margin: 10px 0;
-  font-weight: 700;
-}
-
-.incompatible-message p:last-child {
+  margin: 0;
+  color: var(--muted);
   font-size: 12px;
-  opacity: 0.8;
-  font-weight: 400;
+  line-height: 1.5;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 760px) {
   .columns {
     grid-template-columns: 1fr;
   }

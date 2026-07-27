@@ -1,9 +1,11 @@
 <template>
   <div class="dp-block">
-    <div class="block-header" @click="toggleCollapsed">
-      <span class="block-icon">{{ collapsed ? '▶' : '▼' }}</span>
-      <h3 class="block-name" :class="{ 'has-diff': hasDifferences }">BLOCO DP - DEMANDA POR PATAMAR</h3>
-    </div>
+    <ComparisonBlockHeader
+      :collapsed="collapsed"
+      :has-differences="hasDifferences"
+      title="BLOCO DP — DEMANDA POR PATAMAR"
+      @toggle="toggleCollapsed"
+    />
 
     <div v-show="!collapsed" class="block-content">
       <div class="comparison-tables">
@@ -14,17 +16,17 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th @click="sortBy('estagio')" class="sortable">
+                  <th @click="sortBy('estagio')" class="sortable" v-sortable-header>
                     {{ compareMode === 'estagio' ? 'Estágio' : 'Data' }}{{ getSortIcon('estagio') }}
                   </th>
-                  <th @click="sortBy('subsistema')" class="sortable">Sub{{ getSortIcon('subsistema') }}</th>
-                  <th @click="sortBy('numero_patamares')" class="sortable">Pat{{ getSortIcon('numero_patamares') }}</th>
-                  <th @click="sortBy('carga_pesada')" class="sortable">Pesada{{ getSortIcon('carga_pesada') }}</th>
-                  <th @click="sortBy('horas_pesada')" class="sortable">h Pes.{{ getSortIcon('horas_pesada') }}</th>
-                  <th @click="sortBy('carga_media')" class="sortable">Média{{ getSortIcon('carga_media') }}</th>
-                  <th @click="sortBy('horas_media')" class="sortable">h Méd.{{ getSortIcon('horas_media') }}</th>
-                  <th @click="sortBy('carga_leve')" class="sortable">Leve{{ getSortIcon('carga_leve') }}</th>
-                  <th @click="sortBy('horas_leve')" class="sortable">h Lev.{{ getSortIcon('horas_leve') }}</th>
+                  <th @click="sortBy('subsistema')" class="sortable" v-sortable-header>Sub{{ getSortIcon('subsistema') }}</th>
+                  <th @click="sortBy('numero_patamares')" class="sortable" v-sortable-header>Pat{{ getSortIcon('numero_patamares') }}</th>
+                  <th @click="sortBy('carga_pesada')" class="sortable" v-sortable-header>Pesada{{ getSortIcon('carga_pesada') }}</th>
+                  <th @click="sortBy('horas_pesada')" class="sortable" v-sortable-header>h Pes.{{ getSortIcon('horas_pesada') }}</th>
+                  <th @click="sortBy('carga_media')" class="sortable" v-sortable-header>Média{{ getSortIcon('carga_media') }}</th>
+                  <th @click="sortBy('horas_media')" class="sortable" v-sortable-header>h Méd.{{ getSortIcon('horas_media') }}</th>
+                  <th @click="sortBy('carga_leve')" class="sortable" v-sortable-header>Leve{{ getSortIcon('carga_leve') }}</th>
+                  <th @click="sortBy('horas_leve')" class="sortable" v-sortable-header>h Lev.{{ getSortIcon('horas_leve') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -36,8 +38,8 @@
                     'highlighted': row.onlyInOne && row.sameTemporality
                   }"
                 >
-                  <td class="col-stage">{{ row.dadger1?.display || '-' }}</td>
-                  <td>{{ row.dadger1?.subsistema || '-' }}</td>
+                  <td class="col-stage">{{ row.dadger1?.display ?? '-' }}</td>
+                  <td>{{ row.dadger1?.subsistema ?? '-' }}</td>
                   <td :class="{ diff: row.diff_numero_patamares && !row.onlyInOne }">{{ row.dadger1?.numero_patamares ?? '-' }}</td>
                   <td :class="{ 'diff': row.diff_pesada && !row.onlyInOne }" class="col-number">
                     {{ formatNumber(row.dadger1?.carga_pesada) }}
@@ -70,17 +72,17 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th @click="sortBy('estagio')" class="sortable">
+                  <th @click="sortBy('estagio')" class="sortable" v-sortable-header>
                     {{ compareMode === 'estagio' ? 'Estágio' : 'Data' }}{{ getSortIcon('estagio') }}
                   </th>
-                  <th @click="sortBy('subsistema')" class="sortable">Sub{{ getSortIcon('subsistema') }}</th>
-                  <th @click="sortBy('numero_patamares')" class="sortable">Pat{{ getSortIcon('numero_patamares') }}</th>
-                  <th @click="sortBy('carga_pesada')" class="sortable">Pesada{{ getSortIcon('carga_pesada') }}</th>
-                  <th @click="sortBy('horas_pesada')" class="sortable">h Pes.{{ getSortIcon('horas_pesada') }}</th>
-                  <th @click="sortBy('carga_media')" class="sortable">Média{{ getSortIcon('carga_media') }}</th>
-                  <th @click="sortBy('horas_media')" class="sortable">h Méd.{{ getSortIcon('horas_media') }}</th>
-                  <th @click="sortBy('carga_leve')" class="sortable">Leve{{ getSortIcon('carga_leve') }}</th>
-                  <th @click="sortBy('horas_leve')" class="sortable">h Lev.{{ getSortIcon('horas_leve') }}</th>
+                  <th @click="sortBy('subsistema')" class="sortable" v-sortable-header>Sub{{ getSortIcon('subsistema') }}</th>
+                  <th @click="sortBy('numero_patamares')" class="sortable" v-sortable-header>Pat{{ getSortIcon('numero_patamares') }}</th>
+                  <th @click="sortBy('carga_pesada')" class="sortable" v-sortable-header>Pesada{{ getSortIcon('carga_pesada') }}</th>
+                  <th @click="sortBy('horas_pesada')" class="sortable" v-sortable-header>h Pes.{{ getSortIcon('horas_pesada') }}</th>
+                  <th @click="sortBy('carga_media')" class="sortable" v-sortable-header>Média{{ getSortIcon('carga_media') }}</th>
+                  <th @click="sortBy('horas_media')" class="sortable" v-sortable-header>h Méd.{{ getSortIcon('horas_media') }}</th>
+                  <th @click="sortBy('carga_leve')" class="sortable" v-sortable-header>Leve{{ getSortIcon('carga_leve') }}</th>
+                  <th @click="sortBy('horas_leve')" class="sortable" v-sortable-header>h Lev.{{ getSortIcon('horas_leve') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -92,8 +94,8 @@
                     'highlighted': row.onlyInOne && row.sameTemporality
                   }"
                 >
-                  <td class="col-stage">{{ row.dadger2?.display || '-' }}</td>
-                  <td>{{ row.dadger2?.subsistema || '-' }}</td>
+                  <td class="col-stage">{{ row.dadger2?.display ?? '-' }}</td>
+                  <td>{{ row.dadger2?.subsistema ?? '-' }}</td>
                   <td :class="{ diff: row.diff_numero_patamares && !row.onlyInOne }">{{ row.dadger2?.numero_patamares ?? '-' }}</td>
                   <td :class="{ 'diff': row.diff_pesada && !row.onlyInOne }" class="col-number">
                     {{ formatNumber(row.dadger2?.carga_pesada) }}
@@ -252,58 +254,27 @@ export default {
 </script>
 
 <style scoped>
-@import '../../styles/block-tables.css';
 
 .dp-block {
   margin: 8px;
-  border: 1px solid #00ff00;
-  background: #1e1e1e;
-}
-
-.block-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: #2d2d2d;
-  cursor: pointer;
-  user-select: none;
-  border-bottom: 1px solid #00ff00;
-}
-
-.block-header:hover {
-  background: #3d3d3d;
-}
-
-.block-icon {
-  color: #00ff00;
-  font-size: 12px;
-  font-family: monospace;
-}
-
-.block-name {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  color: #00ff00;
-  font-family: 'Courier New', monospace;
-  letter-spacing: 0.5px;
+  border: 1px solid var(--border);
+  background: var(--surface);
 }
 
 .block-content {
-  background: #1e1e1e;
+  background: var(--surface);
 }
 
 .comparison-tables {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4px;
-  background: #ffffff;
+  background: var(--border);
   overflow: hidden;
 }
 
 .table-side {
-  background: #1e1e1e;
+  background: var(--surface);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -311,19 +282,19 @@ export default {
 
 .table-title {
   padding: 8px 12px;
-  background: #2d2d2d;
+  background: var(--surface-elevated);
   margin: 0;
   font-size: 11px;
   font-weight: 700;
-  color: #00ff00;
-  border-bottom: 1px solid #00ff00;
-  font-family: 'Courier New', monospace;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
 }
 
 .table-container {
   max-height: 500px;
   overflow: auto;
-  background: #1e1e1e;
+  background: var(--surface);
 }
 
 /* Alinhar colunas numéricas à direita */

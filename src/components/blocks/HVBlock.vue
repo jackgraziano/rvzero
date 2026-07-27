@@ -1,9 +1,11 @@
 <template>
   <div class="hv-block">
-    <div class="block-header" @click="toggleCollapsed">
-      <span class="block-icon">{{ collapsed ? '▶' : '▼' }}</span>
-      <h3 class="block-name" :class="{ 'has-diff': hasDifferences }">BLOCO HV - RESTRIÇÕES DE ARMAZENAMENTO</h3>
-    </div>
+    <ComparisonBlockHeader
+      :collapsed="collapsed"
+      :has-differences="hasDifferences"
+      title="BLOCO HV — RESTRIÇÕES DE ARMAZENAMENTO"
+      @toggle="toggleCollapsed"
+    />
 
     <div v-show="!collapsed" class="block-content">
       <div class="comparison-tables">
@@ -14,13 +16,13 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th @click="sortBy('numero_restricao')" class="sortable">Nº Restr{{ getSortIcon('numero_restricao') }}</th>
+                  <th @click="sortBy('numero_restricao')" class="sortable" v-sortable-header>Nº Restr{{ getSortIcon('numero_restricao') }}</th>
                   <th
                     v-for="col in colunasTempo"
                     :key="`col1-${col.key}`"
                     @click="sortBy(col.key)"
                     class="sortable col-temporal"
-                  >
+                   v-sortable-header>
                     {{ col.label }}{{ getSortIcon(col.key) }}
                   </th>
                 </tr>
@@ -37,7 +39,7 @@
                     :class="{
                       'diff': row.valores[col.key]?.diff && row.valores[col.key]?.sameTemporality && !row.onlyInOne,
                       'highlighted': row.valores[col.key]?.dataExisteEmAmbos && !row.valores[col.key]?.sameTemporality,
-                      'faded': !row.valores[col.key]?.dataExisteEmAmbos && !row.valores[col.key]?.sameTemporality
+                      'faded': !row.valores[col.key]?.dataExisteEmAmbos
                     }"
                     class="col-temporal"
                   >
@@ -48,7 +50,7 @@
                         <div class="limite-row">Sup: {{ formatLimite(row.valores[col.key].valor1.limites.limite_superior) }}</div>
                       </div>
                       <div class="coeficientes-section">
-                        <div v-if="row.valores[col.key].valor1.coeficientes?.length" class="coef-count">Coef: {{ formatItems(row.valores[col.key].valor1.coeficientes) }}</div>
+                        <RestrictionCoefficients :coefficients="row.valores[col.key].valor1.coeficientes" />
                       </div>
                     </div>
                     <div v-else class="restricao-details restricao-empty">
@@ -75,13 +77,13 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th @click="sortBy('numero_restricao')" class="sortable">Nº Restr{{ getSortIcon('numero_restricao') }}</th>
+                  <th @click="sortBy('numero_restricao')" class="sortable" v-sortable-header>Nº Restr{{ getSortIcon('numero_restricao') }}</th>
                   <th
                     v-for="col in colunasTempo"
                     :key="`col2-${col.key}`"
                     @click="sortBy(col.key)"
                     class="sortable col-temporal"
-                  >
+                   v-sortable-header>
                     {{ col.label }}{{ getSortIcon(col.key) }}
                   </th>
                 </tr>
@@ -98,7 +100,7 @@
                     :class="{
                       'diff': row.valores[col.key]?.diff && row.valores[col.key]?.sameTemporality && !row.onlyInOne,
                       'highlighted': row.valores[col.key]?.dataExisteEmAmbos && !row.valores[col.key]?.sameTemporality,
-                      'faded': !row.valores[col.key]?.dataExisteEmAmbos && !row.valores[col.key]?.sameTemporality
+                      'faded': !row.valores[col.key]?.dataExisteEmAmbos
                     }"
                     class="col-temporal"
                   >
@@ -109,7 +111,7 @@
                         <div class="limite-row">Sup: {{ formatLimite(row.valores[col.key].valor2.limites.limite_superior) }}</div>
                       </div>
                       <div class="coeficientes-section">
-                        <div v-if="row.valores[col.key].valor2.coeficientes?.length" class="coef-count">Coef: {{ formatItems(row.valores[col.key].valor2.coeficientes) }}</div>
+                        <RestrictionCoefficients :coefficients="row.valores[col.key].valor2.coeficientes" />
                       </div>
                     </div>
                     <div v-else class="restricao-details restricao-empty">
@@ -137,9 +139,11 @@
 import { formatLimite, semanticEqual } from '../../utils/comparison.js'
 import { useBlockComparison } from '../../composables/useBlockComparison.js'
 import { useEntityTemporalComparison } from '../../composables/useEntityTemporalComparison.js'
+import RestrictionCoefficients from '../RestrictionCoefficients.vue'
 
 export default {
   name: 'HVBlock',
+  components: { RestrictionCoefficients },
   props: {
     dadger1Data: { type: Object, required: true },
     dadger1Name: { type: String, required: true },
@@ -149,10 +153,6 @@ export default {
     showOnlyDifferences: { type: Boolean, required: true }
   },
   setup(props) {
-    const formatItems = items => items.map(item => Object.entries(item)
-      .filter(([key, value]) => key !== 'estagio' && value != null)
-      .map(([key, value]) => `${key}=${value}`)
-      .join(' ')).join('; ')
     // Função para extrair valor completo da restrição
     const getEntityValue = (registro) => {
       if (!registro) return null
@@ -201,7 +201,6 @@ export default {
       onScroll1,
       onScroll2,
       formatLimite,
-      formatItems,
       colunasTempo,
       filteredData,
       hasDifferences
@@ -211,58 +210,27 @@ export default {
 </script>
 
 <style scoped>
-@import '../../styles/block-tables.css';
 
 .hv-block {
   margin: 8px;
-  border: 1px solid #00ff00;
-  background: #1e1e1e;
-}
-
-.block-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: #2d2d2d;
-  cursor: pointer;
-  user-select: none;
-  border-bottom: 1px solid #00ff00;
-}
-
-.block-header:hover {
-  background: #3d3d3d;
-}
-
-.block-icon {
-  color: #00ff00;
-  font-size: 12px;
-  font-family: monospace;
-}
-
-.block-name {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  color: #00ff00;
-  font-family: 'Courier New', monospace;
-  letter-spacing: 0.5px;
+  border: 1px solid var(--border);
+  background: var(--surface);
 }
 
 .block-content {
-  background: #1e1e1e;
+  background: var(--surface);
 }
 
 .comparison-tables {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4px;
-  background: #ffffff;
+  background: var(--border);
   overflow: hidden;
 }
 
 .table-side {
-  background: #1e1e1e;
+  background: var(--surface);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -270,24 +238,24 @@ export default {
 
 .table-title {
   padding: 8px 12px;
-  background: #2d2d2d;
+  background: var(--surface-elevated);
   margin: 0;
   font-size: 11px;
   font-weight: 700;
-  color: #00ff00;
-  border-bottom: 1px solid #00ff00;
-  font-family: 'Courier New', monospace;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
 }
 
 .table-container {
   max-height: 500px;
   overflow: auto;
-  background: #1e1e1e;
+  background: var(--surface);
 }
 
 .col-restricao {
   font-weight: 700;
-  color: #00ff00;
+  color: var(--accent);
   min-width: 80px;
 }
 
@@ -316,12 +284,12 @@ export default {
 .limites-section strong {
   display: block;
   margin-bottom: 2px;
-  color: #00ff00;
+  color: var(--accent);
 }
 
 .limite-row {
-  font-family: 'Courier New', monospace;
-  color: #cccccc;
+  font-family: var(--font-mono);
+  color: var(--muted);
   height: 14px;
 }
 
@@ -332,9 +300,4 @@ export default {
   min-height: 20px;
 }
 
-.coef-count {
-  font-family: 'Courier New', monospace;
-  color: #00ccff;
-  font-size: 9px;
-}
 </style>

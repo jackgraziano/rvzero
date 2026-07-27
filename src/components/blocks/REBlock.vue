@@ -1,137 +1,74 @@
 <template>
-  <div class="re-block">
-    <div class="block-header" @click="toggleCollapsed">
-      <span class="block-icon">{{ collapsed ? '▶' : '▼' }}</span>
-      <h3 class="block-name" :class="{ 'has-diff': hasDifferences }">BLOCO RE - RESTRIÇÕES ELÉTRICAS</h3>
-    </div>
+  <section class="re-block">
+    <ComparisonBlockHeader
+      :collapsed="collapsed"
+      :has-differences="hasDifferences"
+      title="BLOCO RE — RESTRIÇÕES ELÉTRICAS"
+      @toggle="toggleCollapsed"
+    />
 
     <div v-show="!collapsed" class="block-content">
-      <div class="comparison-tables">
-        <!-- Tabela Dadger 1 -->
-        <div class="table-side">
-          <h4 class="table-title">{{ dadger1Name }}</h4>
-          <div class="table-container" :ref="el => tableContainer1 = el" @scroll="onScroll1">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th @click="sortBy('numero_restricao')" class="sortable">Nº Restr{{ getSortIcon('numero_restricao') }}</th>
-                  <th
-                    v-for="col in colunasTempo"
-                    :key="`col1-${col.key}`"
-                    @click="sortBy(col.key)"
-                    class="sortable col-temporal"
-                  >
-                    {{ col.label }}{{ getSortIcon(col.key) }}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="row in filteredData"
-                  :key="`d1-${row.key}`"
-                >
-                  <td class="col-restricao" :class="{ highlighted: row.onlyInOne }">{{ row.numero_restricao }}</td>
-                  <td
-                    v-for="col in colunasTempo"
-                    :key="`v1-${col.key}`"
-                    :class="{
-                      'diff': row.valores[col.key]?.diff && row.valores[col.key]?.sameTemporality && !row.onlyInOne,
-                      'highlighted': row.valores[col.key]?.dataExisteEmAmbos && !row.valores[col.key]?.sameTemporality,
-                      'faded': !row.valores[col.key]?.dataExisteEmAmbos && !row.valores[col.key]?.sameTemporality
-                    }"
-                    class="col-temporal"
-                  >
-                    <div v-if="row.valores[col.key]?.valor1" class="restricao-details">
-                      <div class="limites-section" v-if="row.valores[col.key].valor1.limites">
-                        <strong>Limites:</strong>
-                        <div class="limite-row">P: {{ formatLimite(row.valores[col.key].valor1.limites.pesado_min) }} - {{ formatLimite(row.valores[col.key].valor1.limites.pesado_max) }}</div>
-                        <div class="limite-row">M: {{ formatLimite(row.valores[col.key].valor1.limites.medio_min) }} - {{ formatLimite(row.valores[col.key].valor1.limites.medio_max) }}</div>
-                        <div class="limite-row">L: {{ formatLimite(row.valores[col.key].valor1.limites.leve_min) }} - {{ formatLimite(row.valores[col.key].valor1.limites.leve_max) }}</div>
-                      </div>
-                      <div class="fatores-section">
-                        <div v-if="row.valores[col.key].valor1.fatores_uh?.length" class="fator-count">UH: {{ formatItems(row.valores[col.key].valor1.fatores_uh) }}</div>
-                        <div v-if="row.valores[col.key].valor1.fatores_ut?.length" class="fator-count">UT: {{ formatItems(row.valores[col.key].valor1.fatores_ut) }}</div>
-                        <div v-if="row.valores[col.key].valor1.fatores_interligacao?.length" class="fator-count">Int: {{ formatItems(row.valores[col.key].valor1.fatores_interligacao) }}</div>
-                        <div v-if="row.valores[col.key].valor1.fatores_contrato?.length" class="fator-count">Cont: {{ formatItems(row.valores[col.key].valor1.fatores_contrato) }}</div>
-                      </div>
-                    </div>
-                    <div v-else class="restricao-details restricao-empty">
-                      <div class="limites-section">
-                        <strong>Limites:</strong>
-                        <div class="limite-row">-</div>
-                        <div class="limite-row">-</div>
-                        <div class="limite-row">-</div>
-                      </div>
-                      <div class="fatores-section">
-                        <span>-</span>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+      <div v-if="filteredData.length === 0" class="block-empty">
+        Nenhuma diferença comparável neste bloco.
+      </div>
 
-        <!-- Tabela Dadger 2 -->
-        <div class="table-side">
-          <h4 class="table-title">{{ dadger2Name }}</h4>
-          <div class="table-container" :ref="el => tableContainer2 = el" @scroll="onScroll2">
-            <table class="data-table">
+      <div v-else class="comparison-tables restriction-comparison">
+        <div v-for="side in [1, 2]" :key="side" class="table-side">
+          <h4 class="table-title">{{ side === 1 ? dadger1Name : dadger2Name }}</h4>
+          <div
+            :ref="element => setTableContainer(side, element)"
+            class="table-container"
+            @scroll="side === 1 ? onScroll1($event) : onScroll2($event)"
+          >
+            <table class="data-table restriction-table">
               <thead>
                 <tr>
-                  <th @click="sortBy('numero_restricao')" class="sortable">Nº Restr{{ getSortIcon('numero_restricao') }}</th>
-                  <th
-                    v-for="col in colunasTempo"
-                    :key="`col2-${col.key}`"
-                    @click="sortBy(col.key)"
-                    class="sortable col-temporal"
-                  >
-                    {{ col.label }}{{ getSortIcon(col.key) }}
+                  <th class="sortable col-restricao" @click="sortBy('numero_restricao')" v-sortable-header>
+                    Restrição{{ getSortIcon('numero_restricao') }}
                   </th>
+                  <th class="sortable col-periodo" @click="sortBy('timeOrder')" v-sortable-header>
+                    {{ compareMode === 'data' ? 'Período' : 'Estágio' }}{{ getSortIcon('timeOrder') }}
+                  </th>
+                  <th class="col-limites">Limites (MW)</th>
+                  <th class="col-fatores">Composição</th>
                 </tr>
               </thead>
               <tbody>
                 <tr
                   v-for="row in filteredData"
-                  :key="`d2-${row.key}`"
+                  :key="`${side}-${row.key}`"
+                  :class="{
+                    faded: !row.sameTemporality,
+                    highlighted: row.onlyInOne && row.sameTemporality
+                  }"
                 >
-                  <td class="col-restricao" :class="{ highlighted: row.onlyInOne }">{{ row.numero_restricao }}</td>
+                  <td class="restriction-id">RE {{ row.numero_restricao }}</td>
+                  <td class="period-cell">
+                    <strong>{{ row.timeLabel }}</strong>
+                    <span v-if="compareMode === 'data' && recordFor(row, side)">
+                      Estágio {{ recordFor(row, side).estagio }}
+                    </span>
+                  </td>
                   <td
-                    v-for="col in colunasTempo"
-                    :key="`v2-${col.key}`"
-                    :class="{
-                      'diff': row.valores[col.key]?.diff && row.valores[col.key]?.sameTemporality && !row.onlyInOne,
-                      'highlighted': row.valores[col.key]?.dataExisteEmAmbos && !row.valores[col.key]?.sameTemporality,
-                      'faded': !row.valores[col.key]?.dataExisteEmAmbos && !row.valores[col.key]?.sameTemporality
-                    }"
-                    class="col-temporal"
+                    class="limits-cell"
+                    :class="{ diff: row.limitsDiff && !row.onlyInOne }"
                   >
-                    <div v-if="row.valores[col.key]?.valor2" class="restricao-details">
-                      <div class="limites-section" v-if="row.valores[col.key].valor2.limites">
-                        <strong>Limites:</strong>
-                        <div class="limite-row">P: {{ formatLimite(row.valores[col.key].valor2.limites.pesado_min) }} - {{ formatLimite(row.valores[col.key].valor2.limites.pesado_max) }}</div>
-                        <div class="limite-row">M: {{ formatLimite(row.valores[col.key].valor2.limites.medio_min) }} - {{ formatLimite(row.valores[col.key].valor2.limites.medio_max) }}</div>
-                        <div class="limite-row">L: {{ formatLimite(row.valores[col.key].valor2.limites.leve_min) }} - {{ formatLimite(row.valores[col.key].valor2.limites.leve_max) }}</div>
-                      </div>
-                      <div class="fatores-section">
-                        <div v-if="row.valores[col.key].valor2.fatores_uh?.length" class="fator-count">UH: {{ formatItems(row.valores[col.key].valor2.fatores_uh) }}</div>
-                        <div v-if="row.valores[col.key].valor2.fatores_ut?.length" class="fator-count">UT: {{ formatItems(row.valores[col.key].valor2.fatores_ut) }}</div>
-                        <div v-if="row.valores[col.key].valor2.fatores_interligacao?.length" class="fator-count">Int: {{ formatItems(row.valores[col.key].valor2.fatores_interligacao) }}</div>
-                        <div v-if="row.valores[col.key].valor2.fatores_contrato?.length" class="fator-count">Cont: {{ formatItems(row.valores[col.key].valor2.fatores_contrato) }}</div>
-                      </div>
+                    <div v-if="recordFor(row, side)?.limites" class="limits-grid">
+                      <template v-for="level in loadLevels" :key="level.key">
+                        <span class="level-label" :title="level.label">{{ level.short }}</span>
+                        <span>{{ formatRange(
+                          recordFor(row, side).limites[`${level.key}_min`],
+                          recordFor(row, side).limites[`${level.key}_max`]
+                        ) }}</span>
+                      </template>
                     </div>
-                    <div v-else class="restricao-details restricao-empty">
-                      <div class="limites-section">
-                        <strong>Limites:</strong>
-                        <div class="limite-row">-</div>
-                        <div class="limite-row">-</div>
-                        <div class="limite-row">-</div>
-                      </div>
-                      <div class="fatores-section">
-                        <span>-</span>
-                      </div>
-                    </div>
+                    <span v-else class="empty-value">—</span>
+                  </td>
+                  <td
+                    class="factors-cell"
+                    :class="{ diff: row.factorsDiff && !row.onlyInOne }"
+                  >
+                    <RestrictionFactors :restriction="recordFor(row, side)" />
                   </td>
                 </tr>
               </tbody>
@@ -140,16 +77,29 @@
         </div>
       </div>
     </div>
-  </div>
+  </section>
 </template>
 
 <script>
-import { formatLimite, semanticEqual } from '../../utils/comparison.js'
+import { computed } from 'vue'
+import RestrictionFactors from '../RestrictionFactors.vue'
+import {
+  formatRange,
+  semanticEqual
+} from '../../utils/comparison.js'
 import { useBlockComparison } from '../../composables/useBlockComparison.js'
 import { useEntityTemporalComparison } from '../../composables/useEntityTemporalComparison.js'
 
+const FACTOR_FIELDS = [
+  'fatores_uh',
+  'fatores_ut',
+  'fatores_interligacao',
+  'fatores_contrato'
+]
+
 export default {
   name: 'REBlock',
+  components: { RestrictionFactors },
   props: {
     dadger1Data: { type: Object, required: true },
     dadger1Name: { type: String, required: true },
@@ -159,195 +109,174 @@ export default {
     showOnlyDifferences: { type: Boolean, required: true }
   },
   setup(props) {
-    const formatItems = items => items.map(item => Object.entries(item)
-      .filter(([key, value]) => key !== 'estagio' && value != null)
-      .map(([key, value]) => `${key}=${value}`)
-      .join(' ')).join('; ')
-    // Função para extrair valor completo da restrição
-    const getEntityValue = (registro) => {
-      if (!registro) return null
-      return {
-        limites: registro.limites,
-        fatores_uh: registro.fatores_uh,
-        fatores_ut: registro.fatores_ut,
-        fatores_interligacao: registro.fatores_interligacao,
-        fatores_contrato: registro.fatores_contrato
-      }
-    }
+    const getEntityValue = record => record
+      ? {
+          estagio: record.estagio,
+          limites: record.limites,
+          ...Object.fromEntries(FACTOR_FIELDS.map(field => [field, record[field]]))
+        }
+      : null
 
-    // Função para comparar restrições completas
-    const compareValues = (val1, val2) => !semanticEqual(val1, val2)
-
-    // Usar composable de comparação entidade × tempo
     const { colunasTempo, alignedData } = useEntityTemporalComparison(
       props,
-      'RE',                  // blockKey
-      'numero_restricao',    // entityKey
-      getEntityValue,        // função para extrair valor
-      compareValues          // função para comparar valores
+      'RE',
+      'numero_restricao',
+      getEntityValue,
+      (first, second) => !semanticEqual(first, second)
     )
 
-    // Usar composable para lógica comum
-    const {
-      collapsed,
-      tableContainer1,
-      tableContainer2,
-      toggleCollapsed,
-      sortBy,
-      getSortIcon,
-      onScroll1,
-      onScroll2,
-      createFilteredData,
-      hasDifferences
-    } = useBlockComparison(props, alignedData)
+    const displayData = computed(() => alignedData.value.flatMap(entity =>
+      colunasTempo.value.flatMap((column, timeOrder) => {
+        const temporal = entity.valores[column.key]
+        const first = temporal?.valor1 ?? null
+        const second = temporal?.valor2 ?? null
+        if (!first && !second) return []
 
-    // Criar filteredData com campo de diferença
-    const filteredData = createFilteredData()
+        const onlyInOne = !first || !second
+        const limitsDiff = Boolean(
+          first && second && !semanticEqual(first.limites, second.limites)
+        )
+        const factorsDiff = Boolean(first && second && FACTOR_FIELDS.some(
+          field => !semanticEqual(first[field], second[field])
+        ))
+        const sameTemporality = temporal.dataExisteEmAmbos
+
+        return [{
+          key: `${entity.numero_restricao}-${column.key}`,
+          numero_restricao: entity.numero_restricao,
+          timeLabel: column.label,
+          timeOrder,
+          dadger1: first,
+          dadger2: second,
+          limitsDiff,
+          factorsDiff,
+          onlyInOne,
+          sameTemporality,
+          has_diff: sameTemporality && (onlyInOne || limitsDiff || factorsDiff)
+        }]
+      })
+    ))
+
+    const comparison = useBlockComparison(props, displayData)
+    const filteredData = comparison.createFilteredData()
+    const setTableContainer = (side, element) => {
+      if (side === 1) comparison.tableContainer1.value = element
+      else comparison.tableContainer2.value = element
+    }
+    const recordFor = (row, side) => side === 1 ? row.dadger1 : row.dadger2
+    const loadLevels = [
+      { key: 'pesado', short: 'P', label: 'Patamar pesado' },
+      { key: 'medio', short: 'M', label: 'Patamar médio' },
+      { key: 'leve', short: 'L', label: 'Patamar leve' }
+    ]
 
     return {
-      collapsed,
-      tableContainer1,
-      tableContainer2,
-      toggleCollapsed,
-      sortBy,
-      getSortIcon,
-      onScroll1,
-      onScroll2,
-      formatLimite,
-      formatItems,
-      colunasTempo,
+      ...comparison,
       filteredData,
-      hasDifferences
+      formatRange,
+      loadLevels,
+      recordFor,
+      setTableContainer
     }
   }
 }
 </script>
 
 <style scoped>
-@import '../../styles/block-tables.css';
 
 .re-block {
   margin: 8px;
-  border: 1px solid #00ff00;
-  background: #1e1e1e;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
 }
 
-.block-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: #2d2d2d;
-  cursor: pointer;
-  user-select: none;
-  border-bottom: 1px solid #00ff00;
+.restriction-comparison {
+  grid-template-columns: repeat(2, minmax(560px, 1fr));
 }
 
-.block-header:hover {
-  background: #3d3d3d;
+.restriction-table {
+  table-layout: auto;
 }
 
-.block-icon {
-  color: #00ff00;
-  font-size: 12px;
-  font-family: monospace;
+.restriction-table th {
+  vertical-align: middle;
 }
 
-.block-name {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  color: #00ff00;
-  font-family: 'Courier New', monospace;
-  letter-spacing: 0.5px;
+.restriction-table td {
+  vertical-align: top;
 }
 
-.block-content {
-  background: #1e1e1e;
+.col-restricao,
+.restriction-id {
+  width: 86px;
+  min-width: 86px;
 }
 
-.comparison-tables {
+.restriction-id {
+  color: var(--accent);
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.col-periodo,
+.period-cell {
+  width: 108px;
+  min-width: 108px;
+}
+
+.period-cell strong,
+.period-cell span {
+  display: block;
+}
+
+.period-cell strong {
+  color: var(--text);
+  font: 650 10px/1.35 var(--font-mono);
+  white-space: nowrap;
+}
+
+.period-cell span {
+  margin-top: 3px;
+  color: var(--muted);
+  font: 500 9px/1.3 var(--font-ui);
+}
+
+.col-limites,
+.limits-cell {
+  width: 150px;
+  min-width: 150px;
+}
+
+.limits-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  background: #ffffff;
-  overflow: hidden;
+  grid-template-columns: 18px minmax(104px, 1fr);
+  gap: 3px 7px;
+  align-items: baseline;
+  white-space: nowrap;
 }
 
-.table-side {
-  background: #1e1e1e;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+.level-label {
+  color: var(--muted);
+  font: 700 9px/1.4 var(--font-ui);
 }
 
-.table-title {
-  padding: 8px 12px;
-  background: #2d2d2d;
-  margin: 0;
-  font-size: 11px;
-  font-weight: 700;
-  color: #00ff00;
-  border-bottom: 1px solid #00ff00;
-  font-family: 'Courier New', monospace;
+.limits-grid span:not(.level-label) {
+  color: var(--text);
+  font: 500 10px/1.4 var(--font-mono);
+}
+
+.col-fatores,
+.factors-cell {
+  min-width: 250px;
 }
 
 .table-container {
-  max-height: 500px;
-  overflow: auto;
-  background: #1e1e1e;
+  max-height: min(64vh, 680px);
 }
 
-.col-restricao {
-  font-weight: 700;
-  color: #00ff00;
-  min-width: 80px;
-}
-
-.col-temporal {
-  min-width: 150px;
-  max-width: 200px;
-}
-
-.restricao-details {
-  font-size: 10px;
-  line-height: 1.4;
-  min-height: 85px;
-  display: flex;
-  flex-direction: column;
-}
-
-.restricao-empty {
-  opacity: 0.3;
-}
-
-.limites-section {
-  margin-bottom: 4px;
-  min-height: 60px;
-}
-
-.limites-section strong {
-  display: block;
-  margin-bottom: 2px;
-  color: #00ff00;
-}
-
-.limite-row {
-  font-family: 'Courier New', monospace;
-  color: #cccccc;
-  height: 14px;
-}
-
-.fatores-section {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  min-height: 20px;
-}
-
-.fator-count {
-  font-family: 'Courier New', monospace;
-  color: #00ccff;
-  font-size: 9px;
+.empty-value {
+  color: var(--muted);
 }
 </style>

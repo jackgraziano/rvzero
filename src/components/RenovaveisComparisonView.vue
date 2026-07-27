@@ -1,6 +1,13 @@
 <template>
   <div class="renovaveis-comparison">
-    <h2 class="main-title">Comparação de Renováveis</h2>
+    <header class="renewables-header">
+      <span>Resultado da comparação</span>
+      <h2>Geração renovável</h2>
+      <p>
+        Valores agregados por submercado, período e patamar.
+        {{ showOnlyDifferences ? 'Somente diferenças estão visíveis.' : 'Todos os registros estão visíveis.' }}
+      </p>
+    </header>
 
     <RenovaveisGeracaoBlock
       :renovaveis1Data="renovaveis1Data"
@@ -32,22 +39,35 @@ export default {
 
 <style scoped>
 .renovaveis-comparison {
-  height: 100%;
-  overflow-y: auto;
-  padding: 16px;
-  background: #0a0a0a;
+  overflow: hidden;
+  padding: 4px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 10px;
 }
 
-.main-title {
-  color: #00ff00;
-  font-family: 'Courier New', monospace;
-  font-size: 18px;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 20px;
-  padding: 12px;
-  background: #1e1e1e;
-  border: 2px solid #00ff00;
-  border-radius: 4px;
+.renewables-header {
+  padding: 18px;
+  background: var(--surface-elevated);
+  border-bottom: 1px solid var(--border);
+}
+
+.renewables-header span {
+  color: var(--accent);
+  font: 750 9px/1.2 var(--font-ui);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.renewables-header h2 {
+  margin: 6px 0 4px;
+  color: var(--text);
+  font: 700 18px/1.25 var(--font-ui);
+}
+
+.renewables-header p {
+  margin: 0;
+  color: var(--muted);
+  font: 500 11px/1.5 var(--font-ui);
 }
 </style>

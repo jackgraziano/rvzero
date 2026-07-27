@@ -1,15 +1,21 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { computed } from 'vue'
 
 import {
   alignByData,
   alignSequences,
+  formatRange,
   hasDiff,
   semanticEqual
 } from '../src/utils/comparison.js'
 import { buildStageCalendar } from '../src/utils/temporal.js'
 import { useTemporalComparison } from '../src/composables/useTemporalComparison.js'
-import { rowHasDifferences } from '../src/composables/useBlockComparison.js'
+import { useEntityTemporalComparison } from '../src/composables/useEntityTemporalComparison.js'
+import {
+  rowHasDifferences,
+  useBlockComparison
+} from '../src/composables/useBlockComparison.js'
 
 function deck(baseDate, dates, block = []) {
   return {
@@ -122,10 +128,58 @@ test('arrays temporais só contam diferenças no horizonte comparável', () => {
   )
 })
 
+test('entidade temporal ausente nos dois decks não é marcada como diferença', () => {
+  const first = deck('18/07/2026', {
+    1: '18/07/2026',
+    2: '25/07/2026',
+    3: '01/08/2026'
+  })
+  const second = deck('25/07/2026', {
+    1: '25/07/2026',
+    2: '01/08/2026'
+  })
+  first.HV = [
+    { numero_restricao: 20, estagio: 1, limite: 1571.91 },
+    { numero_restricao: 20, estagio: 2, limite: 1571.91 }
+  ]
+  second.HV = [
+    { numero_restricao: 20, estagio: 1, limite: 1571.91 }
+  ]
+
+  const { alignedData } = useEntityTemporalComparison(
+    {
+      dadger1Data: first,
+      dadger2Data: second,
+      compareMode: 'data'
+    },
+    'HV',
+    'numero_restricao',
+    record => record.limite,
+    (left, right) => left !== right
+  )
+  const restriction = alignedData.value[0]
+
+  assert.equal(restriction.has_diff, false)
+  assert.deepEqual(restriction.valores['data_01/08/2026'], {
+    valor1: null,
+    valor2: null,
+    diff: false,
+    sameTemporality: true,
+    dataExisteEmAmbos: true
+  })
+})
+
 test('comparação trata null e undefined como ausentes equivalentes', () => {
   assert.equal(hasDiff(null, undefined), false)
   assert.equal(hasDiff(0, null), true)
   assert.equal(hasDiff(0, 0), false)
+})
+
+test('intervalos exibem limites unilaterais sem placeholders ambíguos', () => {
+  assert.equal(formatRange(null, 200), '≤ 200,0')
+  assert.equal(formatRange(50, null), '≥ 50,0')
+  assert.equal(formatRange(50, 200), '50,0 – 200,0')
+  assert.equal(formatRange(null, null), '-')
 })
 
 test('registro estático presente em apenas um arquivo é diferença', () => {
@@ -133,6 +187,22 @@ test('registro estático presente em apenas um arquivo é diferença', () => {
   assert.equal(
     rowHasDifferences({ onlyInOne: true, sameTemporality: false }),
     false
+  )
+})
+
+test('ordenação aceita valores estruturados de restrições', () => {
+  const comparison = useBlockComparison(
+    { showOnlyDifferences: false },
+    computed(() => [
+      { key: 'second', period: { limite: 20, fatores: [1] } },
+      { key: 'first', period: { limite: 10, fatores: [1] } }
+    ])
+  )
+
+  comparison.sortBy('period')
+  assert.deepEqual(
+    comparison.sortedData.value.map(row => row.key),
+    ['first', 'second']
   )
 })
 

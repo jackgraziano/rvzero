@@ -1,9 +1,11 @@
 <template>
   <div class="stage-array-block">
-    <div class="block-header" @click="toggleCollapsed">
-      <span class="block-icon">{{ collapsed ? '▶' : '▼' }}</span>
-      <h3 class="block-name" :class="{ 'has-diff': hasDifferences }">{{ title }}</h3>
-    </div>
+    <ComparisonBlockHeader
+      :collapsed="collapsed"
+      :has-differences="hasDifferences"
+      :title="title"
+      @toggle="toggleCollapsed"
+    />
 
     <div v-show="!collapsed" class="block-content">
       <div class="comparison-tables">
@@ -17,7 +19,7 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th class="sortable" @click="sortBy(entityField)">
+                  <th class="sortable" @click="sortBy(entityField)" v-sortable-header>
                     {{ entityLabel }}{{ getSortIcon(entityField) }}
                   </th>
                   <th
@@ -25,7 +27,7 @@
                     :key="`${side}-${column.key}`"
                     class="sortable"
                     @click="sortBy(column.key)"
-                  >
+                   v-sortable-header>
                     {{ column.label }}{{ getSortIcon(column.key) }}
                   </th>
                 </tr>
@@ -130,53 +132,31 @@ export default {
 </script>
 
 <style scoped>
-@import '../../styles/block-tables.css';
 
 .stage-array-block {
   margin: 8px;
-  border: 1px solid #00ff00;
-  background: #1e1e1e;
-}
-
-.block-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: #2d2d2d;
-  cursor: pointer;
-  border-bottom: 1px solid #00ff00;
-}
-
-.block-icon,
-.block-name {
-  color: #00ff00;
-  font-family: 'Courier New', monospace;
-}
-
-.block-name {
-  margin: 0;
-  font-size: 13px;
+  border: 1px solid var(--border);
+  background: var(--surface);
 }
 
 .comparison-tables {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4px;
-  background: #fff;
+  background: var(--border);
 }
 
 .table-side {
   min-width: 0;
-  background: #1e1e1e;
+  background: var(--surface);
 }
 
 .table-title {
   margin: 0;
   padding: 8px 12px;
-  color: #00ff00;
-  background: #2d2d2d;
-  font: 700 11px 'Courier New', monospace;
+  color: var(--accent);
+  background: var(--surface-elevated);
+  font: 700 11px var(--font-mono);
 }
 
 .table-container {

@@ -59,10 +59,14 @@ export function useEntityTemporalComparison(
         const dataExisteEmAmbos = stage1 !== null && stage2 !== null
         const record1 = stage1 === null ? null : map1.get(stage1) ?? null
         const record2 = stage2 === null ? null : map2.get(stage2) ?? null
-        const sameTemporality = record1 !== null && record2 !== null
+        const bothPresent = record1 !== null && record2 !== null
+        const bothAbsent = record1 === null && record2 === null
+        const sameTemporality = bothPresent || bothAbsent
         const value1 = record1 ? getEntityValue(record1) : null
         const value2 = record2 ? getEntityValue(record2) : null
-        const diff = compareValues(value1, value2)
+        const diff = bothPresent
+          ? compareValues(value1, value2)
+          : !bothAbsent
 
         if (dataExisteEmAmbos) {
           hasCommonHorizon = true

@@ -1,9 +1,11 @@
 <template>
   <div class="uh-block">
-    <div class="block-header" @click="toggleCollapsed">
-      <span class="block-icon">{{ collapsed ? '▶' : '▼' }}</span>
-      <h3 class="block-name" :class="{ 'has-diff': hasDifferences }">BLOCO UH - USINAS HIDRÁULICAS</h3>
-    </div>
+    <ComparisonBlockHeader
+      :collapsed="collapsed"
+      :has-differences="hasDifferences"
+      title="BLOCO UH — USINAS HIDRÁULICAS"
+      @toggle="toggleCollapsed"
+    />
 
     <div v-show="!collapsed" class="block-content">
       <div class="comparison-tables">
@@ -14,16 +16,16 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th @click="sortBy('numero_usina')" class="sortable">Nº Usina{{ getSortIcon('numero_usina') }}</th>
-                  <th @click="sortBy('ree')" class="sortable">REE{{ getSortIcon('ree') }}</th>
-                  <th @click="sortBy('volume_armazenado_pct')" class="sortable">Vol. Arm. (%){{ getSortIcon('volume_armazenado_pct') }}</th>
-                  <th @click="sortBy('vazao_defluente_min')" class="sortable">Vaz. Def. Min{{ getSortIcon('vazao_defluente_min') }}</th>
-                  <th @click="sortBy('chave_evaporacao')" class="sortable">Evap{{ getSortIcon('chave_evaporacao') }}</th>
-                  <th @click="sortBy('estagio_producao')" class="sortable">Est. Prod{{ getSortIcon('estagio_producao') }}</th>
-                  <th @click="sortBy('volume_morto')" class="sortable">Vol. Morto{{ getSortIcon('volume_morto') }}</th>
-                  <th @click="sortBy('limite_vertimento')" class="sortable">Lim. Vert.{{ getSortIcon('limite_vertimento') }}</th>
-                  <th @click="sortBy('chave_balanco_patamar')" class="sortable">Bal. Pat{{ getSortIcon('chave_balanco_patamar') }}</th>
-                  <th @click="sortBy('status')" class="sortable">Status{{ getSortIcon('status') }}</th>
+                  <th @click="sortBy('numero_usina')" class="sortable" v-sortable-header>Nº Usina{{ getSortIcon('numero_usina') }}</th>
+                  <th @click="sortBy('ree')" class="sortable" v-sortable-header>REE{{ getSortIcon('ree') }}</th>
+                  <th @click="sortBy('volume_armazenado_pct')" class="sortable" v-sortable-header>Vol. Arm. (%){{ getSortIcon('volume_armazenado_pct') }}</th>
+                  <th @click="sortBy('vazao_defluente_min')" class="sortable" v-sortable-header>Vaz. Def. Min{{ getSortIcon('vazao_defluente_min') }}</th>
+                  <th @click="sortBy('chave_evaporacao')" class="sortable" v-sortable-header>Evap{{ getSortIcon('chave_evaporacao') }}</th>
+                  <th @click="sortBy('estagio_producao')" class="sortable" v-sortable-header>Est. Prod{{ getSortIcon('estagio_producao') }}</th>
+                  <th @click="sortBy('volume_morto')" class="sortable" v-sortable-header>Vol. Morto{{ getSortIcon('volume_morto') }}</th>
+                  <th @click="sortBy('limite_vertimento')" class="sortable" v-sortable-header>Lim. Vert.{{ getSortIcon('limite_vertimento') }}</th>
+                  <th @click="sortBy('chave_balanco_patamar')" class="sortable" v-sortable-header>Bal. Pat{{ getSortIcon('chave_balanco_patamar') }}</th>
+                  <th @click="sortBy('status')" class="sortable" v-sortable-header>Status{{ getSortIcon('status') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -72,16 +74,16 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th @click="sortBy('numero_usina')" class="sortable">Nº Usina{{ getSortIcon('numero_usina') }}</th>
-                  <th @click="sortBy('ree')" class="sortable">REE{{ getSortIcon('ree') }}</th>
-                  <th @click="sortBy('volume_armazenado_pct')" class="sortable">Vol. Arm. (%){{ getSortIcon('volume_armazenado_pct') }}</th>
-                  <th @click="sortBy('vazao_defluente_min')" class="sortable">Vaz. Def. Min{{ getSortIcon('vazao_defluente_min') }}</th>
-                  <th @click="sortBy('chave_evaporacao')" class="sortable">Evap{{ getSortIcon('chave_evaporacao') }}</th>
-                  <th @click="sortBy('estagio_producao')" class="sortable">Est. Prod{{ getSortIcon('estagio_producao') }}</th>
-                  <th @click="sortBy('volume_morto')" class="sortable">Vol. Morto{{ getSortIcon('volume_morto') }}</th>
-                  <th @click="sortBy('limite_vertimento')" class="sortable">Lim. Vert.{{ getSortIcon('limite_vertimento') }}</th>
-                  <th @click="sortBy('chave_balanco_patamar')" class="sortable">Bal. Pat{{ getSortIcon('chave_balanco_patamar') }}</th>
-                  <th @click="sortBy('status')" class="sortable">Status{{ getSortIcon('status') }}</th>
+                  <th @click="sortBy('numero_usina')" class="sortable" v-sortable-header>Nº Usina{{ getSortIcon('numero_usina') }}</th>
+                  <th @click="sortBy('ree')" class="sortable" v-sortable-header>REE{{ getSortIcon('ree') }}</th>
+                  <th @click="sortBy('volume_armazenado_pct')" class="sortable" v-sortable-header>Vol. Arm. (%){{ getSortIcon('volume_armazenado_pct') }}</th>
+                  <th @click="sortBy('vazao_defluente_min')" class="sortable" v-sortable-header>Vaz. Def. Min{{ getSortIcon('vazao_defluente_min') }}</th>
+                  <th @click="sortBy('chave_evaporacao')" class="sortable" v-sortable-header>Evap{{ getSortIcon('chave_evaporacao') }}</th>
+                  <th @click="sortBy('estagio_producao')" class="sortable" v-sortable-header>Est. Prod{{ getSortIcon('estagio_producao') }}</th>
+                  <th @click="sortBy('volume_morto')" class="sortable" v-sortable-header>Vol. Morto{{ getSortIcon('volume_morto') }}</th>
+                  <th @click="sortBy('limite_vertimento')" class="sortable" v-sortable-header>Lim. Vert.{{ getSortIcon('limite_vertimento') }}</th>
+                  <th @click="sortBy('chave_balanco_patamar')" class="sortable" v-sortable-header>Bal. Pat{{ getSortIcon('chave_balanco_patamar') }}</th>
+                  <th @click="sortBy('status')" class="sortable" v-sortable-header>Status{{ getSortIcon('status') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -228,58 +230,27 @@ export default {
 </script>
 
 <style scoped>
-@import '../../styles/block-tables.css';
 
 .uh-block {
   margin: 8px;
-  border: 1px solid #00ff00;
-  background: #1e1e1e;
-}
-
-.block-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: #2d2d2d;
-  cursor: pointer;
-  user-select: none;
-  border-bottom: 1px solid #00ff00;
-}
-
-.block-header:hover {
-  background: #3d3d3d;
-}
-
-.block-icon {
-  color: #00ff00;
-  font-size: 12px;
-  font-family: monospace;
-}
-
-.block-name {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  color: #00ff00;
-  font-family: 'Courier New', monospace;
-  letter-spacing: 0.5px;
+  border: 1px solid var(--border);
+  background: var(--surface);
 }
 
 .block-content {
-  background: #1e1e1e;
+  background: var(--surface);
 }
 
 .comparison-tables {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4px;
-  background: #ffffff;
+  background: var(--border);
   overflow: hidden;
 }
 
 .table-side {
-  background: #1e1e1e;
+  background: var(--surface);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -287,24 +258,24 @@ export default {
 
 .table-title {
   padding: 8px 12px;
-  background: #2d2d2d;
+  background: var(--surface-elevated);
   margin: 0;
   font-size: 11px;
   font-weight: 700;
-  color: #00ff00;
-  border-bottom: 1px solid #00ff00;
-  font-family: 'Courier New', monospace;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
 }
 
 .table-container {
   max-height: 500px;
   overflow: auto;
-  background: #1e1e1e;
+  background: var(--surface);
 }
 
 .col-usina {
   font-weight: 700;
-  color: #00ff00;
+  color: var(--accent);
 }
 
 .col-center {

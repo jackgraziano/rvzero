@@ -133,7 +133,7 @@ export function parseDadger(fileContent) {
   result.HE = parseHE(lines)
 
   // Processar bloco AC (alteração de cadastro)
-  result.AC = parseAC(lines)
+  result.AC = parseAC(lines, result.info_dadger.estagios)
 
   // Vazão defluente mínima histórica (um valor por estágio)
   result.RQ = parseRQ(lines, numeroEstagios)

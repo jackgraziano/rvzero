@@ -127,6 +127,8 @@ Os parsers estruturados ficam em `src/utils/parsers`.
 ## Componentes Vue
 
 - `ComparisonView.vue` apenas orquestra blocos.
+- Use `ComparisonBlockHeader.vue` em todos os blocos. O cabeçalho precisa ser
+  acionável por teclado, expor `aria-expanded` e indicar se há alterações.
 - TI, MP, FD, VE e RQ usam `StageArrayBlock.vue`; não recrie componentes quase
   idênticos para esses formatos.
 - Reutilize:
@@ -139,6 +141,13 @@ Os parsers estruturados ficam em `src/utils/parsers`.
 - Células fora do horizonte compartilhado devem ser esmaecidas.
 - Toda propriedade analisada pelo parser deve ser comparada ou ter uma decisão
   explícita documentada para ser ignorada.
+- Não serialize objetos de domínio diretamente na interface. Para listas
+  extensas de fatores ou coeficientes, agrupe por tipo e contexto e use rótulos
+  de domínio, como faz `restrictionDisplay.js`.
+- Zero é um valor visível. Em templates, prefira `??` a `||` ao aplicar o
+  placeholder `-`.
+- Estados de erro de upload devem aparecer junto ao campo; não use `alert`.
+- Valide tabelas lado a lado em desktop e empilhadas abaixo de 900 px.
 
 ## Testes
 

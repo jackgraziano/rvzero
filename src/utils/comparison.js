@@ -52,7 +52,9 @@ export const formatLimite = formatNumber
 
 export function formatRange(minimum, maximum) {
   if (minimum == null && maximum == null) return '-'
-  return `${formatNumber(minimum)} - ${formatNumber(maximum)}`
+  if (minimum == null) return `≤ ${formatNumber(maximum)}`
+  if (maximum == null) return `≥ ${formatNumber(minimum)}`
+  return `${formatNumber(minimum)} – ${formatNumber(maximum)}`
 }
 
 export function collectUniqueValues(array1, array2, propertyOrSelector) {

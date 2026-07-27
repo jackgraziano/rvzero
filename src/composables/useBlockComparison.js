@@ -77,9 +77,9 @@ export function useBlockComparison(props, alignedDataComputed) {
   const onScroll1 = (event) => {
     if (isSyncing.value) return
     isSyncing.value = true
-    const scrollTop = event.target.scrollTop
     if (tableContainer2.value) {
-      tableContainer2.value.scrollTop = scrollTop
+      tableContainer2.value.scrollTop = event.target.scrollTop
+      tableContainer2.value.scrollLeft = event.target.scrollLeft
     }
     setTimeout(() => {
       isSyncing.value = false
@@ -89,9 +89,9 @@ export function useBlockComparison(props, alignedDataComputed) {
   const onScroll2 = (event) => {
     if (isSyncing.value) return
     isSyncing.value = true
-    const scrollTop = event.target.scrollTop
     if (tableContainer1.value) {
-      tableContainer1.value.scrollTop = scrollTop
+      tableContainer1.value.scrollTop = event.target.scrollTop
+      tableContainer1.value.scrollLeft = event.target.scrollLeft
     }
     setTimeout(() => {
       isSyncing.value = false
@@ -128,6 +128,9 @@ export function useBlockComparison(props, alignedDataComputed) {
           valA = a[sortColumn.value] ?? a.dadger1?.[sortColumn.value] ?? a.dadger2?.[sortColumn.value] ?? 0
           valB = b[sortColumn.value] ?? b.dadger1?.[sortColumn.value] ?? b.dadger2?.[sortColumn.value] ?? 0
       }
+
+      valA = toSortableValue(valA)
+      valB = toSortableValue(valB)
 
       // Comparar strings vs números
       let comparison = 0
@@ -178,4 +181,16 @@ export function useBlockComparison(props, alignedDataComputed) {
     createFilteredData,
     hasDifferences
   }
+}
+
+function toSortableValue(value) {
+  if (value == null) return ''
+  if (typeof value !== 'object') return value
+  if (Array.isArray(value)) {
+    return value.map(toSortableValue).join('\u0000')
+  }
+  return Object.entries(value)
+    .sort(([first], [second]) => first.localeCompare(second))
+    .map(([key, item]) => `${key}:${toSortableValue(item)}`)
+    .join('\u0000')
 }
