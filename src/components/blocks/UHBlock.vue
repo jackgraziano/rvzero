@@ -23,16 +23,20 @@
                   <th @click="sortBy('volume_morto')" class="sortable">Vol. Morto{{ getSortIcon('volume_morto') }}</th>
                   <th @click="sortBy('limite_vertimento')" class="sortable">Lim. Vert.{{ getSortIcon('limite_vertimento') }}</th>
                   <th @click="sortBy('chave_balanco_patamar')" class="sortable">Bal. Pat{{ getSortIcon('chave_balanco_patamar') }}</th>
+                  <th @click="sortBy('status')" class="sortable">Status{{ getSortIcon('status') }}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr
                   v-for="row in filteredData"
                   :key="`d1-${row.key}`"
-                  :class="{ 'highlighted': row.onlyInOne }"
+                  :class="{
+                    faded: !row.sameTemporality,
+                    highlighted: row.onlyInOne && row.sameTemporality
+                  }"
                 >
-                  <td class="col-usina">{{ row.dadger1?.numero_usina || '-' }}</td>
-                  <td>{{ row.dadger1?.ree || '-' }}</td>
+                  <td class="col-usina">{{ row.dadger1?.numero_usina ?? '-' }}</td>
+                  <td :class="{ diff: row.diff_ree && !row.onlyInOne }">{{ row.dadger1?.ree ?? '-' }}</td>
                   <td :class="{ 'diff': row.diff_volume_armazenado_pct && !row.onlyInOne }" class="col-number">
                     {{ formatNumber(row.dadger1?.volume_armazenado_pct) }}
                   </td>
@@ -54,6 +58,7 @@
                   <td class="col-center" :class="{ 'diff': row.diff_chave_balanco_patamar && !row.onlyInOne }">
                     {{ row.dadger1?.chave_balanco_patamar ?? '-' }}
                   </td>
+                  <td :class="{ diff: row.diff_status && !row.onlyInOne }">{{ row.dadger1?.status ?? '-' }}</td>
                 </tr>
               </tbody>
             </table>
@@ -76,16 +81,20 @@
                   <th @click="sortBy('volume_morto')" class="sortable">Vol. Morto{{ getSortIcon('volume_morto') }}</th>
                   <th @click="sortBy('limite_vertimento')" class="sortable">Lim. Vert.{{ getSortIcon('limite_vertimento') }}</th>
                   <th @click="sortBy('chave_balanco_patamar')" class="sortable">Bal. Pat{{ getSortIcon('chave_balanco_patamar') }}</th>
+                  <th @click="sortBy('status')" class="sortable">Status{{ getSortIcon('status') }}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr
                   v-for="row in filteredData"
                   :key="`d2-${row.key}`"
-                  :class="{ 'highlighted': row.onlyInOne }"
+                  :class="{
+                    faded: !row.sameTemporality,
+                    highlighted: row.onlyInOne && row.sameTemporality
+                  }"
                 >
-                  <td class="col-usina">{{ row.dadger2?.numero_usina || '-' }}</td>
-                  <td>{{ row.dadger2?.ree || '-' }}</td>
+                  <td class="col-usina">{{ row.dadger2?.numero_usina ?? '-' }}</td>
+                  <td :class="{ diff: row.diff_ree && !row.onlyInOne }">{{ row.dadger2?.ree ?? '-' }}</td>
                   <td :class="{ 'diff': row.diff_volume_armazenado_pct && !row.onlyInOne }" class="col-number">
                     {{ formatNumber(row.dadger2?.volume_armazenado_pct) }}
                   </td>
@@ -107,6 +116,7 @@
                   <td class="col-center" :class="{ 'diff': row.diff_chave_balanco_patamar && !row.onlyInOne }">
                     {{ row.dadger2?.chave_balanco_patamar ?? '-' }}
                   </td>
+                  <td :class="{ diff: row.diff_status && !row.onlyInOne }">{{ row.dadger2?.status ?? '-' }}</td>
                 </tr>
               </tbody>
             </table>
@@ -137,6 +147,9 @@ export default {
     const alignedData = computed(() => {
       const registros1 = props.dadger1Data.UH || []
       const registros2 = props.dadger2Data.UH || []
+      const sameTemporality = props.compareMode !== 'data' ||
+        props.dadger1Data.info_dadger?.data_base ===
+          props.dadger2Data.info_dadger?.data_base
 
       // Coletar todos os números de usina únicos
       const usinas = new Set()
@@ -150,19 +163,29 @@ export default {
         const reg2 = registros2.find(r => r.numero_usina === numero_usina)
 
         const onlyInOne = !reg1 || !reg2
+        const compare = (first, second) => sameTemporality && hasDiff(first, second)
+        const differences = {
+          diff_ree: compare(reg1?.ree, reg2?.ree),
+          diff_volume_armazenado_pct: compare(reg1?.volume_armazenado_pct, reg2?.volume_armazenado_pct),
+          diff_vazao_defluente_min: compare(reg1?.vazao_defluente_min, reg2?.vazao_defluente_min),
+          diff_chave_evaporacao: compare(reg1?.chave_evaporacao, reg2?.chave_evaporacao),
+          diff_estagio_producao: compare(reg1?.estagio_producao, reg2?.estagio_producao),
+          diff_volume_morto: compare(reg1?.volume_morto, reg2?.volume_morto),
+          diff_limite_vertimento: compare(reg1?.limite_vertimento, reg2?.limite_vertimento),
+          diff_chave_balanco_patamar: compare(reg1?.chave_balanco_patamar, reg2?.chave_balanco_patamar),
+          diff_status: compare(reg1?.status, reg2?.status)
+        }
 
         alinhados.push({
           key: numero_usina,
           onlyInOne,
+          sameTemporality,
+          has_diff: sameTemporality && (
+            onlyInOne || Object.values(differences).some(Boolean)
+          ),
           dadger1: reg1 || null,
           dadger2: reg2 || null,
-          diff_volume_armazenado_pct: hasDiff(reg1?.volume_armazenado_pct, reg2?.volume_armazenado_pct),
-          diff_vazao_defluente_min: hasDiff(reg1?.vazao_defluente_min, reg2?.vazao_defluente_min),
-          diff_chave_evaporacao: hasDiff(reg1?.chave_evaporacao, reg2?.chave_evaporacao),
-          diff_estagio_producao: hasDiff(reg1?.estagio_producao, reg2?.estagio_producao),
-          diff_volume_morto: hasDiff(reg1?.volume_morto, reg2?.volume_morto),
-          diff_limite_vertimento: hasDiff(reg1?.limite_vertimento, reg2?.limite_vertimento),
-          diff_chave_balanco_patamar: hasDiff(reg1?.chave_balanco_patamar, reg2?.chave_balanco_patamar)
+          ...differences
         })
       }
 

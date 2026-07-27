@@ -18,9 +18,13 @@
                     {{ compareMode === 'estagio' ? 'Estágio' : 'Data' }}{{ getSortIcon('estagio') }}
                   </th>
                   <th @click="sortBy('subsistema')" class="sortable">Sub{{ getSortIcon('subsistema') }}</th>
+                  <th @click="sortBy('numero_patamares')" class="sortable">Pat{{ getSortIcon('numero_patamares') }}</th>
                   <th @click="sortBy('carga_pesada')" class="sortable">Pesada{{ getSortIcon('carga_pesada') }}</th>
+                  <th @click="sortBy('horas_pesada')" class="sortable">h Pes.{{ getSortIcon('horas_pesada') }}</th>
                   <th @click="sortBy('carga_media')" class="sortable">Média{{ getSortIcon('carga_media') }}</th>
+                  <th @click="sortBy('horas_media')" class="sortable">h Méd.{{ getSortIcon('horas_media') }}</th>
                   <th @click="sortBy('carga_leve')" class="sortable">Leve{{ getSortIcon('carga_leve') }}</th>
+                  <th @click="sortBy('horas_leve')" class="sortable">h Lev.{{ getSortIcon('horas_leve') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -34,14 +38,24 @@
                 >
                   <td class="col-stage">{{ row.dadger1?.display || '-' }}</td>
                   <td>{{ row.dadger1?.subsistema || '-' }}</td>
+                  <td :class="{ diff: row.diff_numero_patamares && !row.onlyInOne }">{{ row.dadger1?.numero_patamares ?? '-' }}</td>
                   <td :class="{ 'diff': row.diff_pesada && !row.onlyInOne }" class="col-number">
                     {{ formatNumber(row.dadger1?.carga_pesada) }}
+                  </td>
+                  <td :class="{ diff: row.diff_horas_pesada && !row.onlyInOne }" class="col-number">
+                    {{ formatNumber(row.dadger1?.horas_pesada) }}
                   </td>
                   <td :class="{ 'diff': row.diff_media && !row.onlyInOne }" class="col-number">
                     {{ formatNumber(row.dadger1?.carga_media) }}
                   </td>
+                  <td :class="{ diff: row.diff_horas_media && !row.onlyInOne }" class="col-number">
+                    {{ formatNumber(row.dadger1?.horas_media) }}
+                  </td>
                   <td :class="{ 'diff': row.diff_leve && !row.onlyInOne }" class="col-number">
                     {{ formatNumber(row.dadger1?.carga_leve) }}
+                  </td>
+                  <td :class="{ diff: row.diff_horas_leve && !row.onlyInOne }" class="col-number">
+                    {{ formatNumber(row.dadger1?.horas_leve) }}
                   </td>
                 </tr>
               </tbody>
@@ -60,9 +74,13 @@
                     {{ compareMode === 'estagio' ? 'Estágio' : 'Data' }}{{ getSortIcon('estagio') }}
                   </th>
                   <th @click="sortBy('subsistema')" class="sortable">Sub{{ getSortIcon('subsistema') }}</th>
+                  <th @click="sortBy('numero_patamares')" class="sortable">Pat{{ getSortIcon('numero_patamares') }}</th>
                   <th @click="sortBy('carga_pesada')" class="sortable">Pesada{{ getSortIcon('carga_pesada') }}</th>
+                  <th @click="sortBy('horas_pesada')" class="sortable">h Pes.{{ getSortIcon('horas_pesada') }}</th>
                   <th @click="sortBy('carga_media')" class="sortable">Média{{ getSortIcon('carga_media') }}</th>
+                  <th @click="sortBy('horas_media')" class="sortable">h Méd.{{ getSortIcon('horas_media') }}</th>
                   <th @click="sortBy('carga_leve')" class="sortable">Leve{{ getSortIcon('carga_leve') }}</th>
+                  <th @click="sortBy('horas_leve')" class="sortable">h Lev.{{ getSortIcon('horas_leve') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -76,14 +94,24 @@
                 >
                   <td class="col-stage">{{ row.dadger2?.display || '-' }}</td>
                   <td>{{ row.dadger2?.subsistema || '-' }}</td>
+                  <td :class="{ diff: row.diff_numero_patamares && !row.onlyInOne }">{{ row.dadger2?.numero_patamares ?? '-' }}</td>
                   <td :class="{ 'diff': row.diff_pesada && !row.onlyInOne }" class="col-number">
                     {{ formatNumber(row.dadger2?.carga_pesada) }}
+                  </td>
+                  <td :class="{ diff: row.diff_horas_pesada && !row.onlyInOne }" class="col-number">
+                    {{ formatNumber(row.dadger2?.horas_pesada) }}
                   </td>
                   <td :class="{ 'diff': row.diff_media && !row.onlyInOne }" class="col-number">
                     {{ formatNumber(row.dadger2?.carga_media) }}
                   </td>
+                  <td :class="{ diff: row.diff_horas_media && !row.onlyInOne }" class="col-number">
+                    {{ formatNumber(row.dadger2?.horas_media) }}
+                  </td>
                   <td :class="{ 'diff': row.diff_leve && !row.onlyInOne }" class="col-number">
                     {{ formatNumber(row.dadger2?.carga_leve) }}
+                  </td>
+                  <td :class="{ diff: row.diff_horas_leve && !row.onlyInOne }" class="col-number">
+                    {{ formatNumber(row.dadger2?.horas_leve) }}
                   </td>
                 </tr>
               </tbody>
@@ -120,6 +148,13 @@ export default {
         const diff_pesada = hasDiff(reg1?.carga_pesada, reg2?.carga_pesada)
         const diff_media = hasDiff(reg1?.carga_media, reg2?.carga_media)
         const diff_leve = hasDiff(reg1?.carga_leve, reg2?.carga_leve)
+        const diff_numero_patamares = hasDiff(
+          reg1?.numero_patamares,
+          reg2?.numero_patamares
+        )
+        const diff_horas_pesada = hasDiff(reg1?.horas_pesada, reg2?.horas_pesada)
+        const diff_horas_media = hasDiff(reg1?.horas_media, reg2?.horas_media)
+        const diff_horas_leve = hasDiff(reg1?.horas_leve, reg2?.horas_leve)
 
         const row = {
           blockType: 'DP',  // Identificador
@@ -129,20 +164,32 @@ export default {
           dadger1: reg1 ? {
             display: props.compareMode === 'estagio' ? `Estágio ${reg1.estagio}` : primaryValue,
             subsistema: reg1.subsistema,
+            numero_patamares: reg1.numero_patamares,
             carga_pesada: reg1.carga_pesada,
+            horas_pesada: reg1.horas_pesada,
             carga_media: reg1.carga_media,
-            carga_leve: reg1.carga_leve
+            horas_media: reg1.horas_media,
+            carga_leve: reg1.carga_leve,
+            horas_leve: reg1.horas_leve
           } : null,
           dadger2: reg2 ? {
             display: props.compareMode === 'estagio' ? `Estágio ${reg2.estagio}` : primaryValue,
             subsistema: reg2.subsistema,
+            numero_patamares: reg2.numero_patamares,
             carga_pesada: reg2.carga_pesada,
+            horas_pesada: reg2.horas_pesada,
             carga_media: reg2.carga_media,
-            carga_leve: reg2.carga_leve
+            horas_media: reg2.horas_media,
+            carga_leve: reg2.carga_leve,
+            horas_leve: reg2.horas_leve
           } : null,
           diff_pesada,
           diff_media,
-          diff_leve
+          diff_leve,
+          diff_numero_patamares,
+          diff_horas_pesada,
+          diff_horas_media,
+          diff_horas_leve
         }
 
         return row

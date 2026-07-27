@@ -5,12 +5,14 @@ import { formatNumber } from '../utils/comparison.js'
  * Verifica se uma row tem diferenças reais (não faded)
  * Fonte única de verdade para detectar diferenças
  */
-function rowHasDifferences(row) {
+export function rowHasDifferences(row) {
+  if (typeof row.has_diff === 'boolean') return row.has_diff
+
   // Se é onlyInOne (existe apenas em um dadger)
   if (row.onlyInOne) {
     // Apenas contar como diferença se também sameTemporality (highlighted)
     // Se não sameTemporality, é faded e não conta
-    return row.sameTemporality === true
+    return row.sameTemporality !== false
   }
 
   // Para rows que existem em ambos dadgers, verificar diferenças de valores
@@ -24,7 +26,6 @@ function rowHasDifferences(row) {
   }
 
   // Verificar outros campos de diferença
-  if (row.has_diff) return true
   if (row.temDiferenca) return true
 
   return false

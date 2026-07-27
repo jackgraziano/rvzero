@@ -1,309 +1,129 @@
 # Arquitetura do RVZero
 
-## Visão Geral
+O RVZero lê dois DADGERs, transforma os registros posicionais em estruturas
+semânticas e os alinha por estágio ou por data de início do estágio. O modo por
+data é o padrão porque revisões diferentes não atribuem o mesmo período do
+calendário ao mesmo número de estágio.
 
-O RVZero é uma aplicação Vue para comparar arquivos dadger, destacando diferenças entre dois arquivos. A arquitetura foi projetada para escalar facilmente com a adição de novos blocos de dados.
+## Regra temporal
 
-## Estrutura de Pastas
+- `DT` é a data de início do estágio 1.
+- O estágio `n` começa em `DT + (n - 1) × 7 dias`.
+- A duração vem da soma das horas dos patamares do `DP`. Os estágios semanais
+  normalmente têm 168 horas; o último estágio pode representar o restante do
+  mês seguinte e, portanto, durar várias semanas.
+- `info_dadger.estagios` preserva início, fim, horas e a consistência das horas
+  entre subsistemas. `datas_estagios` permanece como índice rápido
+  `{ estágio: data_inicio }`.
+- No modo `data`, somente datas de início presentes nos dois horizontes são
+  comparáveis. Datas exclusivas de um horizonte aparecem esmaecidas e não são
+  diferenças.
+- No modo `estagio`, a comparação é numérica e serve como diagnóstico do
+  arquivo; ela não representa necessariamente o mesmo período do calendário.
+- `UH` contém condições iniciais. No modo `data`, dois blocos UH só são
+  comparáveis quando os dois `DT` são iguais.
 
+Todas as operações de data usam calendário UTC e formato estrito
+`dd/mm/aaaa`, evitando deslocamentos por fuso horário e datas normalizadas
+silenciosamente pelo JavaScript.
+
+Exemplo real:
+
+```text
+DADGER RV0: DT 31/01/2026, estágio 6 começa 07/03/2026
+DADGER RV3: DT 21/02/2026, estágio 3 começa 07/03/2026
+
+Modo data: estágio 6 ↔ estágio 3
+Modo estágio: estágio 3 ↔ estágio 3
 ```
+
+## Fluxo
+
+```text
+DropZone
+  → fileTypeRegistry
+  → parseDadger
+      → parser de cada bloco
+      → calendário DT + DP
+  → ComparisonView
+      → alinhamento temporal
+      → comparação semântica
+      → filtro de diferenças comparáveis
+```
+
+## Parsers
+
+Os parsers ficam em `src/utils/parsers`. Campos em branco são `null`; zero é
+sempre preservado como zero. Registros inválidos não recebem valores
+inventados. Um DADGER precisa ter `DT` válido e ao menos um `DP` válido.
+
+| Bloco | Tratamento |
+| --- | --- |
+| `DP` | Carga, horas e quantidade de patamares por estágio/subsistema |
+| `PQ` | Forward-fill por fonte+subsistema; soma separada de P/M/L |
+| `CT` | Forward-fill por usina; preserva nome e subsistema |
+| `IA` | Forward-fill por par de subsistemas; patamares definidos pelo DP |
+| `UH` | Condições iniciais, campos opcionais e status (`NW`, etc.) |
+| `TI`, `MP`, `FD`, `VE`, `RQ` | Arrays com exatamente o número de estágios do deck |
+| `RE` | `RE/LU/FU/FT/FI/FE`; fatores herdados individualmente por identidade |
+| `HQ` | `HQ/LQ/CQ`; coeficientes herdados individualmente |
+| `HV` | `HV/LV/CV`; coeficientes herdados individualmente |
+| `RI` | Forward-fill por usina+subsistema |
+| `HE` | `CM` associado pelo número da restrição a todas as linhas `HE` |
+| `AC` | Todas as ocorrências são preservadas, inclusive chaves repetidas |
+| `OUTROS` | Qualquer registro ativo de duas letras sem parser estruturado |
+
+`VI` permanece em `OUTROS`: ele representa histórico de vazões para tempo de
+viagem, e não os estágios futuros do horizonte. `RQ`, ao contrário, possui um
+valor por estágio e é temporal.
+
+## Comparação
+
+`src/utils/comparison.js` concentra:
+
+- alinhamento por data ou estágio com índices `Map`;
+- igualdade semântica de objetos e coleções, ignorando o número do estágio
+  quando datas equivalentes usam índices diferentes;
+- alinhamento de sequências por distância de edição para `AC` e `OUTROS`, de
+  forma que uma inserção não desloque todas as linhas posteriores;
+- formatação comum e tratamento uniforme de `null`/`undefined`.
+
+`useTemporalComparison` atende os blocos com arrays. `StageArrayBlock.vue`
+renderiza TI, MP, FD, VE e RQ sem componentes duplicados.
+`useEntityTemporalComparison` atende RE, HQ e HV.
+`useBlockComparison` é a fonte única para ordenação, scroll, filtro e indicação
+de diferenças.
+
+## Estrutura principal
+
+```text
 src/
 ├── components/
-│   ├── blocks/              # Componentes de blocos individuais
-│   │   └── DPBlock.vue      # Bloco DP (Demanda por Patamar)
-│   ├── ComparisonView.vue   # Orquestrador de blocos
-│   ├── DropZone.vue         # Área de upload
-│   └── TopBar.vue           # Barra superior
-├── utils/
-│   ├── parsers/             # Parsers de blocos
-│   │   ├── index.js         # Orquestrador de parsers
-│   │   ├── infoParser.js    # Parser de informações gerais
-│   │   └── dpParser.js      # Parser do bloco DP
-│   ├── comparison.js        # Utilitários de comparação
-│   └── dadgerParser.js      # Re-exporta parser principal
-└── App.vue
+│   ├── blocks/
+│   │   ├── StageArrayBlock.vue
+│   │   └── *Block.vue
+│   ├── ComparisonView.vue
+│   ├── DropZone.vue
+│   └── TopBar.vue
+├── composables/
+│   ├── useBlockComparison.js
+│   ├── useEntityTemporalComparison.js
+│   └── useTemporalComparison.js
+└── utils/
+    ├── parsers/
+    ├── comparison.js
+    └── temporal.js
 ```
 
-## Componentes Principais
+## Verificação
 
-### 1. ComparisonView (Orquestrador)
-**Arquivo:** `src/components/ComparisonView.vue`
-
-**Responsabilidade:** Orquestrar a exibição de todos os blocos de comparação.
-
-**Como funciona:**
-- Recebe dados dos dois dadgers
-- Renderiza componentes de bloco individuais
-- Passa props comuns (dadger1Data, dadger2Data, compareMode)
-
-**Como adicionar um novo bloco:**
-```vue
-<template>
-  <div class="comparison-content">
-    <!-- Blocos existentes -->
-    <DPBlock ... />
-
-    <!-- Adicionar novo bloco aqui -->
-    <NovoBlock
-      v-if="dadger1Data.NOVO && dadger2Data.NOVO"
-      :dadger1Data="dadger1Data"
-      :dadger1Name="dadger1Name"
-      :dadger2Data="dadger2Data"
-      :dadger2Name="dadger2Name"
-      :compareMode="compareMode"
-    />
-  </div>
-</template>
-
-<script>
-import NovoBlock from './blocks/NovoBlock.vue'
-
-export default {
-  components: {
-    DPBlock,
-    NovoBlock  // Adicionar aqui
-  }
-}
-</script>
+```bash
+npm ci
+npm test
+npm run build
+npm audit
 ```
 
-### 2. Componentes de Bloco
-**Localização:** `src/components/blocks/`
-
-**Padrão:** Cada bloco é um componente Vue independente.
-
-**Props obrigatórias:**
-- `dadger1Data` - Dados do primeiro dadger
-- `dadger1Name` - Nome do primeiro arquivo
-- `dadger2Data` - Dados do segundo dadger
-- `dadger2Name` - Nome do segundo arquivo
-- `compareMode` - Modo de comparação ('estagio' ou 'data')
-
-**Estrutura recomendada:**
-```vue
-<template>
-  <div class="block">
-    <!-- Cabeçalho colapsável -->
-    <div class="block-header" @click="toggleCollapsed">
-      <span class="block-icon">{{ collapsed ? '▶' : '▼' }}</span>
-      <h3 class="block-name">NOME DO BLOCO</h3>
-    </div>
-
-    <!-- Conteúdo do bloco -->
-    <div v-show="!collapsed" class="block-content">
-      <div class="comparison-tables">
-        <!-- Duas colunas: dadger1 e dadger2 -->
-        <div class="table-side">
-          <!-- Tabela do dadger 1 -->
-        </div>
-        <div class="table-side">
-          <!-- Tabela do dadger 2 -->
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
-<script>
-import { alignByEstagio, alignByData, hasDiff, formatNumber } from '../../utils/comparison.js'
-
-export default {
-  props: ['dadger1Data', 'dadger1Name', 'dadger2Data', 'dadger2Name', 'compareMode'],
-  data() {
-    return {
-      collapsed: false,
-      isSyncing: false
-    }
-  },
-  computed: {
-    alignedData() {
-      // Usar funções de comparison.js para alinhar dados
-    }
-  },
-  methods: {
-    // Sincronizar scroll entre as duas tabelas
-    onScroll1(event) { ... },
-    onScroll2(event) { ... }
-  }
-}
-</script>
-```
-
-## Sistema de Parsers
-
-### Arquitetura Modular
-
-**Orquestrador:** `src/utils/parsers/index.js`
-- Importa todos os parsers de blocos
-- Combina resultados em um único objeto JSON
-- Calcula informações derivadas (número de estágios, datas)
-
-**Parser de Bloco Individual:** Ex: `src/utils/parsers/dpParser.js`
-- Exporta função `parse[BLOCO](lines)`
-- Recebe array de linhas do arquivo
-- Retorna array de registros do bloco
-- Responsável por leitura posicional específica
-
-### Como Adicionar um Novo Parser
-
-1. **Criar arquivo do parser:**
-```javascript
-// src/utils/parsers/novoParser.js
-
-export function parseNOVO(lines) {
-  const registros = []
-
-  for (const line of lines) {
-    if (line.startsWith('NOVO ')) {
-      const registro = parseNOVOLine(line)
-      if (registro) {
-        registros.push(registro)
-      }
-    }
-  }
-
-  return registros
-}
-
-function parseNOVOLine(line) {
-  // Leitura posicional específica do bloco
-  const campo1 = parseInt(line.substring(5, 10).trim())
-  const campo2 = parseFloat(line.substring(10, 20).trim())
-
-  return {
-    campo1,
-    campo2,
-    // ... outros campos
-  }
-}
-```
-
-2. **Registrar no orquestrador:**
-```javascript
-// src/utils/parsers/index.js
-
-import { parseNOVO } from './novoParser.js'
-
-export function parseDadger(fileContent) {
-  const result = {
-    info_dadger: {},
-    DP: [],
-    NOVO: []  // Adicionar aqui
-  }
-
-  const lines = fileContent.split('\n')
-
-  result.info_dadger = parseInfoDadger(lines)
-  result.DP = parseDP(lines)
-  result.NOVO = parseNOVO(lines)  // Adicionar aqui
-
-  // ... resto do código
-
-  return result
-}
-```
-
-## Utilitários de Comparação
-
-**Arquivo:** `src/utils/comparison.js`
-
-Fornece funções reutilizáveis para:
-- Alinhar registros por estágio
-- Alinhar registros por data
-- Detectar diferenças
-- Formatar números
-- Coletar valores únicos
-
-### Funções Principais
-
-#### `alignByEstagio(registros1, registros2, dadger1Info, dadger2Info, secondaryKey, transformFn)`
-Alinha registros pelo número do estágio e uma chave secundária (ex: subsistema).
-
-#### `alignByData(registros1, registros2, dadger1Data, dadger2Data, secondaryKey, transformFn)`
-Alinha registros por data (encontra datas em comum) e uma chave secundária.
-
-#### `hasDiff(val1, val2)`
-Verifica se dois valores são diferentes (considerando nulls).
-
-#### `formatNumber(value)`
-Formata número para exibição (ou '-' se null).
-
-### Exemplo de Uso
-
-```javascript
-import { alignByEstagio, alignByData, hasDiff, formatNumber } from '../../utils/comparison.js'
-
-computed: {
-  alignedData() {
-    const transformFn = (reg1, reg2, onlyInOne, primaryValue, secondaryValue) => {
-      return {
-        key: `${primaryValue}-${secondaryValue}`,
-        onlyInOne,
-        dadger1: reg1 ? { /* dados formatados */ } : null,
-        dadger2: reg2 ? { /* dados formatados */ } : null,
-        diff_campo: hasDiff(reg1?.campo, reg2?.campo)
-      }
-    }
-
-    if (this.compareMode === 'estagio') {
-      return alignByEstagio(
-        this.dadger1Data.BLOCO,
-        this.dadger2Data.BLOCO,
-        this.dadger1Data.info_dadger,
-        this.dadger2Data.info_dadger,
-        'chave_secundaria',
-        transformFn
-      )
-    } else {
-      return alignByData(
-        this.dadger1Data.BLOCO,
-        this.dadger2Data.BLOCO,
-        this.dadger1Data,
-        this.dadger2Data,
-        'chave_secundaria',
-        transformFn
-      )
-    }
-  }
-}
-```
-
-## Fluxo de Dados
-
-```
-1. Usuário faz upload de 2 arquivos
-   ↓
-2. DropZone lê arquivo e chama parseDadger()
-   ↓
-3. parseDadger() orquestra parsers individuais
-   ↓
-4. JSON estruturado é armazenado em App.vue
-   ↓
-5. ComparisonView renderiza blocos
-   ↓
-6. Cada bloco usa comparison.js para alinhar dados
-   ↓
-7. Blocos exibem tabelas com diferenças destacadas
-```
-
-## Estilo Visual
-
-**Tema:** Terminal/código com fonte monospace
-- Fundo: #1e1e1e, #2d2d2d
-- Texto principal: #00ff00 (verde terminal)
-- Diferenças: #ffff00 (amarelo) sobre #4a4a00
-- Linhas faded (só em um arquivo): opacity 0.3
-- Fonte: 'Courier New', monospace
-
-## Checklist para Adicionar um Novo Bloco
-
-- [ ] Criar parser em `src/utils/parsers/[nome]Parser.js`
-- [ ] Registrar parser em `src/utils/parsers/index.js`
-- [ ] Criar componente em `src/components/blocks/[Nome]Block.vue`
-- [ ] Adicionar componente em `ComparisonView.vue`
-- [ ] Usar funções de `comparison.js` para alinhar dados
-- [ ] Implementar sincronização de scroll entre tabelas
-- [ ] Adicionar lógica de colapsar/expandir
-- [ ] Destacar diferenças (apenas quando ambos arquivos têm a linha)
-- [ ] Aplicar estilo faded para linhas que existem em apenas um arquivo
-- [ ] Testar com arquivos de exemplo
+Os testes cobrem calendário semanal/mensal, alinhamento de RVs diferentes,
+horizontes não compartilhados, zeros, HE/CM, forward-fill individual de RE,
+agregação de PQ, arrays limitados ao horizonte e inserções em blocos de linhas.

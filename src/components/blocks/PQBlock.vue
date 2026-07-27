@@ -18,7 +18,9 @@
                     {{ compareMode === 'estagio' ? 'Estágio' : 'Data' }}{{ getSortIcon('estagio') }}
                   </th>
                   <th @click="sortBy('subsistema')" class="sortable">Sub{{ getSortIcon('subsistema') }}</th>
-                  <th @click="sortBy('geracao_total')" class="sortable">Geração Total{{ getSortIcon('geracao_total') }}</th>
+                  <th v-for="field in generationFields" :key="field.key" class="sortable" @click="sortBy(field.key)">
+                    {{ field.label }}{{ getSortIcon(field.key) }}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -32,8 +34,13 @@
                 >
                   <td class="col-stage">{{ row.dadger1?.display || '-' }}</td>
                   <td>{{ row.dadger1?.subsistema || '-' }}</td>
-                  <td :class="{ 'diff': row.diff_geracao_total && !row.onlyInOne }" class="col-number">
-                    {{ formatNumber(row.dadger1?.geracao_total) }}
+                  <td
+                    v-for="field in generationFields"
+                    :key="`d1-${row.key}-${field.key}`"
+                    :class="{ diff: row[`diff_${field.key}`] && !row.onlyInOne }"
+                    class="col-number"
+                  >
+                    {{ formatNumber(row.dadger1?.[field.key]) }}
                   </td>
                 </tr>
               </tbody>
@@ -52,7 +59,9 @@
                     {{ compareMode === 'estagio' ? 'Estágio' : 'Data' }}{{ getSortIcon('estagio') }}
                   </th>
                   <th @click="sortBy('subsistema')" class="sortable">Sub{{ getSortIcon('subsistema') }}</th>
-                  <th @click="sortBy('geracao_total')" class="sortable">Geração Total{{ getSortIcon('geracao_total') }}</th>
+                  <th v-for="field in generationFields" :key="field.key" class="sortable" @click="sortBy(field.key)">
+                    {{ field.label }}{{ getSortIcon(field.key) }}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -66,8 +75,13 @@
                 >
                   <td class="col-stage">{{ row.dadger2?.display || '-' }}</td>
                   <td>{{ row.dadger2?.subsistema || '-' }}</td>
-                  <td :class="{ 'diff': row.diff_geracao_total && !row.onlyInOne }" class="col-number">
-                    {{ formatNumber(row.dadger2?.geracao_total) }}
+                  <td
+                    v-for="field in generationFields"
+                    :key="`d2-${row.key}-${field.key}`"
+                    :class="{ diff: row[`diff_${field.key}`] && !row.onlyInOne }"
+                    class="col-number"
+                  >
+                    {{ formatNumber(row.dadger2?.[field.key]) }}
                   </td>
                 </tr>
               </tbody>
@@ -95,6 +109,11 @@ export default {
     showOnlyDifferences: { type: Boolean, required: true }
   },
   setup(props) {
+    const generationFields = [
+      { key: 'geracao_pesado', label: 'Pesada' },
+      { key: 'geracao_medio', label: 'Média' },
+      { key: 'geracao_leve', label: 'Leve' }
+    ]
     // Computed: dados alinhados (lógica específica do bloco PQ)
     const alignedData = computed(() => {
       const registros1 = props.dadger1Data.PQ
@@ -108,14 +127,20 @@ export default {
           dadger1: reg1 ? {
             display: props.compareMode === 'estagio' ? `Estágio ${reg1.estagio}` : primaryValue,
             subsistema: reg1.subsistema,
-            geracao_total: reg1.geracao_total
+            geracao_pesado: reg1.geracao_pesado,
+            geracao_medio: reg1.geracao_medio,
+            geracao_leve: reg1.geracao_leve
           } : null,
           dadger2: reg2 ? {
             display: props.compareMode === 'estagio' ? `Estágio ${reg2.estagio}` : primaryValue,
             subsistema: reg2.subsistema,
-            geracao_total: reg2.geracao_total
+            geracao_pesado: reg2.geracao_pesado,
+            geracao_medio: reg2.geracao_medio,
+            geracao_leve: reg2.geracao_leve
           } : null,
-          diff_geracao_total: hasDiff(reg1?.geracao_total, reg2?.geracao_total)
+          diff_geracao_pesado: hasDiff(reg1?.geracao_pesado, reg2?.geracao_pesado),
+          diff_geracao_medio: hasDiff(reg1?.geracao_medio, reg2?.geracao_medio),
+          diff_geracao_leve: hasDiff(reg1?.geracao_leve, reg2?.geracao_leve)
         }
       }
 
@@ -168,6 +193,7 @@ export default {
       onScroll1,
       onScroll2,
       formatNumber,
+      generationFields,
       filteredData,
       hasDifferences
     }

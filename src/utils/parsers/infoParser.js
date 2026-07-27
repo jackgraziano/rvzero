@@ -1,6 +1,4 @@
-/**
- * Parser para informações gerais do dadger
- */
+import { buildStageCalendar, formatBrazilianDate, parseBrazilianDate } from '../temporal.js'
 
 /**
  * Processa informações gerais do dadger
@@ -31,15 +29,15 @@ export function parseInfoDadger(lines) {
  * @returns {string} Data no formato dd/mm/aaaa
  */
 function parseDataBase(line) {
-  // Remover 'DT' do início e fazer split por espaços
   const parts = line.substring(2).trim().split(/\s+/)
 
   if (parts.length >= 3) {
     const dia = parts[0].padStart(2, '0')
     const mes = parts[1].padStart(2, '0')
     const ano = parts[2]
+    const date = parseBrazilianDate(`${dia}/${mes}/${ano}`)
 
-    return `${dia}/${mes}/${ano}`
+    return date ? formatBrazilianDate(date) : null
   }
 
   return null
@@ -51,27 +49,11 @@ function parseDataBase(line) {
  * @param {number} numeroEstagios - Número total de estágios
  * @returns {object} Objeto com as datas de cada estágio (chave: número do estágio)
  */
-export function calcularDatasEstagios(dataBase, numeroEstagios) {
-  const datas = {}
-
-  // Parsear a data_base (formato dd/mm/aaaa)
-  const [dia, mes, ano] = dataBase.split('/').map(Number)
-  const dataInicial = new Date(ano, mes - 1, dia)
-
-  // Gerar as datas para cada estágio (incrementando 7 dias)
-  for (let i = 0; i < numeroEstagios; i++) {
-    const data = new Date(dataInicial)
-    data.setDate(dataInicial.getDate() + (i * 7))
-
-    const diaFormatado = String(data.getDate()).padStart(2, '0')
-    const mesFormatado = String(data.getMonth() + 1).padStart(2, '0')
-    const anoFormatado = data.getFullYear()
-
-    // Estágio começa em 1, não em 0
-    datas[i + 1] = `${diaFormatado}/${mesFormatado}/${anoFormatado}`
-  }
-
-  return datas
+export function calcularDatasEstagios(dataBase, numeroEstagios, registrosDP = []) {
+  return Object.fromEntries(
+    buildStageCalendar(dataBase, numeroEstagios, registrosDP)
+      .map(stage => [stage.numero, stage.data_inicio])
+  )
 }
 
 /**

@@ -1,3 +1,5 @@
+import { parseDecimalField, parseIntegerField } from './parserUtils.js'
+
 /**
  * Parser para o bloco DP (Demanda por Patamar)
  */
@@ -38,10 +40,13 @@ export function parseDP(lines) {
  * @returns {object} Objeto com os dados do registro DP
  */
 function parseDPLine(line) {
-  // Leitura posicional
-  const estagio = parseInt(line.substring(5, 7).trim())
-  const subsistema = parseInt(line.substring(10, 12).trim())
-  const numero_patamares = 3 // Sempre 3 patamares
+  const estagio = parseIntegerField(line.slice(4, 7))
+  const subsistema = parseIntegerField(line.slice(9, 12))
+  const numero_patamares = parseIntegerField(line.slice(14, 16))
+
+  if (estagio === null || subsistema === null || numero_patamares === null) {
+    return null
+  }
 
   const registro = {
     estagio,
@@ -50,22 +55,16 @@ function parseDPLine(line) {
   }
 
   // Patamar 1 - Pesada
-  const cargaPesadaStr = line.substring(20, 30).trim()
-  const horasPesadaStr = line.substring(30, 40).trim()
-  registro.carga_pesada = cargaPesadaStr ? parseFloat(cargaPesadaStr) : null
-  registro.horas_pesada = horasPesadaStr ? parseFloat(horasPesadaStr) : null
+  registro.carga_pesada = parseDecimalField(line.slice(20, 30))
+  registro.horas_pesada = parseDecimalField(line.slice(30, 40))
 
   // Patamar 2 - Média
-  const cargaMediaStr = line.substring(40, 50).trim()
-  const horasMediaStr = line.substring(50, 60).trim()
-  registro.carga_media = cargaMediaStr ? parseFloat(cargaMediaStr) : null
-  registro.horas_media = horasMediaStr ? parseFloat(horasMediaStr) : null
+  registro.carga_media = parseDecimalField(line.slice(40, 50))
+  registro.horas_media = parseDecimalField(line.slice(50, 60))
 
   // Patamar 3 - Leve
-  const cargaLeveStr = line.substring(60, 70).trim()
-  const horasLeveStr = line.substring(70, 80).trim()
-  registro.carga_leve = cargaLeveStr ? parseFloat(cargaLeveStr) : null
-  registro.horas_leve = horasLeveStr ? parseFloat(horasLeveStr) : null
+  registro.carga_leve = parseDecimalField(line.slice(60, 70))
+  registro.horas_leve = parseDecimalField(line.slice(70, 80))
 
   return registro
 }

@@ -1,107 +1,46 @@
-/**
- * Parser do bloco RI (Restrições de Itaipu)
- * Expande estágios faltantes usando forward-fill
- */
+import {
+  expandForwardByStage,
+  parseDecimalField,
+  parseIntegerField
+} from './parserUtils.js'
 
-export function parseRI(lines, numeroEstagios) {
-  const registros = []
+export function parseRI(lines, stageCount) {
+  const records = lines
+    .filter(line => line.startsWith('RI '))
+    .map(parseRILine)
+    .filter(Boolean)
 
-  for (const line of lines) {
-    if (line.startsWith('RI ')) {
-      const usina = parseInt(line.substring(4, 7).trim())
-      const estagio = parseInt(line.substring(8, 11).trim())
-      const subsistema = parseInt(line.substring(12, 15).trim())
-
-      // Patamar pesado
-      const p60_min_pesado = parseFloat(line.substring(16, 23).trim()) || null
-      const p60_max_pesado = parseFloat(line.substring(23, 30).trim()) || null
-      const p50_min_pesado = parseFloat(line.substring(30, 37).trim()) || null
-      const p50_max_pesado = parseFloat(line.substring(37, 44).trim()) || null
-      const carga_ande_pesado = parseFloat(line.substring(44, 51).trim()) || null
-
-      // Patamar médio
-      const p60_min_medio = parseFloat(line.substring(51, 58).trim()) || null
-      const p60_max_medio = parseFloat(line.substring(58, 65).trim()) || null
-      const p50_min_medio = parseFloat(line.substring(65, 72).trim()) || null
-      const p50_max_medio = parseFloat(line.substring(72, 79).trim()) || null
-      const carga_ande_medio = parseFloat(line.substring(79, 86).trim()) || null
-
-      // Patamar leve
-      const p60_min_leve = parseFloat(line.substring(86, 93).trim()) || null
-      const p60_max_leve = parseFloat(line.substring(93, 100).trim()) || null
-      const p50_min_leve = parseFloat(line.substring(100, 107).trim()) || null
-      const p50_max_leve = parseFloat(line.substring(107, 114).trim()) || null
-      const carga_ande_leve = parseFloat(line.substring(114, 121).trim()) || null
-
-      if (!isNaN(usina) && !isNaN(estagio) && !isNaN(subsistema)) {
-        registros.push({
-          usina,
-          estagio,
-          subsistema,
-          pesado: {
-            p60_min: p60_min_pesado,
-            p60_max: p60_max_pesado,
-            p50_min: p50_min_pesado,
-            p50_max: p50_max_pesado,
-            carga_ande: carga_ande_pesado
-          },
-          medio: {
-            p60_min: p60_min_medio,
-            p60_max: p60_max_medio,
-            p50_min: p50_min_medio,
-            p50_max: p50_max_medio,
-            carga_ande: carga_ande_medio
-          },
-          leve: {
-            p60_min: p60_min_leve,
-            p60_max: p60_max_leve,
-            p50_min: p50_min_leve,
-            p50_max: p50_max_leve,
-            carga_ande: carga_ande_leve
-          }
-        })
-      }
-    }
-  }
-
-  // Expandir estágios faltantes
-  return expandirEstagios(registros, numeroEstagios)
+  const numberOfStages = stageCount || Math.max(...records.map(record => record.estagio), 0)
+  return expandForwardByStage(
+    records,
+    numberOfStages,
+    record => `${record.usina}\u0000${record.subsistema}`
+  )
 }
 
-/**
- * Expande estágios faltantes usando forward-fill
- */
-function expandirEstagios(registros, numeroEstagios) {
-  if (registros.length === 0 || !numeroEstagios) {
-    return registros
+function parseRILine(line) {
+  const usina = parseIntegerField(line.slice(4, 7))
+  const estagio = parseIntegerField(line.slice(8, 11))
+  const subsistema = parseIntegerField(line.slice(12, 15))
+
+  if (usina === null || estagio === null || subsistema === null) return null
+
+  return {
+    usina,
+    estagio,
+    subsistema,
+    pesado: parsePatamar(line, 16),
+    medio: parsePatamar(line, 51),
+    leve: parsePatamar(line, 86)
   }
+}
 
-  const expandidos = []
-
-  // Para cada estágio de 1 até numeroEstagios, expandir usando forward-fill
-  for (let estagio = 1; estagio <= numeroEstagios; estagio++) {
-    // Buscar se este estágio foi declarado
-    let registro = registros.find(r => r.estagio === estagio)
-
-    // Se não foi declarado, usar o último estágio anterior declarado (forward-fill)
-    if (!registro) {
-      for (let e = estagio - 1; e >= 1; e--) {
-        const anterior = registros.find(r => r.estagio === e)
-        if (anterior) {
-          // Criar cópia com novo número de estágio
-          registro = {
-            ...anterior,
-            estagio
-          }
-          break
-        }
-      }
-    }
-
-    if (registro) {
-      expandidos.push(registro)
-    }
+function parsePatamar(line, start) {
+  return {
+    p60_min: parseDecimalField(line.slice(start, start + 7)),
+    p60_max: parseDecimalField(line.slice(start + 7, start + 14)),
+    p50_min: parseDecimalField(line.slice(start + 14, start + 21)),
+    p50_max: parseDecimalField(line.slice(start + 21, start + 28)),
+    carga_ande: parseDecimalField(line.slice(start + 28, start + 35))
   }
-
-  return expandidos
 }

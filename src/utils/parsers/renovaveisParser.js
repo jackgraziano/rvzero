@@ -1,3 +1,5 @@
+import { parseDecimalField, parseIntegerField } from './parserUtils.js'
+
 /**
  * Parser para arquivos renovaveis.*
  * Formato: CSV separado por ';', linhas com '&' são comentários
@@ -59,7 +61,7 @@ function agregarGeracaoPorSubmercadoPeriodoPatamar(geracao, submercados) {
  * @returns {object} Dados parseados estruturados
  */
 export function parseRenovaveis(content) {
-  const lines = content.split('\n')
+  const lines = content.split(/\r?\n/)
 
   const result = {
     tipo: 'renovaveis',
@@ -89,7 +91,7 @@ export function parseRenovaveis(content) {
         // Formato: PEE-CAD;CodPEE;NomePEE
         if (parts.length >= 3) {
           result['PEE-CAD'].push({
-            codPEE: parseInt(parts[1]) || null,
+            codPEE: parseIntegerField(parts[1]),
             nomePEE: parts[2] || ''
           })
         }
@@ -99,9 +101,9 @@ export function parseRenovaveis(content) {
         // Formato: PEE-CONFIG-PER;CodPEE;PerIni;PerFin;EstadoOperEolica
         if (parts.length >= 5) {
           result['PEE-CONFIG-PER'].push({
-            codPEE: parseInt(parts[1]) || null,
-            perIni: parseInt(parts[2]) || null,
-            perFin: parseInt(parts[3]) || null,
+            codPEE: parseIntegerField(parts[1]),
+            perIni: parseIntegerField(parts[2]),
+            perFin: parseIntegerField(parts[3]),
             estadoOperEolica: parts[4] || ''
           })
         }
@@ -111,8 +113,8 @@ export function parseRenovaveis(content) {
         // Formato: PEE-SUBM;CodPEE;CodSubm
         if (parts.length >= 3) {
           result['PEE-SUBM'].push({
-            codPEE: parseInt(parts[1]) || null,
-            codSubm: parseInt(parts[2]) || null
+            codPEE: parseIntegerField(parts[1]),
+            codSubm: parseIntegerField(parts[2])
           })
         }
         break
@@ -121,10 +123,10 @@ export function parseRenovaveis(content) {
         // Formato: PEE-POT-INST-PER;CodPEE;PerIni;PerFin;PotInstPEE
         if (parts.length >= 5) {
           result['PEE-POT-INST-PER'].push({
-            codPEE: parseInt(parts[1]) || null,
-            perIni: parseInt(parts[2]) || null,
-            perFin: parseInt(parts[3]) || null,
-            potInstPEE: parseFloat(parts[4]) || null
+            codPEE: parseIntegerField(parts[1]),
+            perIni: parseIntegerField(parts[2]),
+            perFin: parseIntegerField(parts[3]),
+            potInstPEE: parseDecimalField(parts[4])
           })
         }
         break
@@ -133,12 +135,12 @@ export function parseRenovaveis(content) {
         // Formato: PEE-GER-PER-PAT-CEN;CodPEE;PerIni;PerFin;Pat;Cen;GerEolica
         if (parts.length >= 7) {
           result['PEE-GER-PER-PAT-CEN'].push({
-            codPEE: parseInt(parts[1]) || null,
-            perIni: parseInt(parts[2]) || null,
-            perFin: parseInt(parts[3]) || null,
-            pat: parseInt(parts[4]) || null,
-            cen: parseInt(parts[5]) || null,
-            gerEolica: parseFloat(parts[6]) || null
+            codPEE: parseIntegerField(parts[1]),
+            perIni: parseIntegerField(parts[2]),
+            perFin: parseIntegerField(parts[3]),
+            pat: parseIntegerField(parts[4]),
+            cen: parseIntegerField(parts[5]),
+            gerEolica: parseDecimalField(parts[6])
           })
         }
         break

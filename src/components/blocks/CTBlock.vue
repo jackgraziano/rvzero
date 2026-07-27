@@ -47,8 +47,8 @@
                 >
                   <td class="col-stage">{{ row.dadger1?.display || '-' }}</td>
                   <td>{{ row.dadger1?.codigo_usina || '-' }}</td>
-                  <td class="col-name">{{ row.dadger1?.nome_termica || '-' }}</td>
-                  <td>{{ row.dadger1?.subsistema || '-' }}</td>
+                  <td class="col-name" :class="{ diff: row.diff_nome_termica && !row.onlyInOne }">{{ row.dadger1?.nome_termica || '-' }}</td>
+                  <td :class="{ diff: row.diff_subsistema && !row.onlyInOne }">{{ row.dadger1?.subsistema ?? '-' }}</td>
                   <td :class="{ 'diff': row.diff_disp_pesado && !row.onlyInOne }" class="col-number col-pesado">
                     {{ formatNumber(row.dadger1?.disp_pesado) }}
                   </td>
@@ -122,8 +122,8 @@
                 >
                   <td class="col-stage">{{ row.dadger2?.display || '-' }}</td>
                   <td>{{ row.dadger2?.codigo_usina || '-' }}</td>
-                  <td class="col-name">{{ row.dadger2?.nome_termica || '-' }}</td>
-                  <td>{{ row.dadger2?.subsistema || '-' }}</td>
+                  <td class="col-name" :class="{ diff: row.diff_nome_termica && !row.onlyInOne }">{{ row.dadger2?.nome_termica || '-' }}</td>
+                  <td :class="{ diff: row.diff_subsistema && !row.onlyInOne }">{{ row.dadger2?.subsistema ?? '-' }}</td>
                   <td :class="{ 'diff': row.diff_disp_pesado && !row.onlyInOne }" class="col-number col-pesado">
                     {{ formatNumber(row.dadger2?.disp_pesado) }}
                   </td>
@@ -217,6 +217,8 @@ export default {
             inflex_leve: reg2.inflex_leve,
             cvu_leve: reg2.cvu_leve
           } : null,
+          diff_nome_termica: hasDiff(reg1?.nome_termica, reg2?.nome_termica),
+          diff_subsistema: hasDiff(reg1?.subsistema, reg2?.subsistema),
           diff_disp_pesado: hasDiff(reg1?.disp_pesado, reg2?.disp_pesado),
           diff_inflex_pesado: hasDiff(reg1?.inflex_pesado, reg2?.inflex_pesado),
           diff_cvu_pesado: hasDiff(reg1?.cvu_pesado, reg2?.cvu_pesado),

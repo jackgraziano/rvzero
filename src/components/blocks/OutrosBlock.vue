@@ -65,6 +65,7 @@
 
 <script>
 import { ref, computed } from 'vue'
+import { alignSequences } from '../../utils/comparison.js'
 
 export default {
   name: 'OutrosBlock',
@@ -82,11 +83,10 @@ export default {
       collapsed.value = !collapsed.value
     }
 
-    // Lista de todos os mnemônicos possíveis
-    const MNEMONICOS = [
-      'AR', 'CD', 'EV', 'FA', 'SB', 'UE', 'TX', 'GP', 'NI', 'IR', 'FC',
-      'RQ', 'EZ', 'TE', 'VL', 'VU', 'VA', 'CX', 'VI'
-    ]
+    const mnemonicos = computed(() => [...new Set([
+      ...Object.keys(props.dadger1Data.OUTROS ?? {}),
+      ...Object.keys(props.dadger2Data.OUTROS ?? {})
+    ])].sort())
 
     // Comparações linha a linha para cada mnemônico
     const comparacoes = computed(() => {
@@ -95,34 +95,18 @@ export default {
       const outros1 = props.dadger1Data.OUTROS || {}
       const outros2 = props.dadger2Data.OUTROS || {}
 
-      for (const mnem of MNEMONICOS) {
+      for (const mnem of mnemonicos.value) {
         const linhas1 = outros1[mnem] || []
         const linhas2 = outros2[mnem] || []
-
-        // Criar comparação linha por linha
-        const maxLen = Math.max(linhas1.length, linhas2.length)
-        const comp = []
-
-        for (let i = 0; i < maxLen; i++) {
-          const linha1 = linhas1[i] || null
-          const linha2 = linhas2[i] || null
-
-          const onlyInOne = (linha1 && !linha2) || (!linha1 && linha2)
-
-          // Comparar sem espaços no final
-          const linha1Trimmed = linha1 ? linha1.trimEnd() : null
-          const linha2Trimmed = linha2 ? linha2.trimEnd() : null
-          const different = linha1Trimmed && linha2Trimmed && linha1Trimmed !== linha2Trimmed
-
-          comp.push({
+        result[mnem] = alignSequences(linhas1, linhas2, line => line.trimEnd())
+          .map(({ left: linha1, right: linha2 }) => ({
             linha1,
             linha2,
-            onlyInOne,
-            different
-          })
-        }
-
-        result[mnem] = comp
+            onlyInOne: !linha1 || !linha2,
+            different: Boolean(
+              linha1 && linha2 && linha1.trimEnd() !== linha2.trimEnd()
+            )
+          }))
       }
 
       return result
@@ -132,7 +116,7 @@ export default {
     const comparacoesFiltradas = computed(() => {
       const result = {}
 
-      for (const mnem of MNEMONICOS) {
+      for (const mnem of mnemonicos.value) {
         const comp = comparacoes.value[mnem]
 
         if (props.showOnlyDifferences) {
@@ -149,25 +133,14 @@ export default {
 
     // Mnemônicos que devem ser mostrados
     const mnemonicosVisiveis = computed(() => {
-      const visiveis = []
-
-      for (const mnem of MNEMONICOS) {
-        const comp = comparacoesFiltradas.value[mnem]
-
-        // Se não tem dados, não mostrar
-        if (comp.length === 0) {
-          continue
-        }
-
-        visiveis.push(mnem)
-      }
-
-      return visiveis
+      return mnemonicos.value.filter(
+        mnemonic => comparacoesFiltradas.value[mnemonic].length > 0
+      )
     })
 
     // Verificar se há diferenças no bloco
     const hasDifferences = computed(() => {
-      for (const mnem of MNEMONICOS) {
+      for (const mnem of mnemonicos.value) {
         const comp = comparacoes.value[mnem]
         // OUTROS não tem temporalidade, então onlyInOne sempre conta
         if (comp.some(c => c.onlyInOne || c.different)) {

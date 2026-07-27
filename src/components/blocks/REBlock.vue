@@ -29,16 +29,15 @@
                 <tr
                   v-for="row in filteredData"
                   :key="`d1-${row.key}`"
-                  :class="{ 'highlighted': row.onlyInOne }"
                 >
-                  <td class="col-restricao">{{ row.numero_restricao }}</td>
+                  <td class="col-restricao" :class="{ highlighted: row.onlyInOne }">{{ row.numero_restricao }}</td>
                   <td
                     v-for="col in colunasTempo"
                     :key="`v1-${col.key}`"
                     :class="{
                       'diff': row.valores[col.key]?.diff && row.valores[col.key]?.sameTemporality && !row.onlyInOne,
                       'highlighted': row.valores[col.key]?.dataExisteEmAmbos && !row.valores[col.key]?.sameTemporality,
-                      'faded': !row.valores[col.key]?.dataExisteEmAmbos && !row.valores[col.key]?.sameTemporality && !row.onlyInOne
+                      'faded': !row.valores[col.key]?.dataExisteEmAmbos && !row.valores[col.key]?.sameTemporality
                     }"
                     class="col-temporal"
                   >
@@ -50,10 +49,10 @@
                         <div class="limite-row">L: {{ formatLimite(row.valores[col.key].valor1.limites.leve_min) }} - {{ formatLimite(row.valores[col.key].valor1.limites.leve_max) }}</div>
                       </div>
                       <div class="fatores-section">
-                        <div v-if="row.valores[col.key].valor1.fatores_uh?.length" class="fator-count">UH: {{ row.valores[col.key].valor1.fatores_uh.length }}</div>
-                        <div v-if="row.valores[col.key].valor1.fatores_ut?.length" class="fator-count">UT: {{ row.valores[col.key].valor1.fatores_ut.length }}</div>
-                        <div v-if="row.valores[col.key].valor1.fatores_interligacao?.length" class="fator-count">Int: {{ row.valores[col.key].valor1.fatores_interligacao.length }}</div>
-                        <div v-if="row.valores[col.key].valor1.fatores_contrato?.length" class="fator-count">Cont: {{ row.valores[col.key].valor1.fatores_contrato.length }}</div>
+                        <div v-if="row.valores[col.key].valor1.fatores_uh?.length" class="fator-count">UH: {{ formatItems(row.valores[col.key].valor1.fatores_uh) }}</div>
+                        <div v-if="row.valores[col.key].valor1.fatores_ut?.length" class="fator-count">UT: {{ formatItems(row.valores[col.key].valor1.fatores_ut) }}</div>
+                        <div v-if="row.valores[col.key].valor1.fatores_interligacao?.length" class="fator-count">Int: {{ formatItems(row.valores[col.key].valor1.fatores_interligacao) }}</div>
+                        <div v-if="row.valores[col.key].valor1.fatores_contrato?.length" class="fator-count">Cont: {{ formatItems(row.valores[col.key].valor1.fatores_contrato) }}</div>
                       </div>
                     </div>
                     <div v-else class="restricao-details restricao-empty">
@@ -96,16 +95,15 @@
                 <tr
                   v-for="row in filteredData"
                   :key="`d2-${row.key}`"
-                  :class="{ 'highlighted': row.onlyInOne }"
                 >
-                  <td class="col-restricao">{{ row.numero_restricao }}</td>
+                  <td class="col-restricao" :class="{ highlighted: row.onlyInOne }">{{ row.numero_restricao }}</td>
                   <td
                     v-for="col in colunasTempo"
                     :key="`v2-${col.key}`"
                     :class="{
                       'diff': row.valores[col.key]?.diff && row.valores[col.key]?.sameTemporality && !row.onlyInOne,
                       'highlighted': row.valores[col.key]?.dataExisteEmAmbos && !row.valores[col.key]?.sameTemporality,
-                      'faded': !row.valores[col.key]?.dataExisteEmAmbos && !row.valores[col.key]?.sameTemporality && !row.onlyInOne
+                      'faded': !row.valores[col.key]?.dataExisteEmAmbos && !row.valores[col.key]?.sameTemporality
                     }"
                     class="col-temporal"
                   >
@@ -117,10 +115,10 @@
                         <div class="limite-row">L: {{ formatLimite(row.valores[col.key].valor2.limites.leve_min) }} - {{ formatLimite(row.valores[col.key].valor2.limites.leve_max) }}</div>
                       </div>
                       <div class="fatores-section">
-                        <div v-if="row.valores[col.key].valor2.fatores_uh?.length" class="fator-count">UH: {{ row.valores[col.key].valor2.fatores_uh.length }}</div>
-                        <div v-if="row.valores[col.key].valor2.fatores_ut?.length" class="fator-count">UT: {{ row.valores[col.key].valor2.fatores_ut.length }}</div>
-                        <div v-if="row.valores[col.key].valor2.fatores_interligacao?.length" class="fator-count">Int: {{ row.valores[col.key].valor2.fatores_interligacao.length }}</div>
-                        <div v-if="row.valores[col.key].valor2.fatores_contrato?.length" class="fator-count">Cont: {{ row.valores[col.key].valor2.fatores_contrato.length }}</div>
+                        <div v-if="row.valores[col.key].valor2.fatores_uh?.length" class="fator-count">UH: {{ formatItems(row.valores[col.key].valor2.fatores_uh) }}</div>
+                        <div v-if="row.valores[col.key].valor2.fatores_ut?.length" class="fator-count">UT: {{ formatItems(row.valores[col.key].valor2.fatores_ut) }}</div>
+                        <div v-if="row.valores[col.key].valor2.fatores_interligacao?.length" class="fator-count">Int: {{ formatItems(row.valores[col.key].valor2.fatores_interligacao) }}</div>
+                        <div v-if="row.valores[col.key].valor2.fatores_contrato?.length" class="fator-count">Cont: {{ formatItems(row.valores[col.key].valor2.fatores_contrato) }}</div>
                       </div>
                     </div>
                     <div v-else class="restricao-details restricao-empty">
@@ -146,7 +144,7 @@
 </template>
 
 <script>
-import { formatNumber, formatLimite } from '../../utils/comparison.js'
+import { formatLimite, semanticEqual } from '../../utils/comparison.js'
 import { useBlockComparison } from '../../composables/useBlockComparison.js'
 import { useEntityTemporalComparison } from '../../composables/useEntityTemporalComparison.js'
 
@@ -161,6 +159,10 @@ export default {
     showOnlyDifferences: { type: Boolean, required: true }
   },
   setup(props) {
+    const formatItems = items => items.map(item => Object.entries(item)
+      .filter(([key, value]) => key !== 'estagio' && value != null)
+      .map(([key, value]) => `${key}=${value}`)
+      .join(' ')).join('; ')
     // Função para extrair valor completo da restrição
     const getEntityValue = (registro) => {
       if (!registro) return null
@@ -174,31 +176,7 @@ export default {
     }
 
     // Função para comparar restrições completas
-    const compareValues = (val1, val2) => {
-      if (!val1 && !val2) return false
-      if (!val1 || !val2) return true
-
-      // Comparar limites
-      const lim1 = val1.limites
-      const lim2 = val2.limites
-
-      if (lim1 && lim2) {
-        const campos = ['pesado_min', 'pesado_max', 'medio_min', 'medio_max', 'leve_min', 'leve_max']
-        for (const campo of campos) {
-          if (lim1[campo] !== lim2[campo]) return true
-        }
-      } else if (lim1 || lim2) {
-        return true
-      }
-
-      // Comparar quantidade de fatores
-      if ((val1.fatores_uh?.length || 0) !== (val2.fatores_uh?.length || 0)) return true
-      if ((val1.fatores_ut?.length || 0) !== (val2.fatores_ut?.length || 0)) return true
-      if ((val1.fatores_interligacao?.length || 0) !== (val2.fatores_interligacao?.length || 0)) return true
-      if ((val1.fatores_contrato?.length || 0) !== (val2.fatores_contrato?.length || 0)) return true
-
-      return false
-    }
+    const compareValues = (val1, val2) => !semanticEqual(val1, val2)
 
     // Usar composable de comparação entidade × tempo
     const { colunasTempo, alignedData } = useEntityTemporalComparison(
@@ -236,6 +214,7 @@ export default {
       onScroll1,
       onScroll2,
       formatLimite,
+      formatItems,
       colunasTempo,
       filteredData,
       hasDifferences

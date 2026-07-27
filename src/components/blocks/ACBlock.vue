@@ -77,6 +77,7 @@
 
 <script>
 import { ref, computed } from 'vue'
+import { alignSequences } from '../../utils/comparison.js'
 
 export default {
   name: 'ACBlock',
@@ -110,39 +111,28 @@ export default {
         const regsUsina1 = registros1.filter(r => r.usina === usina)
         const regsUsina2 = registros2.filter(r => r.usina === usina)
 
-        // Criar chave composta para cada alteração
-        const chavesMap = new Map()
-
-        regsUsina1.forEach(r => {
-          const chave = criarChave(r)
-          if (!chavesMap.has(chave)) {
-            chavesMap.set(chave, { reg1: r, reg2: null })
-          } else {
-            chavesMap.get(chave).reg1 = r
-          }
-        })
-
-        regsUsina2.forEach(r => {
-          const chave = criarChave(r)
-          if (!chavesMap.has(chave)) {
-            chavesMap.set(chave, { reg1: null, reg2: r })
-          } else {
-            chavesMap.get(chave).reg2 = r
-          }
-        })
-
-        // Converter para array e adicionar flags
+        const keys = new Set([
+          ...regsUsina1.map(criarChave),
+          ...regsUsina2.map(criarChave)
+        ])
         const comparacoes = []
-        for (const [chave, { reg1, reg2 }] of chavesMap) {
-          const onlyInOne = (reg1 && !reg2) || (!reg1 && reg2)
-          const different = reg1 && reg2 && !compararAlteracoes(reg1, reg2)
+        for (const chave of keys) {
+          const group1 = regsUsina1.filter(record => criarChave(record) === chave)
+          const group2 = regsUsina2.filter(record => criarChave(record) === chave)
+          const pairs = alignSequences(
+            group1,
+            group2,
+            record => record.dados.trimEnd()
+          )
 
-          comparacoes.push({
-            chave,
-            reg1,
-            reg2,
-            onlyInOne,
-            different
+          pairs.forEach(({ left: reg1, right: reg2 }, index) => {
+            comparacoes.push({
+              chave: `${chave}-${index}`,
+              reg1,
+              reg2,
+              onlyInOne: !reg1 || !reg2,
+              different: Boolean(reg1 && reg2 && !compararAlteracoes(reg1, reg2))
+            })
           })
         }
 

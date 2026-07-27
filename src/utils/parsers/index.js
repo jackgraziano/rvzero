@@ -20,6 +20,8 @@ import { parseRI } from './riParser.js'
 import { parseHE } from './heParser.js'
 import { parseAC } from './acParser.js'
 import { parseOutros } from './outrosParser.js'
+import { parseRQ } from './rqParser.js'
+import { buildStageCalendar } from '../temporal.js'
 
 /**
  * Função principal para fazer o parse do dadger
@@ -44,11 +46,12 @@ export function parseDadger(fileContent) {
     RI: [],
     HE: [],
     AC: [],
+    RQ: [],
     OUTROS: {}
   }
 
   // Dividir o arquivo em linhas
-  const lines = fileContent.split('\n')
+  const lines = fileContent.split(/\r?\n/)
 
   // Processar informações gerais
   result.info_dadger = parseInfoDadger(lines)
@@ -56,19 +59,34 @@ export function parseDadger(fileContent) {
   // Processar bloco DP
   result.DP = parseDP(lines)
 
+  if (!result.info_dadger.data_base) {
+    throw new Error('DADGER inválido: registro DT ausente ou com data inválida')
+  }
+
+  if (result.DP.length === 0) {
+    throw new Error('DADGER inválido: bloco DP ausente ou sem registros válidos')
+  }
+
   // Calcular número de estágios
   let numeroEstagios = 0
   if (result.DP.length > 0) {
     numeroEstagios = calcularNumeroEstagios(result.DP)
     result.info_dadger.numero_estagios = numeroEstagios
 
-    // Calcular as datas dos estágios
-    if (result.info_dadger.data_base && numeroEstagios > 0) {
-      result.info_dadger.datas_estagios = calcularDatasEstagios(
-        result.info_dadger.data_base,
-        numeroEstagios
-      )
-    }
+    result.info_dadger.numero_patamares = Math.max(
+      ...result.DP.map(record => record.numero_patamares),
+      0
+    )
+    result.info_dadger.estagios = buildStageCalendar(
+      result.info_dadger.data_base,
+      numeroEstagios,
+      result.DP
+    )
+    result.info_dadger.datas_estagios = calcularDatasEstagios(
+      result.info_dadger.data_base,
+      numeroEstagios,
+      result.DP
+    )
   }
 
   // Processar bloco PQ (passa numero_estagios para expansão)
@@ -78,22 +96,26 @@ export function parseDadger(fileContent) {
   result.CT = parseCT(lines, numeroEstagios)
 
   // Processar bloco IA (passa numero_estagios para expansão)
-  result.IA = parseIA(lines, numeroEstagios)
+  result.IA = parseIA(
+    lines,
+    numeroEstagios,
+    result.info_dadger.numero_patamares
+  )
 
   // Processar bloco UH (só existe para estágio 1, não precisa expansão)
   result.UH = parseUH(lines)
 
   // Processar bloco TI (todos os estágios são declarados, não precisa expansão)
-  result.TI = parseTI(lines)
+  result.TI = parseTI(lines, numeroEstagios)
 
   // Processar bloco MP (todos os estágios são declarados, não precisa expansão)
-  result.MP = parseMP(lines)
+  result.MP = parseMP(lines, numeroEstagios)
 
   // Processar bloco FD (todos os estágios são declarados, não precisa expansão)
-  result.FD = parseFD(lines)
+  result.FD = parseFD(lines, numeroEstagios)
 
   // Processar bloco VE (todos os estágios são declarados, não precisa expansão)
-  result.VE = parseVE(lines)
+  result.VE = parseVE(lines, numeroEstagios)
 
   // Processar bloco RE (restrições elétricas com expansão de estágios)
   result.RE = parseRE(lines, numeroEstagios)
@@ -112,6 +134,9 @@ export function parseDadger(fileContent) {
 
   // Processar bloco AC (alteração de cadastro)
   result.AC = parseAC(lines)
+
+  // Vazão defluente mínima histórica (um valor por estágio)
+  result.RQ = parseRQ(lines, numeroEstagios)
 
   // Processar outros blocos (capturar linhas como strings simples)
   result.OUTROS = parseOutros(lines)

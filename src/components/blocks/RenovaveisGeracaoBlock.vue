@@ -132,6 +132,10 @@ export default {
           key,
           ren1,
           ren2,
+          periodo: ren1?.periodo ?? ren2?.periodo,
+          submercado: ren1?.submercado ?? ren2?.submercado,
+          patamar: ren1?.patamar ?? ren2?.patamar,
+          geracaoMedia: ren1?.geracaoMedia ?? ren2?.geracaoMedia,
           onlyInOne,
           diff_geracaoMedia
         })

@@ -1,74 +1,56 @@
+import { groupBy, parseDecimalField, parseIntegerField } from './parserUtils.js'
+
 /**
- * Parser do bloco HE (Vminop - Restrições de Energia Armazenada)
- * Composto por: HE (cabeçalho da restrição), CM (coeficientes)
- * Cada HE define uma restrição para um estágio específico
+ * O CM é escrito depois de todas as linhas HE da mesma restrição. Portanto, a
+ * associação correta é pelo número da restrição, não pela linha HE precedente.
  */
-
 export function parseHE(lines) {
-  const restricoes = []
-  let restricaoAtual = null
+  const restrictions = lines
+    .filter(line => line.startsWith('HE '))
+    .map(parseHELine)
+    .filter(Boolean)
+  const coefficients = lines
+    .filter(line => line.startsWith('CM '))
+    .map(parseCMLine)
+    .filter(Boolean)
+  const coefficientsByRestriction = groupBy(
+    coefficients,
+    coefficient => coefficient.numero_restricao
+  )
 
-  for (const line of lines) {
-    if (line.startsWith('HE ')) {
-      // Nova restrição - salvar a anterior se existir
-      if (restricaoAtual) {
-        restricoes.push(restricaoAtual)
-      }
+  return restrictions.map(restriction => ({
+    ...restriction,
+    coeficientes: coefficientsByRestriction.get(restriction.numero_restricao) ?? []
+  }))
+}
 
-      const numero = parseInt(line.substring(4, 7).trim())
-      const tipo_limite = parseInt(line.substring(9, 10).trim())
-      const limite_inferior_str = line.substring(14, 24).trim()
-      const estagio = parseInt(line.substring(25, 27).trim())
-      const penalidade_str = line.substring(28, 38).trim()
-      const flag_calculo_prod = parseInt(line.substring(39, 40).trim()) || 0
-      const flag_tipo_valores = parseInt(line.substring(41, 42).trim()) || 0
-      const flag_trat_nao_atend = parseInt(line.substring(43, 44).trim()) || 0
-      const arquivo_produtividades = line.substring(45, 105).trim()
-      const flag_tolerancia = parseInt(line.substring(106, 107).trim()) || 0
+function parseHELine(line) {
+  const numero_restricao = parseIntegerField(line.slice(4, 7))
+  const estagio = parseIntegerField(line.slice(25, 27))
+  if (numero_restricao === null || estagio === null) return null
 
-      if (!isNaN(numero) && !isNaN(estagio)) {
-        restricaoAtual = {
-          numero_restricao: numero,
-          estagio,
-          tipo_limite: !isNaN(tipo_limite) ? tipo_limite : null,
-          limite_inferior: limite_inferior_str ? parseFloat(limite_inferior_str) : null,
-          penalidade: penalidade_str ? parseFloat(penalidade_str) : null,
-          flag_calculo_prod,
-          flag_tipo_valores,
-          flag_trat_nao_atend,
-          arquivo_produtividades: arquivo_produtividades || null,
-          flag_tolerancia,
-          coeficientes: []
-        }
-      }
-    } else if (line.startsWith('CM ') && restricaoAtual) {
-      const coef = parseCMLine(line)
-      if (coef) {
-        restricaoAtual.coeficientes.push(coef)
-      }
-    }
+  return {
+    numero_restricao,
+    estagio,
+    tipo_limite: parseIntegerField(line.slice(9, 10)),
+    limite_inferior: parseDecimalField(line.slice(14, 24)),
+    penalidade: parseDecimalField(line.slice(28, 38)),
+    flag_calculo_prod: parseIntegerField(line.slice(39, 40)),
+    flag_tipo_valores: parseIntegerField(line.slice(41, 42)),
+    flag_trat_nao_atend: parseIntegerField(line.slice(43, 44)),
+    arquivo_produtividades: line.slice(45, 105).trim() || null,
+    flag_tolerancia: parseIntegerField(line.slice(106, 107))
   }
-
-  // Salvar última restrição
-  if (restricaoAtual) {
-    restricoes.push(restricaoAtual)
-  }
-
-  return restricoes
 }
 
 function parseCMLine(line) {
-  // CM: 1-2, numero: 5-7, ree: 10-12, coeficiente: 15-24
-
-  const numero = parseInt(line.substring(4, 7).trim())
-  const ree = parseInt(line.substring(9, 12).trim())
-  const coeficiente_str = line.substring(14, 24).trim()
-
-  if (isNaN(ree)) return null
+  const numero_restricao = parseIntegerField(line.slice(4, 7))
+  const ree = parseIntegerField(line.slice(9, 12))
+  if (numero_restricao === null || ree === null) return null
 
   return {
-    numero_restricao: numero,
+    numero_restricao,
     ree,
-    coeficiente: coeficiente_str ? parseFloat(coeficiente_str) : null
+    coeficiente: parseDecimalField(line.slice(14, 24))
   }
 }

@@ -208,6 +208,7 @@ export default {
     const alignedData = computed(() => {
       const registros1 = props.dadger1Data.RI || []
       const registros2 = props.dadger2Data.RI || []
+      const entityKey = record => `${record.usina}\u0000${record.subsistema}`
 
       let aligned
       if (props.compareMode === 'data') {
@@ -216,16 +217,16 @@ export default {
           registros2,
           props.dadger1Data,
           props.dadger2Data,
-          'usina',  // secondaryKey - agrupa por usina (sempre Itaipu, mas necessário)
+          entityKey,
           transformFn
         )
       } else {
         aligned = alignByEstagio(
           registros1,
           registros2,
-          props.dadger1Data,
-          props.dadger2Data,
-          'usina',  // secondaryKey - agrupa por usina
+          props.dadger1Data.info_dadger,
+          props.dadger2Data.info_dadger,
+          entityKey,
           transformFn
         )
       }

@@ -1,26 +1,9 @@
-/**
- * Composable para blocos com estrutura "entidade × tempo"
- * Usado por: RE e outros blocos complexos com valores variados por estágio
- *
- * Estrutura:
- * - Cada LINHA = uma entidade (ex: restrição)
- * - Cada COLUNA = um estágio/data
- * - Valores podem ser complexos (objetos)
- */
-
 import { computed } from 'vue'
-import { encontrarEstagioPorDataV2, collectUniqueDates } from '../utils/comparison.js'
+import {
+  collectUniqueDates,
+  encontrarEstagioPorData
+} from '../utils/comparison.js'
 
-/**
- * Cria a lógica de comparação para blocos com estrutura entidade × tempo
- *
- * @param {Object} props - Props do componente (dadger1Data, dadger2Data, compareMode)
- * @param {string} blockKey - Chave do bloco no dadger (ex: 'RE')
- * @param {string} entityKey - Campo que identifica a entidade (ex: 'numero_restricao')
- * @param {Function} getEntityValue - Função para extrair valor de um registro
- * @param {Function} compareValues - Função para comparar dois valores (retorna true se diferentes)
- * @returns {Object} Computed properties
- */
 export function useEntityTemporalComparison(
   props,
   blockKey,
@@ -28,148 +11,91 @@ export function useEntityTemporalComparison(
   getEntityValue,
   compareValues
 ) {
-  /**
-   * Colunas de tempo baseado no modo de comparação
-   */
   const colunasTempo = computed(() => {
-    const numEstagios1 = props.dadger1Data.info_dadger?.numero_estagios || 0
-    const numEstagios2 = props.dadger2Data.info_dadger?.numero_estagios || 0
-
     if (props.compareMode === 'data') {
-      const datasUnicas = collectUniqueDates(props.dadger1Data, props.dadger2Data)
-
-      if (datasUnicas.length > 0) {
-        return datasUnicas.map(data => ({
-          key: `data_${data}`,
-          label: data,
-          data: data
-        }))
-      }
+      return collectUniqueDates(props.dadger1Data, props.dadger2Data)
+        .map(data => ({ key: `data_${data}`, label: data, data }))
     }
 
-    // Modo ESTAGIO ou fallback
-    const maxEstagios = Math.max(numEstagios1, numEstagios2)
-    const colunas = []
-    for (let i = 1; i <= maxEstagios; i++) {
-      colunas.push({
-        key: `estagio_${i}`,
-        label: `Est ${i}`,
-        estagio: i
-      })
-    }
-    return colunas
+    const maximum = Math.max(
+      props.dadger1Data.info_dadger?.numero_estagios ?? 0,
+      props.dadger2Data.info_dadger?.numero_estagios ?? 0
+    )
+    return Array.from({ length: maximum }, (_, index) => ({
+      key: `estagio_${index + 1}`,
+      label: `Est ${index + 1}`,
+      estagio: index + 1
+    }))
   })
 
-  /**
-   * Dados alinhados por entidade com valores em colunas temporais
-   */
   const alignedData = computed(() => {
-    const registros1 = props.dadger1Data[blockKey] || []
-    const registros2 = props.dadger2Data[blockKey] || []
+    const records1 = props.dadger1Data[blockKey] ?? []
+    const records2 = props.dadger2Data[blockKey] ?? []
+    const entities = new Set([
+      ...records1.map(record => record[entityKey]),
+      ...records2.map(record => record[entityKey])
+    ])
 
-    // Coletar todas as entidades únicas
-    const entidades = new Set()
-    registros1.forEach(r => entidades.add(r[entityKey]))
-    registros2.forEach(r => entidades.add(r[entityKey]))
+    return [...entities].map(entityId => {
+      const entityRecords1 = records1.filter(record => record[entityKey] === entityId)
+      const entityRecords2 = records2.filter(record => record[entityKey] === entityId)
+      const map1 = new Map(entityRecords1.map(record => [record.estagio, record]))
+      const map2 = new Map(entityRecords2.map(record => [record.estagio, record]))
+      const values = {}
+      let hasComparableDifference = false
+      let hasCommonHorizon = false
 
-    const alinhados = []
+      for (const column of colunasTempo.value) {
+        const stage1 = column.data
+          ? encontrarEstagioPorData(column.data, props.dadger1Data)
+          : column.estagio <= (props.dadger1Data.info_dadger?.numero_estagios ?? 0)
+            ? column.estagio
+            : null
+        const stage2 = column.data
+          ? encontrarEstagioPorData(column.data, props.dadger2Data)
+          : column.estagio <= (props.dadger2Data.info_dadger?.numero_estagios ?? 0)
+            ? column.estagio
+            : null
+        const dataExisteEmAmbos = stage1 !== null && stage2 !== null
+        const record1 = stage1 === null ? null : map1.get(stage1) ?? null
+        const record2 = stage2 === null ? null : map2.get(stage2) ?? null
+        const sameTemporality = record1 !== null && record2 !== null
+        const value1 = record1 ? getEntityValue(record1) : null
+        const value2 = record2 ? getEntityValue(record2) : null
+        const diff = compareValues(value1, value2)
 
-    for (const entidadeId of entidades) {
-      const regsEntidade1 = registros1.filter(r => r[entityKey] === entidadeId)
-      const regsEntidade2 = registros2.filter(r => r[entityKey] === entidadeId)
-
-      const onlyInOne = regsEntidade1.length === 0 || regsEntidade2.length === 0
-
-      // Criar objeto de valores alinhados por coluna temporal
-      const valores = {}
-      let temDiferenca = false
-
-      for (const col of colunasTempo.value) {
-        let valor1 = null
-        let valor2 = null
-        let sameTemporality = false
-        let dataExisteEmAmbos = false
-
-        if (col.data) {
-          // Coluna baseada em DATA
-          const estagio1 = encontrarEstagioPorDataV2(col.data, props.dadger1Data)
-          const estagio2 = encontrarEstagioPorDataV2(col.data, props.dadger2Data)
-
-          // Data existe em ambos os dadgers se ambos têm estágio para essa data
-          dataExisteEmAmbos = estagio1 !== null && estagio2 !== null
-
-          const reg1 = estagio1 ? regsEntidade1.find(r => r.estagio === estagio1) : null
-          const reg2 = estagio2 ? regsEntidade2.find(r => r.estagio === estagio2) : null
-
-          valor1 = reg1 ? getEntityValue(reg1) : null
-          valor2 = reg2 ? getEntityValue(reg2) : null
-
-          // sameTemporality = ambos têm a entidade nessa data
-          sameTemporality = reg1 !== null && reg2 !== null
-        } else if (col.estagio) {
-          // Coluna baseada em ESTÁGIO
-          const reg1 = regsEntidade1.find(r => r.estagio === col.estagio)
-          const reg2 = regsEntidade2.find(r => r.estagio === col.estagio)
-
-          // Estágio existe em ambos (no modo estágio sempre existe)
-          dataExisteEmAmbos = true
-
-          valor1 = reg1 ? getEntityValue(reg1) : null
-          valor2 = reg2 ? getEntityValue(reg2) : null
-
-          // sameTemporality = ambos têm a entidade nesse estágio
-          sameTemporality = reg1 !== undefined && reg2 !== undefined
+        if (dataExisteEmAmbos) {
+          hasCommonHorizon = true
+          if (!sameTemporality || diff) hasComparableDifference = true
         }
-
-        const diff = compareValues(valor1, valor2)
-
-        // Contar como diferença se:
-        // 1. Valores diferentes na mesma temporalidade
-        // 2. Data existe em ambos mas entidade só em um (highlighted)
-        if (diff && sameTemporality) {
-          temDiferenca = true
-        } else if (dataExisteEmAmbos && !sameTemporality) {
-          // Data comum mas entidade só em um dadger
-          temDiferenca = true
-        }
-
-        valores[col.key] = {
-          valor1,
-          valor2,
+        values[column.key] = {
+          valor1: value1,
+          valor2: value2,
           diff,
           sameTemporality,
           dataExisteEmAmbos
         }
       }
 
+      const entityOnlyInOne = entityRecords1.length === 0 || entityRecords2.length === 0
       const row = {
-        key: String(entidadeId),
-        [entityKey]: entidadeId,
-        onlyInOne,
-        // Para blocos com colunas temporais, sameTemporality sempre true se existe em pelo menos um dadger
-        sameTemporality: true,
-        dadger1: regsEntidade1.length > 0 ? regsEntidade1[0] : null,
-        dadger2: regsEntidade2.length > 0 ? regsEntidade2[0] : null,
-        valores,
-        temDiferenca,
-        // Campo para compatibilidade com filtro
-        // Se onlyInOne, sempre considerar como diferença
-        has_diff: onlyInOne || temDiferenca
+        key: String(entityId),
+        [entityKey]: entityId,
+        onlyInOne: entityOnlyInOne && hasCommonHorizon,
+        sameTemporality: hasCommonHorizon,
+        dadger1: entityRecords1[0] ?? null,
+        dadger2: entityRecords2[0] ?? null,
+        valores: values,
+        temDiferenca: hasComparableDifference,
+        has_diff: hasComparableDifference
       }
 
-      // Adicionar valores para permitir sort
-      for (const col of colunasTempo.value) {
-        row[col.key] = valores[col.key].valor1 ?? valores[col.key].valor2 ?? 0
+      for (const column of colunasTempo.value) {
+        row[column.key] = values[column.key].valor1 ?? values[column.key].valor2 ?? 0
       }
-
-      alinhados.push(row)
-    }
-
-    return alinhados
+      return row
+    })
   })
 
-  return {
-    colunasTempo,
-    alignedData
-  }
+  return { colunasTempo, alignedData }
 }

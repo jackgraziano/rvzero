@@ -4,17 +4,19 @@
       <div class="dadger-info">
         <h3>{{ dadger1Name }}</h3>
         <p>DT: {{ dadger1Data.info_dadger.data_base }}</p>
+        <p>{{ horizonLabel(dadger1Data) }}</p>
       </div>
       <div class="dadger-info">
         <h3>{{ dadger2Name }}</h3>
         <p>DT: {{ dadger2Data.info_dadger.data_base }}</p>
+        <p>{{ horizonLabel(dadger2Data) }}</p>
       </div>
     </div>
 
     <div class="comparison-content">
       <!-- Bloco UH -->
       <UHBlock
-        v-if="dadger1Data.UH && dadger2Data.UH"
+        v-if="hasBlockData('UH')"
         :dadger1Data="dadger1Data"
         :dadger1Name="dadger1Name"
         :dadger2Data="dadger2Data"
@@ -25,7 +27,7 @@
 
       <!-- Bloco CT -->
       <CTBlock
-        v-if="dadger1Data.CT && dadger2Data.CT"
+        v-if="hasBlockData('CT')"
         :dadger1Data="dadger1Data"
         :dadger1Name="dadger1Name"
         :dadger2Data="dadger2Data"
@@ -36,7 +38,7 @@
 
       <!-- Bloco DP -->
       <DPBlock
-        v-if="dadger1Data.DP && dadger2Data.DP"
+        v-if="hasBlockData('DP')"
         :dadger1Data="dadger1Data"
         :dadger1Name="dadger1Name"
         :dadger2Data="dadger2Data"
@@ -47,7 +49,7 @@
 
       <!-- Bloco PQ -->
       <PQBlock
-        v-if="dadger1Data.PQ && dadger2Data.PQ"
+        v-if="hasBlockData('PQ')"
         :dadger1Data="dadger1Data"
         :dadger1Name="dadger1Name"
         :dadger2Data="dadger2Data"
@@ -58,7 +60,7 @@
 
       <!-- Bloco RI -->
       <RIBlock
-        v-if="dadger1Data.RI && dadger2Data.RI"
+        v-if="hasBlockData('RI')"
         :dadger1Data="dadger1Data"
         :dadger1Name="dadger1Name"
         :dadger2Data="dadger2Data"
@@ -69,7 +71,7 @@
 
       <!-- Bloco IA -->
       <IABlock
-        v-if="dadger1Data.IA && dadger2Data.IA"
+        v-if="hasBlockData('IA')"
         :dadger1Data="dadger1Data"
         :dadger1Name="dadger1Name"
         :dadger2Data="dadger2Data"
@@ -78,42 +80,56 @@
         :showOnlyDifferences="showOnlyDifferences"
       />
 
-      <!-- Bloco MP -->
-      <MPBlock
-        v-if="dadger1Data.MP && dadger2Data.MP"
+      <StageArrayBlock
+        v-if="hasBlockData('MP')"
         :dadger1Data="dadger1Data"
         :dadger1Name="dadger1Name"
         :dadger2Data="dadger2Data"
         :dadger2Name="dadger2Name"
         :compareMode="compareMode"
         :showOnlyDifferences="showOnlyDifferences"
+        blockKey="MP"
+        valueField="fatores"
+        entityField="numero_usina"
+        entityLabel="Nº Usina"
+        title="BLOCO MP - MANUTENÇÃO PROGRAMADA"
+        hasItaipuSet
       />
 
-      <!-- Bloco FD -->
-      <FDBlock
-        v-if="dadger1Data.FD && dadger2Data.FD"
+      <StageArrayBlock
+        v-if="hasBlockData('FD')"
         :dadger1Data="dadger1Data"
         :dadger1Name="dadger1Name"
         :dadger2Data="dadger2Data"
         :dadger2Name="dadger2Name"
         :compareMode="compareMode"
         :showOnlyDifferences="showOnlyDifferences"
+        blockKey="FD"
+        valueField="fatores"
+        entityField="numero_usina"
+        entityLabel="Nº Usina"
+        title="BLOCO FD - FATORES DE DISPONIBILIDADE"
+        hasItaipuSet
       />
 
-      <!-- Bloco VE -->
-      <VEBlock
-        v-if="dadger1Data.VE && dadger2Data.VE"
+      <StageArrayBlock
+        v-if="hasBlockData('VE')"
         :dadger1Data="dadger1Data"
         :dadger1Name="dadger1Name"
         :dadger2Data="dadger2Data"
         :dadger2Name="dadger2Name"
         :compareMode="compareMode"
         :showOnlyDifferences="showOnlyDifferences"
+        blockKey="VE"
+        valueField="volumes"
+        entityField="numero_usina"
+        entityLabel="Nº Usina"
+        title="BLOCO VE - VOLUME DE ESPERA"
       />
 
       <!-- Bloco RE -->
       <REBlock
-        v-if="dadger1Data.RE && dadger2Data.RE"
+        v-if="hasBlockData('RE')"
         :dadger1Data="dadger1Data"
         :dadger1Name="dadger1Name"
         :dadger2Data="dadger2Data"
@@ -124,7 +140,7 @@
 
       <!-- Bloco AC -->
       <ACBlock
-        v-if="dadger1Data.AC && dadger2Data.AC"
+        v-if="hasBlockData('AC')"
         :dadger1Data="dadger1Data"
         :dadger1Name="dadger1Name"
         :dadger2Data="dadger2Data"
@@ -132,20 +148,24 @@
         :showOnlyDifferences="showOnlyDifferences"
       />
 
-      <!-- Bloco TI -->
-      <TIBlock
-        v-if="dadger1Data.TI && dadger2Data.TI"
+      <StageArrayBlock
+        v-if="hasBlockData('TI')"
         :dadger1Data="dadger1Data"
         :dadger1Name="dadger1Name"
         :dadger2Data="dadger2Data"
         :dadger2Name="dadger2Name"
         :compareMode="compareMode"
         :showOnlyDifferences="showOnlyDifferences"
+        blockKey="TI"
+        valueField="vazoes"
+        entityField="numero_usina"
+        entityLabel="Nº Usina"
+        title="BLOCO TI - VAZÃO DESVIADA"
       />
 
       <!-- Bloco HV -->
       <HVBlock
-        v-if="dadger1Data.HV && dadger2Data.HV"
+        v-if="hasBlockData('HV')"
         :dadger1Data="dadger1Data"
         :dadger1Name="dadger1Name"
         :dadger2Data="dadger2Data"
@@ -156,7 +176,7 @@
 
       <!-- Bloco HQ -->
       <HQBlock
-        v-if="dadger1Data.HQ && dadger2Data.HQ"
+        v-if="hasBlockData('HQ')"
         :dadger1Data="dadger1Data"
         :dadger1Name="dadger1Name"
         :dadger2Data="dadger2Data"
@@ -167,7 +187,7 @@
 
       <!-- Bloco HE -->
       <HEBlock
-        v-if="dadger1Data.HE && dadger2Data.HE"
+        v-if="hasBlockData('HE')"
         :dadger1Data="dadger1Data"
         :dadger1Name="dadger1Name"
         :dadger2Data="dadger2Data"
@@ -176,9 +196,23 @@
         :showOnlyDifferences="showOnlyDifferences"
       />
 
-      <!-- Outros Blocos -->
+      <StageArrayBlock
+        v-if="hasBlockData('RQ')"
+        :dadger1Data="dadger1Data"
+        :dadger1Name="dadger1Name"
+        :dadger2Data="dadger2Data"
+        :dadger2Name="dadger2Name"
+        :compareMode="compareMode"
+        :showOnlyDifferences="showOnlyDifferences"
+        blockKey="RQ"
+        valueField="vazoes_minimas_pct"
+        entityField="numero_ree"
+        entityLabel="Nº REE"
+        title="BLOCO RQ - VAZÃO DEFLUENTE MÍNIMA (%)"
+      />
+
       <OutrosBlock
-        v-if="dadger1Data.OUTROS || dadger2Data.OUTROS"
+        v-if="hasBlockData('OUTROS')"
         :dadger1Data="dadger1Data"
         :dadger1Name="dadger1Name"
         :dadger2Data="dadger2Data"
@@ -207,10 +241,7 @@ import PQBlock from './blocks/PQBlock.vue'
 import CTBlock from './blocks/CTBlock.vue'
 import IABlock from './blocks/IABlock.vue'
 import UHBlock from './blocks/UHBlock.vue'
-import TIBlock from './blocks/TIBlock.vue'
-import MPBlock from './blocks/MPBlock.vue'
-import FDBlock from './blocks/FDBlock.vue'
-import VEBlock from './blocks/VEBlock.vue'
+import StageArrayBlock from './blocks/StageArrayBlock.vue'
 import REBlock from './blocks/REBlock.vue'
 import HQBlock from './blocks/HQBlock.vue'
 import HVBlock from './blocks/HVBlock.vue'
@@ -227,10 +258,7 @@ export default {
     CTBlock,
     IABlock,
     UHBlock,
-    TIBlock,
-    MPBlock,
-    FDBlock,
-    VEBlock,
+    StageArrayBlock,
     REBlock,
     HQBlock,
     HVBlock,
@@ -263,6 +291,22 @@ export default {
     showOnlyDifferences: {
       type: Boolean,
       required: true
+    }
+  },
+  methods: {
+    hasBlockData(blockKey) {
+      return [this.dadger1Data[blockKey], this.dadger2Data[blockKey]]
+        .some(value => Array.isArray(value)
+          ? value.length > 0
+          : value && Object.values(value).some(lines => lines.length > 0))
+    },
+    horizonLabel(dadgerData) {
+      const stages = dadgerData.info_dadger?.estagios ?? []
+      if (stages.length === 0) return 'Horizonte indisponível'
+
+      const first = stages[0]
+      const last = stages.at(-1)
+      return `Horizonte: ${first.data_inicio} → ${last.data_fim ?? last.data_inicio} · ${stages.length} estágios`
     }
   }
 }

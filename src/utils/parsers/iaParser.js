@@ -1,109 +1,44 @@
-/**
- * Parser para o bloco IA - Intercâmbio entre subsistemas
- */
+import {
+  expandForwardByStage,
+  parseDecimalField,
+  parseIntegerField
+} from './parserUtils.js'
 
-/**
- * Parse de uma linha IA
- */
-function parseIALine(line) {
-  try {
-    const estagio = parseInt(line.substring(4, 6).trim())
-    const subsistema_de = line.substring(9, 11).trim()
-    const subsistema_para = line.substring(14, 16).trim()
-    const flag_penalidade = parseInt(line.substring(17, 18).trim()) || 0
+export function parseIA(lines, stageCount, loadLevelCount = 3) {
+  const records = lines
+    .filter(line => line.startsWith('IA '))
+    .map(line => parseIALine(line, loadLevelCount))
+    .filter(Boolean)
 
-    // Capacidades por patamar (5 patamares x 2 direções)
-    const capacidades = {
-      // Patamar 1
-      p1_de_para: parseFloat(line.substring(19, 29).trim()) || 0,
-      p1_para_de: parseFloat(line.substring(29, 39).trim()) || 0,
-      // Patamar 2
-      p2_de_para: parseFloat(line.substring(39, 49).trim()) || 0,
-      p2_para_de: parseFloat(line.substring(49, 59).trim()) || 0,
-      // Patamar 3
-      p3_de_para: parseFloat(line.substring(59, 69).trim()) || 0,
-      p3_para_de: parseFloat(line.substring(69, 79).trim()) || 0,
-      // Patamar 4
-      p4_de_para: parseFloat(line.substring(79, 89).trim()) || 0,
-      p4_para_de: parseFloat(line.substring(89, 99).trim()) || 0,
-      // Patamar 5
-      p5_de_para: parseFloat(line.substring(99, 109).trim()) || 0,
-      p5_para_de: parseFloat(line.substring(109, 119).trim()) || 0
-    }
-
-    return {
-      estagio,
-      subsistema_de,
-      subsistema_para,
-      flag_penalidade,
-      ...capacidades
-    }
-  } catch (error) {
-    console.error('Erro ao parsear linha IA:', line, error)
-    return null
-  }
+  const numberOfStages = stageCount || Math.max(...records.map(record => record.estagio), 0)
+  return expandForwardByStage(
+    records,
+    numberOfStages,
+    record => `${record.subsistema_de}\u0000${record.subsistema_para}`
+  )
 }
 
-/**
- * Expandir estágios faltantes por intercâmbio (de-para)
- */
-function expandirEstagios(registros, numeroEstagios) {
-  // Agrupar por intercâmbio (de-para)
-  const porIntercambio = {}
+function parseIALine(line, loadLevelCount) {
+  const estagio = parseIntegerField(line.slice(4, 6))
+  const subsistema_de = line.slice(9, 11).trim()
+  const subsistema_para = line.slice(14, 16).trim()
 
-  for (const reg of registros) {
-    const key = `${reg.subsistema_de}-${reg.subsistema_para}`
-    if (!porIntercambio[key]) {
-      porIntercambio[key] = []
-    }
-    porIntercambio[key].push(reg)
+  if (estagio === null || !subsistema_de || !subsistema_para) return null
+
+  const capacidades = []
+  for (let patamar = 0; patamar < loadLevelCount; patamar += 1) {
+    const start = 19 + patamar * 20
+    capacidades.push({
+      de_para: parseDecimalField(line.slice(start, start + 10)),
+      para_de: parseDecimalField(line.slice(start + 10, start + 20))
+    })
   }
 
-  // Expandir cada grupo
-  const expandidos = []
-
-  for (const [key, regs] of Object.entries(porIntercambio)) {
-    // Ordenar por estágio
-    regs.sort((a, b) => a.estagio - b.estagio)
-
-    let ultimoValor = null
-
-    for (let estagio = 1; estagio <= numeroEstagios; estagio++) {
-      const regExistente = regs.find(r => r.estagio === estagio)
-
-      if (regExistente) {
-        expandidos.push(regExistente)
-        ultimoValor = regExistente
-      } else if (ultimoValor) {
-        // Repetir último valor conhecido
-        expandidos.push({
-          ...ultimoValor,
-          estagio
-        })
-      }
-    }
+  return {
+    estagio,
+    subsistema_de,
+    subsistema_para,
+    flag_penalidade: parseIntegerField(line.slice(17, 18)),
+    capacidades
   }
-
-  return expandidos
-}
-
-/**
- * Parse do bloco IA completo
- */
-export function parseIA(lines, numeroEstagios) {
-  const registros = []
-
-  for (const line of lines) {
-    if (line.startsWith('IA ')) {
-      const registro = parseIALine(line)
-      if (registro) {
-        registros.push(registro)
-      }
-    }
-  }
-
-  // Expandir estágios faltantes
-  const expandidos = expandirEstagios(registros, numeroEstagios)
-
-  return expandidos
 }

@@ -19,6 +19,7 @@
                   <th>Tipo Limite</th>
                   <th class="col-number">Lim Inf</th>
                   <th class="col-number">Penalidade</th>
+                  <th>Flags / arquivo</th>
                   <th>Coeficientes</th>
                 </tr>
               </thead>
@@ -33,13 +34,14 @@
                 >
                   <td class="col-stage">{{ row.display }}</td>
                   <td>{{ row.dadger1?.numero_restricao ?? '-' }}</td>
-                  <td>{{ formatTipoLimite(row.dadger1?.tipo_limite) }}</td>
+                  <td :class="{ diff: row.tipo_limite_diff && !row.onlyInOne }">{{ formatTipoLimite(row.dadger1?.tipo_limite) }}</td>
                   <td :class="{ 'diff': row.limite_diff && !row.onlyInOne }" class="col-number">
                     {{ formatNumber(row.dadger1?.limite_inferior) }}
                   </td>
                   <td :class="{ 'diff': row.penalidade_diff && !row.onlyInOne }" class="col-number">
                     {{ formatNumber(row.dadger1?.penalidade) }}
                   </td>
+                  <td :class="{ diff: row.flags_diff && !row.onlyInOne }">{{ formatFlags(row.dadger1) }}</td>
                   <td :class="{ 'diff': row.coeficientes_diff && !row.onlyInOne }">
                     <div v-if="row.dadger1?.coeficientes?.length" class="coef-list">
                       <span v-for="(coef, idx) in row.dadger1.coeficientes" :key="idx" class="coef-item">
@@ -66,6 +68,7 @@
                   <th>Tipo Limite</th>
                   <th class="col-number">Lim Inf</th>
                   <th class="col-number">Penalidade</th>
+                  <th>Flags / arquivo</th>
                   <th>Coeficientes</th>
                 </tr>
               </thead>
@@ -80,13 +83,14 @@
                 >
                   <td class="col-stage">{{ row.display }}</td>
                   <td>{{ row.dadger2?.numero_restricao ?? '-' }}</td>
-                  <td>{{ formatTipoLimite(row.dadger2?.tipo_limite) }}</td>
+                  <td :class="{ diff: row.tipo_limite_diff && !row.onlyInOne }">{{ formatTipoLimite(row.dadger2?.tipo_limite) }}</td>
                   <td :class="{ 'diff': row.limite_diff && !row.onlyInOne }" class="col-number">
                     {{ formatNumber(row.dadger2?.limite_inferior) }}
                   </td>
                   <td :class="{ 'diff': row.penalidade_diff && !row.onlyInOne }" class="col-number">
                     {{ formatNumber(row.dadger2?.penalidade) }}
                   </td>
+                  <td :class="{ diff: row.flags_diff && !row.onlyInOne }">{{ formatFlags(row.dadger2) }}</td>
                   <td :class="{ 'diff': row.coeficientes_diff && !row.onlyInOne }">
                     <div v-if="row.dadger2?.coeficientes?.length" class="coef-list">
                       <span v-for="(coef, idx) in row.dadger2.coeficientes" :key="idx" class="coef-item">
@@ -107,7 +111,7 @@
 
 <script>
 import { computed } from 'vue'
-import { hasDiff, formatNumber, alignByEstagio, alignByData } from '../../utils/comparison.js'
+import { hasDiff, formatNumber, alignByEstagio, alignByData, semanticEqual } from '../../utils/comparison.js'
 import { useBlockComparison } from '../../composables/useBlockComparison.js'
 
 export default {
@@ -127,21 +131,17 @@ export default {
     })
 
     // Função para comparar coeficientes
-    const comparaCoeficientes = (coefs1, coefs2) => {
-      if (!coefs1 && !coefs2) return false
-      if (!coefs1 || !coefs2) return true
-      if (coefs1.length !== coefs2.length) return true
-
-      // Comparar cada coeficiente
-      for (let i = 0; i < coefs1.length; i++) {
-        const c1 = coefs1[i]
-        const c2 = coefs2.find(c => c.ree === c1.ree)
-        if (!c2 || hasDiff(c1.coeficiente, c2.coeficiente)) {
-          return true
-        }
-      }
-      return false
-    }
+    const comparaCoeficientes = (coefs1, coefs2) => !semanticEqual(coefs1, coefs2)
+    const flagFields = [
+      'flag_calculo_prod',
+      'flag_tipo_valores',
+      'flag_trat_nao_atend',
+      'arquivo_produtividades',
+      'flag_tolerancia'
+    ]
+    const formatFlags = record => record
+      ? flagFields.map(field => `${field}=${record[field] ?? '-'}`).join(' ')
+      : '-'
 
     // Função de transformação para alinhar registros
     const transformFn = (reg1, reg2, onlyInOne, sameTemporality, primaryValue, secondaryValue) => {
@@ -190,8 +190,12 @@ export default {
       // Adicionar campos de diferença
       return aligned.map(row => ({
         ...row,
+        tipo_limite_diff: hasDiff(row.dadger1?.tipo_limite, row.dadger2?.tipo_limite),
         limite_diff: hasDiff(row.dadger1?.limite_inferior, row.dadger2?.limite_inferior),
         penalidade_diff: hasDiff(row.dadger1?.penalidade, row.dadger2?.penalidade),
+        flags_diff: flagFields.some(field =>
+          hasDiff(row.dadger1?.[field], row.dadger2?.[field])
+        ),
         coeficientes_diff: comparaCoeficientes(row.dadger1?.coeficientes, row.dadger2?.coeficientes)
       }))
     })
@@ -231,6 +235,7 @@ export default {
       filteredData,
       formatNumber,
       formatTipoLimite,
+      formatFlags,
       hasDifferences
     }
   }
