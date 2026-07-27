@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rvzero.local/schemas/report.schema.json",
+  "type": "object",
+  "required": ["schemaVersion", "mode", "inputs", "summary", "blocks", "warnings"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": "1" },
+    "mode": { "enum": ["data", "estagio"] },
+    "inputs": {
+      "type": "object",
+      "required": ["left", "right"],
+      "additionalProperties": false,
+      "properties": {
+        "left": { "$ref": "#/$defs/inputFiles" },
+        "right": { "$ref": "#/$defs/inputFiles" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "comparablePeriods",
+        "differences",
+        "onlyLeft",
+        "onlyRight",
+        "outsideCommonHorizon"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "comparablePeriods": { "type": "integer", "minimum": 0 },
+        "differences": { "type": "integer", "minimum": 0 },
+        "onlyLeft": { "type": "integer", "minimum": 0 },
+        "onlyRight": { "type": "integer", "minimum": 0 },
+        "outsideCommonHorizon": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "blocks": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/occurrence" }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/warning" }
+    }
+  },
+  "$defs": {
+    "inputFiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "type"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "enum": ["dadger", "dadgnl", "renovaveis"] }
+        }
+      }
+    },
+    "warning": {
+      "type": "object",
+      "required": ["code", "message"],
+      "additionalProperties": true,
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" }
+      }
+    },
+    "occurrence": {
+      "type": "object",
+      "required": ["fileType", "block", "status", "identity", "calendar", "fields"],
+      "additionalProperties": false,
+      "properties": {
+        "fileType": { "enum": ["dadger", "dadgnl", "renovaveis"] },
+        "block": { "type": "string" },
+        "status": {
+          "enum": [
+            "equal",
+            "changed",
+            "only-left",
+            "only-right",
+            "outside-common-horizon"
+          ]
+        },
+        "identity": { "type": "object" },
+        "calendar": { "type": "object" },
+        "fields": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["left", "right", "changed"],
+            "additionalProperties": false,
+            "properties": {
+              "left": {},
+              "right": {},
+              "changed": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

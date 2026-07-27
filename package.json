@@ -4,12 +4,16 @@
   "description": "Comparador temporal de arquivos DADGER, DADGNL e renováveis do DECOMP",
   "license": "MIT",
   "type": "module",
+  "exports": {
+    "./core": "./src/core/index.js"
+  },
   "engines": {
     "node": ">=20.19.0"
   },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:core": "vite build --config vite.core.config.js",
     "preview": "vite preview",
     "test": "node --test"
   },

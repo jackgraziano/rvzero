@@ -110,6 +110,137 @@ parser, mas não é usada como âncora de alinhamento.
 DADGERs sem `DT` ou sem registros `DP` válidos são rejeitados para evitar
 comparações temporais silenciosamente incorretas.
 
+## Uso programático
+
+O mesmo núcleo usado pelo site pode ser importado em Node.js ou em aplicações
+web. O núcleo recebe nomes e conteúdos textuais; leitura de arquivos locais,
+uploads do navegador, ZIPs ou rede deve ser feita por um adaptador externo.
+
+```js
+import { compareDeckSets } from 'rvzero/core'
+
+const report = compareDeckSets(
+  {
+    left: [
+      { name: 'dadger.rv1', content: dadgerRv1 },
+      { name: 'dadgnl.rv1', content: dadgnlRv1 },
+      { name: 'renovaveis.rv1', content: renovaveisRv1 }
+    ],
+    right: [
+      { name: 'dadger.rv4', content: dadgerRv4 },
+      { name: 'dadgnl.rv4', content: dadgnlRv4 },
+      { name: 'renovaveis.rv4', content: renovaveisRv4 }
+    ]
+  },
+  {
+    mode: 'data',
+    includeEqual: false,
+    includeOutsideCommonHorizon: true
+  }
+)
+```
+
+Opções:
+
+| Opção | Valores | Padrão |
+| --- | --- | --- |
+| `mode` | `data` ou `estagio` | `estagio` |
+| `includeEqual` | `boolean` | `false` |
+| `includeOutsideCommonHorizon` | `boolean` | `true` |
+
+No modo `data`, é obrigatório haver um DADGER válido em cada lado. Sem os dois
+DADGERs, DADGNL e renováveis continuam comparáveis em `estagio`, usando
+semana, estágio ou `PerIni` diretamente.
+
+### Contrato de saída
+
+O relatório possui contrato versionado em
+[`src/core/contract/report.schema.json`](src/core/contract/report.schema.json).
+
+```json
+{
+  "schemaVersion": "1",
+  "mode": "data",
+  "inputs": {
+    "left": [],
+    "right": []
+  },
+  "summary": {
+    "comparablePeriods": 0,
+    "differences": 0,
+    "onlyLeft": 0,
+    "onlyRight": 0,
+    "outsideCommonHorizon": 0
+  },
+  "blocks": {},
+  "warnings": []
+}
+```
+
+Cada ocorrência usa um estado semântico estável:
+
+| Estado | Significado |
+| --- | --- |
+| `equal` | Conteúdo equivalente no período comparável |
+| `changed` | Campos alterados no período comparável |
+| `only-left` | Registro presente somente no lado esquerdo |
+| `only-right` | Registro presente somente no lado direito |
+| `outside-common-horizon` | Período exclusivo de um horizonte, sem contar como diferença |
+
+Exemplo de ocorrência:
+
+```json
+{
+  "fileType": "dadgnl",
+  "block": "GL",
+  "status": "changed",
+  "identity": {
+    "codigoUsina": 86
+  },
+  "calendar": {
+    "date": "29/08/2026",
+    "leftIndex": 9,
+    "rightIndex": 6
+  },
+  "fields": {
+    "geracao_pesado": {
+      "left": 350,
+      "right": 0,
+      "changed": true
+    }
+  }
+}
+```
+
+Erros públicos usam códigos estáveis e podem ser serializados com
+`publicError(error)`. Códigos atuais:
+
+```text
+UNSUPPORTED_FILE_TYPE
+DUPLICATE_FILE_TYPE
+INVALID_DADGER
+INVALID_DADGNL
+INVALID_RENOVAVEIS
+MISSING_DADGER_FOR_DATE_MODE
+NO_COMPARABLE_FILE_TYPES
+```
+
+### Exemplos
+
+```bash
+node examples/node-basic/index.mjs
+node examples/cli/compare.mjs --left ./dadger.rv0 --right ./dadger.rv3 --mode data
+```
+
+O exemplo de navegador em `examples/browser-basic/index.html` mostra um
+adaptador mínimo usando `File.text()`.
+
+### Compatibilidade
+
+O pacote usa versionamento semântico. O campo `schemaVersion` evolui de forma
+independente: campos novos opcionais podem ser adicionados sem mudar a versão,
+mas remoções, renomeações ou mudança semântica exigem nova versão do contrato.
+
 ## Executar localmente
 
 ### Requisitos
@@ -147,6 +278,7 @@ Depois, acesse `http://localhost:8080`.
 ```bash
 npm test
 npm run build
+npm run build:core
 npm audit --audit-level=moderate
 ```
 
@@ -172,6 +304,7 @@ Conjunto de arquivos por revisão
   → associação de índices temporais → data
   → alinhamento por data/estágio
   → comparação semântica
+  → relatório público versionado
   → componentes Vue
 ```
 
@@ -179,9 +312,10 @@ Principais diretórios:
 
 ```text
 src/
+├── core/             # API programática sem Vue ou DOM
 ├── components/
-│   ├── blocks/       # Tabelas de comparação
-│   └── ComparisonView.vue
+│   ├── blocks/       # Componentes legados de blocos específicos
+│   └── ReportComparisonView.vue
 ├── composables/      # Alinhamento e comportamento compartilhado
 └── utils/
     ├── parsers/      # Leitura posicional dos blocos
@@ -212,6 +346,7 @@ Antes de começar:
 ```bash
 npm test
 npm run build
+npm run build:core
 npm audit --audit-level=moderate
 git diff --check
 ```

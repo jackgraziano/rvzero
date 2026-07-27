@@ -75,6 +75,7 @@
 </template>
 
 <script>
+import { readBrowserFile } from '../adapters/browserFiles.js'
 import { detectFileType, parseFile, getSupportedTypes } from '../utils/fileTypeRegistry.js'
 
 export default {
@@ -133,7 +134,7 @@ export default {
       this.pendingCount += supportedFiles.length
       for (const { file, type: detectedType } of supportedFiles) {
         try {
-          const content = await this.readFile(file)
+          const content = await readBrowserFile(file)
           if (generation !== this.readGeneration) continue
 
           const parsedData = parseFile(file.name, content)
@@ -141,6 +142,7 @@ export default {
             type: detectedType,
             name: file.name,
             size: file.size,
+            content,
             data: parsedData
           }
           const existingIndex = this.files.findIndex(
@@ -170,16 +172,6 @@ export default {
         this.errorMessage = `Não foi possível processar: ${errors.join('; ')}.`
       }
       this.resetInput()
-    },
-    readFile(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = event => resolve(event.target.result)
-        reader.onerror = () => reject(
-          new Error('não foi possível ler o arquivo; selecione-o novamente')
-        )
-        reader.readAsText(file)
-      })
     },
     fileStatus(file) {
       return this.readyTypes.includes(file.type.id)

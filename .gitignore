@@ -1,4 +1,5 @@
 exemplos/
 node_modules/
 dist/
+dist-core/
 .DS_Store

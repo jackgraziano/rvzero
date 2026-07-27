@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <title>RVZero core browser example</title>
+  </head>
+  <body>
+    <input id="left" type="file" multiple>
+    <input id="right" type="file" multiple>
+    <button id="compare" type="button">Comparar</button>
+    <pre id="output"></pre>
+
+    <script type="module">
+      import { compareDeckSets, publicError } from '../../src/core/index.js'
+
+      const output = document.querySelector('#output')
+
+      document.querySelector('#compare').addEventListener('click', async () => {
+        try {
+          const report = compareDeckSets(
+            {
+              left: await readInput('#left'),
+              right: await readInput('#right')
+            },
+            {
+              mode: 'estagio',
+              includeEqual: false,
+              includeOutsideCommonHorizon: true
+            }
+          )
+          output.textContent = JSON.stringify(report, null, 2)
+        } catch (error) {
+          output.textContent = JSON.stringify(publicError(error), null, 2)
+        }
+      })
+
+      async function readInput(selector) {
+        const files = [...document.querySelector(selector).files]
+        return Promise.all(files.map(async file => ({
+          name: file.name,
+          content: await file.text()
+        })))
+      }
+    </script>
+  </body>
+</html>

@@ -72,40 +72,24 @@
           </div>
         </header>
 
-        <ComparisonView
-          v-if="hasDadgerComparison"
-          :dadger1-data="deckFiles[0].dadger.data"
-          :dadger1-name="deckFiles[0].dadger.name"
-          :dadger2-data="deckFiles[1].dadger.data"
-          :dadger2-name="deckFiles[1].dadger.name"
-          :compare-mode="activeCompareMode"
-          :show-only-differences="showOnlyDifferences"
-        />
-
-        <RenovaveisComparisonView
-          v-if="hasRenovaveisComparison"
-          :renovaveis1-data="deckFiles[0].renovaveis.data"
-          :renovaveis1-name="deckFiles[0].renovaveis.name"
-          :renovaveis2-data="deckFiles[1].renovaveis.data"
-          :renovaveis2-name="deckFiles[1].renovaveis.name"
-          :dadger1-data="deckFiles[0].dadger?.data ?? null"
-          :dadger2-data="deckFiles[1].dadger?.data ?? null"
-          :compare-mode="activeCompareMode"
-          :show-only-differences="showOnlyDifferences"
-        />
-
-        <DadgnlComparisonView
-          v-if="hasDadgnlComparison"
-          :dadgnl1-data="deckFiles[0].dadgnl.data"
-          :dadgnl1-name="deckFiles[0].dadgnl.name"
-          :dadgnl2-data="deckFiles[1].dadgnl.data"
-          :dadgnl2-name="deckFiles[1].dadgnl.name"
-          :dadger1-data="deckFiles[0].dadger?.data ?? null"
-          :dadger2-data="deckFiles[1].dadger?.data ?? null"
-          :compare-mode="activeCompareMode"
+        <ReportComparisonView
+          v-if="coreReport"
+          :report="coreReport"
           :show-only-differences="showOnlyDifferences"
         />
       </section>
+
+      <aside
+        v-if="coreError"
+        class="incompatible-message"
+        role="alert"
+      >
+        <span class="message-icon" aria-hidden="true">!</span>
+        <div>
+          <h2>Comparação indisponível</h2>
+          <p>{{ coreError.message }}</p>
+        </div>
+      </aside>
     </main>
   </div>
 </template>
@@ -113,9 +97,8 @@
 <script>
 import TopBar from './components/TopBar.vue'
 import DropZone from './components/DropZone.vue'
-import ComparisonView from './components/ComparisonView.vue'
-import RenovaveisComparisonView from './components/RenovaveisComparisonView.vue'
-import DadgnlComparisonView from './components/DadgnlComparisonView.vue'
+import ReportComparisonView from './components/ReportComparisonView.vue'
+import { compareDeckSets, publicError } from './core/index.js'
 
 const emptyDeck = () => ({
   dadger: null,
@@ -128,9 +111,7 @@ export default {
   components: {
     TopBar,
     DropZone,
-    ComparisonView,
-    RenovaveisComparisonView,
-    DadgnlComparisonView
+    ReportComparisonView
   },
   data() {
     return {
@@ -160,15 +141,51 @@ export default {
       ]
     },
     comparisonReady() {
-      return this.hasDadgerComparison ||
-        this.hasRenovaveisComparison ||
-        this.hasDadgnlComparison
+      return this.coreReport !== null
     },
     dateModeAvailable() {
       return this.hasDadgerComparison
     },
     activeCompareMode() {
       return this.dateModeAvailable ? this.compareMode : 'estagio'
+    },
+    coreResult() {
+      if (!this.hasComparableFileType) {
+        return { report: null, error: null }
+      }
+
+      try {
+        return {
+          report: compareDeckSets(
+            {
+              left: this.deckInput(this.deckFiles[0]),
+              right: this.deckInput(this.deckFiles[1])
+            },
+            {
+              mode: this.activeCompareMode,
+              includeEqual: !this.showOnlyDifferences,
+              includeOutsideCommonHorizon: true
+            }
+          ),
+          error: null
+        }
+      } catch (error) {
+        return {
+          report: null,
+          error: publicError(error)
+        }
+      }
+    },
+    coreReport() {
+      return this.coreResult.report
+    },
+    coreError() {
+      return this.coreResult.error
+    },
+    hasComparableFileType() {
+      return this.hasDadgerComparison ||
+        this.hasRenovaveisComparison ||
+        this.hasDadgnlComparison
     },
     unpairedFileMessages() {
       const messages = []
@@ -196,6 +213,7 @@ export default {
       this.deckFiles[index][fileInfo.type.id] = {
         type: fileInfo.type,
         name: fileInfo.name,
+        content: fileInfo.content,
         data: fileInfo.data
       }
     },
@@ -213,6 +231,12 @@ export default {
       return ['dadger', 'renovaveis', 'dadgnl']
         .map(typeId => deck[typeId])
         .filter(Boolean)
+    },
+    deckInput(deck) {
+      return this.loadedFiles(deck).map(file => ({
+        name: file.name,
+        content: file.content
+      }))
     },
     fileCalendarLabel(file) {
       if (file.type.id !== 'dadger') return ''
