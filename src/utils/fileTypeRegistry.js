@@ -4,6 +4,7 @@
  */
 
 import { parseDadger } from './parsers/index.js'
+import { parseDadgnl } from './parsers/dadgnlParser.js'
 import { parseRenovaveis } from './parsers/renovaveisParser.js'
 
 /**
@@ -25,6 +26,14 @@ export const FILE_TYPES = {
     pattern: /^renovaveis/i,
     parser: parseRenovaveis,
     icon: '🌱'
+  },
+  DADGNL: {
+    id: 'dadgnl',
+    name: 'DADGNL',
+    description: 'Arquivo de térmicas a GNL',
+    pattern: /^dadgnl/i,
+    parser: parseDadgnl,
+    icon: '🔥'
   }
 }
 

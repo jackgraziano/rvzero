@@ -44,7 +44,7 @@
           class="file-loaded"
         >
           <div class="file-type" aria-hidden="true">
-            {{ file.type.id === 'dadger' ? 'DG' : 'RN' }}
+            {{ fileBadge(file.type.id) }}
           </div>
           <div class="file-details">
             <span class="file-kind">{{ file.type.name }}</span>
@@ -185,6 +185,13 @@ export default {
       return this.readyTypes.includes(file.type.id)
         ? 'Pronto para comparar'
         : 'Validado · aguardando arquivo correspondente'
+    },
+    fileBadge(typeId) {
+      return {
+        dadger: 'DG',
+        renovaveis: 'RN',
+        dadgnl: 'DN'
+      }[typeId] ?? 'ARQ'
     },
     removeFile(typeId) {
       this.files = this.files.filter(file => file.type.id !== typeId)

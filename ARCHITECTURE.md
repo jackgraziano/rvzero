@@ -1,9 +1,9 @@
 # Arquitetura do RVZero
 
-O RVZero lê dois conjuntos que podem conter um DADGER, um arquivo de renováveis
-ou ambos. Ele transforma os registros em estruturas semânticas e os alinha por
-índice ou por data de início. O alinhamento por data exige um DADGER em cada
-lado, pois é o `DT` do DADGER que ancora o calendário da revisão.
+O RVZero lê dois conjuntos que podem conter DADGER, DADGNL e renováveis. Ele
+transforma os registros em estruturas semânticas e os alinha por índice ou por
+data de início. O alinhamento por data exige um DADGER em cada lado, pois é o
+`DT` do DADGER que ancora o calendário da revisão.
 
 ## Regra temporal
 
@@ -25,6 +25,13 @@ lado, pois é o `DT` do DADGER que ancora o calendário da revisão.
 - Quando os dois lados têm DADGER, cada `PerIni` é convertido pela tabela
   `info_dadger.datas_estagios` do próprio lado. Assim, por exemplo, o período 2
   de uma revisão pode ser comparado ao período 1 da revisão seguinte.
+- O DADGNL não possui `DT`. Em `TG` e `GL`, a semana `n` começa em
+  `DT + (n - 1) × 7 dias`, usando o DADGER do mesmo lado.
+- O horizonte DADGNL pode ultrapassar o horizonte curto do DADGER. Seu
+  calendário é extrapolado até `info_dadgnl.numero_semanas`, obtido do maior
+  índice de `GL`; não deve ser truncado por `info_dadger.numero_estagios`.
+- A data textual de `GL` é preservada como dado de origem e pode ser usada para
+  validação, mas o alinhamento usa o `DT` do DADGER.
 - `UH` contém condições iniciais. No modo `data`, dois blocos UH só são
   comparáveis quando os dois `DT` são iguais.
 
@@ -46,13 +53,13 @@ Modo estágio: estágio 3 ↔ estágio 3
 
 ```text
 DropZone
-  → conjunto por lado (DADGER + renováveis)
+  → conjunto por lado (DADGER + DADGNL + renováveis)
   → fileTypeRegistry
-  → parseDadger / parseRenovaveis
+  → parseDadger / parseDadgnl / parseRenovaveis
       → parser de cada bloco
       → calendário DT + DP
-  → ComparisonView / RenovaveisComparisonView
-      → associação PerIni → data do DADGER
+  → ComparisonView / DadgnlComparisonView / RenovaveisComparisonView
+      → associação de índices → data do DADGER
       → alinhamento temporal
       → comparação semântica
       → filtro de diferenças comparáveis
@@ -80,6 +87,15 @@ inventados. Um DADGER precisa ter `DT` válido e ao menos um `DP` válido.
 | `AC` | Todas as ocorrências são preservadas, inclusive chaves repetidas |
 | `OUTROS` | Qualquer registro ativo de duas letras sem parser estruturado |
 
+O parser DADGNL cobre:
+
+| Bloco | Tratamento |
+| --- | --- |
+| `TG` | Campos completos de P/M/L; forward-fill por usina até o horizonte GL |
+| `GS` | Mês relativo e quantidade de semanas |
+| `NL` | Usina, subsistema e lag |
+| `GL` | Geração, duração e data textual para cada usina e semana |
+
 `VI` permanece em `OUTROS`: ele representa histórico de vazões para tempo de
 viagem, e não os estágios futuros do horizonte. `RQ`, ao contrário, possui um
 valor por estágio e é temporal.
@@ -101,7 +117,9 @@ renderiza TI, MP, FD, VE e RQ sem componentes duplicados.
 `useBlockComparison` é a fonte única para ordenação, scroll, filtro e indicação
 de diferenças. `renovaveisComparison.js` concentra a associação de `PerIni` ao
 calendário e mantém períodos fora do horizonte compartilhado fora do conjunto
-de diferenças.
+de diferenças. `dadgnlComparison.js` faz o mesmo para `TG` e `GL`, extrapolando
+o calendário semanal a partir do `DT`; `GS` e `NL` são comparados como blocos
+estáticos.
 
 ## Estrutura principal
 
@@ -121,6 +139,7 @@ src/
 └── utils/
     ├── parsers/
     ├── comparison.js
+    ├── dadgnlComparison.js
     ├── renovaveisComparison.js
     └── temporal.js
 ```

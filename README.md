@@ -2,7 +2,7 @@
 
 [![Deploy to GitHub Pages](https://github.com/jackgraziano/rvzero/actions/workflows/deploy.yml/badge.svg)](https://github.com/jackgraziano/rvzero/actions/workflows/deploy.yml)
 
-Comparador aberto de arquivos DADGER e renováveis do DECOMP, executado
+Comparador aberto de arquivos DADGER, DADGNL e renováveis do DECOMP, executado
 inteiramente no navegador.
 
 **Aplicação:** [rv0.com.br](https://rv0.com.br/)
@@ -47,10 +47,13 @@ dos patamares do bloco `DP`.
   a exibição de objetos internos como texto corrido.
 - Suporte a campos opcionais, valores zero e registros repetidos.
 - Detecção dinâmica de blocos simples ainda sem parser estruturado.
-- Upload simultâneo de um DADGER e um arquivo `renovaveis.*` por deck.
-- Comparação de renováveis por `PerIni` quando usados isoladamente.
+- Upload simultâneo de DADGER, DADGNL e `renovaveis.*` por deck.
+- Comparação de DADGNL por estágio/semana e de renováveis por `PerIni` quando
+  usados isoladamente.
 - Associação de `PerIni` à data do estágio correspondente quando cada lado
   também possui um DADGER.
+- Associação das semanas do DADGNL ao calendário extrapolado a partir do `DT`
+  do DADGER do mesmo lado.
 - Processamento local: os arquivos são lidos pelo navegador e não são enviados
   para um servidor.
 
@@ -79,14 +82,28 @@ dos patamares do bloco `DP`.
 O registro `VI` é mantido como histórico textual, pois representa vazões
 passadas usadas no tempo de viagem, e não estágios futuros do horizonte.
 
+## Blocos DADGNL
+
+| Bloco | Tratamento |
+| --- | --- |
+| `TG` | Cadastro e parâmetros por patamar, com vigência propagada por estágio |
+| `GS` | Número de semanas de cada mês relativo |
+| `NL` | Lag de antecipação por usina |
+| `GL` | Geração e duração por usina, semana e patamar |
+
+No modo Data, o índice temporal de `TG` e `GL` é convertido em data usando o
+`DT` do DADGER correspondente. A data impressa no `GL` é preservada pelo
+parser, mas não é usada como âncora de alinhamento.
+
 ## Como usar
 
 1. Abra o RVZero.
-2. Em cada lado, arraste um DADGER, um arquivo de renováveis ou ambos.
-3. Com somente renováveis, compare diretamente pelo número do período.
+2. Em cada lado, arraste um DADGER, DADGNL, arquivo de renováveis ou qualquer
+   combinação desses tipos.
+3. Sem os dois DADGERs, compare DADGNL e renováveis diretamente pelo índice.
 4. Com um DADGER em cada lado, escolha a comparação por **Data** ou
-   **Estágio**. No modo Data, o `PerIni` dos renováveis usa o calendário do
-   DADGER do mesmo lado.
+   **Estágio**. No modo Data, `PerIni` e as semanas do DADGNL usam o calendário
+   ancorado pelo DADGER do mesmo lado.
 5. Expanda os blocos que deseja analisar.
 6. Ative ou desative **Mostrar apenas diferenças** conforme necessário.
 
@@ -150,9 +167,9 @@ A suíte usa `node:test` e cobre, entre outros casos:
 ```text
 Conjunto de arquivos por revisão
   → detecção do tipo
-  → parser DADGER e/ou renováveis
+  → parser DADGER, DADGNL e/ou renováveis
   → calendário DT + DP, quando disponível
-  → associação PerIni → data
+  → associação de índices temporais → data
   → alinhamento por data/estágio
   → comparação semântica
   → componentes Vue

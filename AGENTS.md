@@ -2,9 +2,9 @@
 
 ## Objetivo do projeto
 
-O RVZero compara arquivos DADGER e renováveis do DECOMP bloco a bloco. Quando
-há DADGER nos dois lados, o modo por data deve comparar o mesmo período do
-calendário, mesmo quando esse período possui índices diferentes em revisões
+O RVZero compara arquivos DADGER, DADGNL e renováveis do DECOMP bloco a bloco.
+Quando há DADGER nos dois lados, o modo por data deve comparar o mesmo período
+do calendário, mesmo quando esse período possui índices diferentes em revisões
 distintas.
 
 Antes de alterar regras de negócio, leia `ARCHITECTURE.md`.
@@ -50,6 +50,12 @@ Antes de concluir uma alteração:
   associe o arquivo de renováveis ao calendário do deck oposto.
 - Sem os dois DADGERs, a comparação de renováveis deve permanecer disponível,
   mas somente pelo número de `PerIni`.
+- DADGNL também não fornece `DT`. Para `TG` e `GL`, derive a data da semana `n`
+  como `DT + (n - 1) × 7 dias`, sempre com o DADGER do mesmo lado.
+- O DADGNL normalmente alcança M+2. Extrapole seu calendário por todo o
+  horizonte de `GL`; não o limite ao número de estágios do DADGER.
+- Sem os dois DADGERs, DADGNL continua comparável diretamente por estágio ou
+  semana.
 - `UH` representa condições iniciais. No modo `data`, compare UH apenas quando
   os dois arquivos possuem o mesmo `DT`.
 - `RQ` é temporal, com um valor por estágio.
@@ -71,6 +77,8 @@ Os parsers estruturados ficam em `src/utils/parsers`.
 
 - O DADGER é posicional. Confirme índices usando um arquivo real e uma
   especificação ou gerador confiável antes de alterar `slice`.
+- O DADGNL também é posicional. Preserve todos os campos P/M/L de `TG` e `GL`;
+  o leitor parcial de cadastro de um gerador não define o escopo da comparação.
 - Use `parseIntegerField` e `parseDecimalField` de `parserUtils.js`.
 - Campo vazio deve ser `null`.
 - Zero deve permanecer zero. Nunca use `parseFloat(...) || null`,
@@ -111,6 +119,11 @@ Os parsers estruturados ficam em `src/utils/parsers`.
   alinhe todas as ocorrências.
 - `OUTROS`: alinhe sequências de modo que uma inserção não desloque todas as
   linhas seguintes.
+- DADGNL `TG`: propague cada alteração da usina a partir de seu estágio.
+- DADGNL `GS`: mês relativo e número de semanas.
+- DADGNL `NL`: identidade por usina; subsistema e lag são comparáveis.
+- DADGNL `GL`: geração e duração por usina, semana e patamar. Preserve a data
+  textual, mas use o `DT` do DADGER como âncora de alinhamento.
 
 ## Regras para comparação
 
@@ -155,7 +168,7 @@ Os parsers estruturados ficam em `src/utils/parsers`.
 - Estados de erro de upload devem aparecer junto ao campo; não use `alert`.
 - Cada área de upload representa um conjunto e aceita até um arquivo por tipo.
   Substituir ou remover o DADGER não pode remover silenciosamente o arquivo de
-  renováveis, nem o inverso.
+  renováveis ou DADGNL, nem o inverso.
 - Valide tabelas lado a lado em desktop e empilhadas abaixo de 900 px.
 
 ## Testes

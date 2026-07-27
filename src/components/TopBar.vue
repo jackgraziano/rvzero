@@ -82,10 +82,10 @@
         <h2 id="about-title">Sobre o RVZero</h2>
         <p>
           O RVZero é uma ferramenta de código aberto destinada à análise
-          comparativa de arquivos DADGER e renováveis do DECOMP. Quando o
-          DADGER está disponível, a aplicação associa os períodos ao calendário
-          da revisão; todo o processamento ocorre localmente, sem envio dos
-          arquivos a servidores.
+          comparativa de arquivos DADGER, DADGNL e renováveis do DECOMP.
+          Quando o DADGER está disponível, a aplicação associa os períodos ao
+          calendário da revisão; todo o processamento ocorre localmente, sem
+          envio dos arquivos a servidores.
         </p>
         <a
           href="https://github.com/jackgraziano/rvzero"
@@ -125,7 +125,7 @@ export default {
         {
           value: 'estagio',
           label: 'Estágio',
-          description: 'Compara diretamente o mesmo estágio ou PerIni'
+          description: 'Compara diretamente o mesmo estágio, semana ou PerIni'
         }
       ]
     }

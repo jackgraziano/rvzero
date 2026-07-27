@@ -17,6 +17,11 @@ import {
   useBlockComparison
 } from '../src/composables/useBlockComparison.js'
 import { alignRenovaveisGeneration } from '../src/utils/renovaveisComparison.js'
+import {
+  alignDadgnlGL,
+  alignDadgnlTG,
+  dadgnlWeekDate
+} from '../src/utils/dadgnlComparison.js'
 
 function deck(baseDate, dates, block = []) {
   return {
@@ -183,6 +188,105 @@ test('renováveis sem DADGER compara diretamente pelo número do período', () =
   assert.equal(aligned.sameTemporality, true)
   assert.equal(aligned.diff_geracaoMedia, true)
   assert.equal(aligned.has_diff, true)
+})
+
+test('DADGNL usa o DT do DADGER e não a data textual do GL para alinhar semanas', () => {
+  const firstDadger = deck('18/07/2026', {
+    1: '18/07/2026',
+    2: '25/07/2026',
+    3: '01/08/2026'
+  })
+  const secondDadger = deck('25/07/2026', {
+    1: '25/07/2026',
+    2: '01/08/2026'
+  })
+  const first = {
+    info_dadgnl: { numero_semanas: 9 },
+    GL: [{
+      codigo_usina: 86,
+      subsistema: 1,
+      semana: 2,
+      geracao_pesado: 500,
+      duracao_pesado: 15,
+      geracao_medio: 500,
+      duracao_medio: 64,
+      geracao_leve: 500,
+      duracao_leve: 89,
+      data_inicio: '31/12/2099'
+    }]
+  }
+  const second = {
+    info_dadgnl: { numero_semanas: 9 },
+    GL: [{
+      codigo_usina: 86,
+      subsistema: 1,
+      semana: 1,
+      geracao_pesado: 500,
+      duracao_pesado: 15,
+      geracao_medio: 500,
+      duracao_medio: 64,
+      geracao_leve: 500,
+      duracao_leve: 89,
+      data_inicio: '01/01/1900'
+    }]
+  }
+
+  const [aligned] = alignDadgnlGL(first, second, {
+    compareMode: 'data',
+    dadger1Data: firstDadger,
+    dadger2Data: secondDadger
+  })
+
+  assert.equal(dadgnlWeekDate(2, firstDadger), '25/07/2026')
+  assert.equal(aligned.date, '25/07/2026')
+  assert.equal(aligned.dadger1.semana, 2)
+  assert.equal(aligned.dadger2.semana, 1)
+  assert.equal(aligned.has_diff, false)
+})
+
+test('calendário DADGNL extrapola nove semanas a partir do DT', () => {
+  const firstDadger = deck('18/07/2026', {
+    1: '18/07/2026',
+    2: '25/07/2026',
+    3: '01/08/2026'
+  })
+  const secondDadger = deck('25/07/2026', {
+    1: '25/07/2026',
+    2: '01/08/2026'
+  })
+  const thermal = (estagio, availability) => ({
+    codigo_usina: 86,
+    subsistema: 1,
+    nome_termica: 'SANTA CRUZ',
+    estagio,
+    inflex_pesado: 0,
+    disp_pesado: availability,
+    cvu_pesado: 212.61,
+    inflex_medio: 0,
+    disp_medio: availability,
+    cvu_medio: 212.61,
+    inflex_leve: 0,
+    disp_leve: availability,
+    cvu_leve: 212.61
+  })
+  const first = {
+    info_dadgnl: { numero_semanas: 9 },
+    TG: [thermal(9, 350)]
+  }
+  const second = {
+    info_dadgnl: { numero_semanas: 9 },
+    TG: [thermal(8, 350)]
+  }
+
+  const [aligned] = alignDadgnlTG(first, second, {
+    compareMode: 'data',
+    dadger1Data: firstDadger,
+    dadger2Data: secondDadger
+  })
+
+  assert.equal(aligned.date, '12/09/2026')
+  assert.equal(aligned.sameTemporality, true)
+  assert.equal(aligned.has_diff, false)
 })
 
 test('arrays temporais só contam diferenças no horizonte comparável', () => {

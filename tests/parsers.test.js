@@ -8,10 +8,12 @@ import { parsePQ } from '../src/utils/parsers/pqParser.js'
 import { parseRE } from '../src/utils/parsers/reParser.js'
 import { parseUH } from '../src/utils/parsers/uhParser.js'
 import { parseRenovaveis } from '../src/utils/parsers/renovaveisParser.js'
+import { parseDadgnl } from '../src/utils/parsers/dadgnlParser.js'
 import {
   buildCotvolSnapshots,
   cotvolSignature
 } from '../src/utils/cotvol.js'
+import { detectFileType } from '../src/utils/fileTypeRegistry.js'
 
 function fixedLine(length, fields) {
   const characters = Array(length).fill(' ')
@@ -241,4 +243,54 @@ test('parser de renováveis também preserva valores zero', () => {
 
   assert.equal(parsed['PEE-POT-INST-PER'][0].potInstPEE, 0)
   assert.equal(parsed['PEE-GER-PER-PAT-CEN'][0].gerEolica, 0)
+})
+
+test('DADGNL preserva os quatro blocos e expande alterações TG por semana', () => {
+  const parsed = parseDadgnl([
+    'TG   86   1   SANTA CRUZ 1     0.0500.0    212.61  0.0500.0    212.61  0.0500.0    212.61',
+    'TG   86   1   SANTA CRUZ 3     0.0350.0    212.61  0.0350.0    212.61  0.0350.0    212.61',
+    'GS   1   2',
+    'GS   2   4',
+    'GS   3   5',
+    'NL   86   1   2',
+    'GL   86   1    1        500.0  15.     500.0  64.     500.0  89. 18072026',
+    'GL   86   1    9        350.0            0.0            0.0      12092026'
+  ].join('\r\n'))
+
+  assert.equal(parsed.info_dadgnl.numero_semanas, 9)
+  assert.equal(parsed.TG.length, 9)
+  assert.equal(parsed.TG[1].disp_pesado, 500)
+  assert.equal(parsed.TG[2].disp_pesado, 350)
+  assert.equal(parsed.TG[8].disp_leve, 350)
+  assert.deepEqual(parsed.GS[0], { mes: 1, numero_semanas: 2 })
+  assert.deepEqual(parsed.NL[0], {
+    codigo_usina: 86,
+    subsistema: 1,
+    lag: 2
+  })
+  assert.deepEqual(parsed.GL[1], {
+    codigo_usina: 86,
+    subsistema: 1,
+    semana: 9,
+    geracao_pesado: 350,
+    duracao_pesado: null,
+    geracao_medio: 0,
+    duracao_medio: null,
+    geracao_leve: 0,
+    duracao_leve: null,
+    data_inicio: '12/09/2026'
+  })
+})
+
+test('parser rejeita conteúdo sem registros reconhecidos de DADGNL', () => {
+  assert.throws(
+    () => parseDadgnl('& arquivo sem blocos'),
+    /nenhum registro TG, GS, NL ou GL/
+  )
+})
+
+test('detecção distingue DADGNL de DADGER', () => {
+  assert.equal(detectFileType('dadger.rv4').id, 'dadger')
+  assert.equal(detectFileType('DADGNL.RV4').id, 'dadgnl')
+  assert.equal(detectFileType('renovaveis.csv').id, 'renovaveis')
 })

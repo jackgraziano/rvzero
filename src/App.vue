@@ -93,6 +93,18 @@
           :compare-mode="activeCompareMode"
           :show-only-differences="showOnlyDifferences"
         />
+
+        <DadgnlComparisonView
+          v-if="hasDadgnlComparison"
+          :dadgnl1-data="deckFiles[0].dadgnl.data"
+          :dadgnl1-name="deckFiles[0].dadgnl.name"
+          :dadgnl2-data="deckFiles[1].dadgnl.data"
+          :dadgnl2-name="deckFiles[1].dadgnl.name"
+          :dadger1-data="deckFiles[0].dadger?.data ?? null"
+          :dadger2-data="deckFiles[1].dadger?.data ?? null"
+          :compare-mode="activeCompareMode"
+          :show-only-differences="showOnlyDifferences"
+        />
       </section>
     </main>
   </div>
@@ -103,10 +115,12 @@ import TopBar from './components/TopBar.vue'
 import DropZone from './components/DropZone.vue'
 import ComparisonView from './components/ComparisonView.vue'
 import RenovaveisComparisonView from './components/RenovaveisComparisonView.vue'
+import DadgnlComparisonView from './components/DadgnlComparisonView.vue'
 
 const emptyDeck = () => ({
   dadger: null,
-  renovaveis: null
+  renovaveis: null,
+  dadgnl: null
 })
 
 export default {
@@ -115,7 +129,8 @@ export default {
     TopBar,
     DropZone,
     ComparisonView,
-    RenovaveisComparisonView
+    RenovaveisComparisonView,
+    DadgnlComparisonView
   },
   data() {
     return {
@@ -134,14 +149,20 @@ export default {
     hasRenovaveisComparison() {
       return this.deckFiles.every(deck => deck.renovaveis !== null)
     },
+    hasDadgnlComparison() {
+      return this.deckFiles.every(deck => deck.dadgnl !== null)
+    },
     pairedTypeIds() {
       return [
         ...(this.hasDadgerComparison ? ['dadger'] : []),
-        ...(this.hasRenovaveisComparison ? ['renovaveis'] : [])
+        ...(this.hasRenovaveisComparison ? ['renovaveis'] : []),
+        ...(this.hasDadgnlComparison ? ['dadgnl'] : [])
       ]
     },
     comparisonReady() {
-      return this.hasDadgerComparison || this.hasRenovaveisComparison
+      return this.hasDadgerComparison ||
+        this.hasRenovaveisComparison ||
+        this.hasDadgnlComparison
     },
     dateModeAvailable() {
       return this.hasDadgerComparison
@@ -151,7 +172,7 @@ export default {
     },
     unpairedFileMessages() {
       const messages = []
-      const typeIds = ['dadger', 'renovaveis']
+      const typeIds = ['dadger', 'renovaveis', 'dadgnl']
 
       typeIds.forEach(typeId => {
         const first = this.deckFiles[0][typeId]
@@ -189,7 +210,7 @@ export default {
       this.$refs.dropZone2?.clearFiles()
     },
     loadedFiles(deck) {
-      return ['dadger', 'renovaveis']
+      return ['dadger', 'renovaveis', 'dadgnl']
         .map(typeId => deck[typeId])
         .filter(Boolean)
     },
