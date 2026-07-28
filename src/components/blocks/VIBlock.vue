@@ -22,55 +22,81 @@
           >
             <table class="data-table">
               <thead>
-                <tr>
+                <tr class="header-row-1">
                   <th
+                    rowspan="2"
                     class="sortable col-usina"
                     @click="sortBy('numero_usina')"
                     v-sortable-header
                   >
                     Usina{{ getSortIcon('numero_usina') }}
                   </th>
-                  <th>Tempo de viagem</th>
-                  <th>Vazões defluentes anteriores (m³/s)</th>
+                  <th rowspan="2" class="col-duration">Tempo de viagem</th>
+                  <th colspan="2" class="history-header">
+                    Vazões defluentes anteriores (m³/s)
+                  </th>
+                </tr>
+                <tr class="header-row-2">
+                  <th class="col-date">
+                    {{ compareMode === 'data' ? 'Data' : 'Posição' }}
+                  </th>
+                  <th class="col-flow">Vazão</th>
                 </tr>
               </thead>
               <tbody>
-                <tr
+                <template
                   v-for="row in filteredData"
                   :key="`${side}-${row.key}`"
-                  :class="{ highlighted: row.onlyInOne }"
                 >
-                  <td class="plant-code">
-                    {{ recordFor(row, side)?.numero_usina ?? row.numero_usina }}
-                  </td>
-                  <td
-                    class="duration-cell"
-                    :class="{ diff: row.duracao_diff && !row.onlyInOne }"
+                  <tr
+                    v-for="(flow, flowIndex) in tableFlows(row)"
+                    :key="`${side}-${row.key}-${flow?.key ?? 'sem-vazao'}`"
+                    :class="{
+                      highlighted: row.onlyInOne,
+                      'entity-start': flowIndex === 0
+                    }"
                   >
-                    <template v-if="recordFor(row, side)">
-                      <strong>{{ formatHours(recordFor(row, side).duracao_horas) }}</strong>
-                      <small>{{ formatDays(recordFor(row, side).duracao_horas) }}</small>
-                    </template>
-                    <span v-else>—</span>
-                  </td>
-                  <td class="history-cell">
-                    <div v-if="row.flows.length" class="flow-list">
-                      <span
-                        v-for="flow in row.flows"
-                        :key="flow.key"
-                        class="flow-value"
-                        :class="{
-                          diff: flow.diff && flow.sameTemporality && !row.onlyInOne,
-                          faded: !flow.sameTemporality
-                        }"
-                      >
-                        <small>{{ flowLabel(flow, side) }}</small>
-                        <strong>{{ formatFlow(flowValue(flow, side)) }}</strong>
-                      </span>
-                    </div>
-                    <span v-else>—</span>
-                  </td>
-                </tr>
+                    <td
+                      v-if="flowIndex === 0"
+                      :rowspan="tableFlows(row).length"
+                      class="plant-code entity-cell"
+                    >
+                      {{ recordFor(row, side)?.numero_usina ?? row.numero_usina }}
+                    </td>
+                    <td
+                      v-if="flowIndex === 0"
+                      :rowspan="tableFlows(row).length"
+                      class="duration-cell entity-cell"
+                      :class="{ diff: row.duracao_diff && !row.onlyInOne }"
+                    >
+                      <template v-if="recordFor(row, side)">
+                        <strong>{{ formatHours(recordFor(row, side).duracao_horas) }}</strong>
+                        <small>{{ formatDays(recordFor(row, side).duracao_horas) }}</small>
+                      </template>
+                      <span v-else>—</span>
+                    </td>
+                    <td
+                      class="history-date"
+                      :class="{ faded: flow && !flow.sameTemporality }"
+                    >
+                      <strong>{{ flowPeriod(flow, side, compareMode) }}</strong>
+                      <small v-if="flowSource(flow, side, compareMode)">
+                        {{ flowSource(flow, side, compareMode) }}
+                      </small>
+                    </td>
+                    <td
+                      class="history-flow"
+                      :class="{
+                        diff: flow?.diff &&
+                          flow.sameTemporality &&
+                          !row.onlyInOne,
+                        faded: flow && !flow.sameTemporality
+                      }"
+                    >
+                      {{ formatFlow(flowValue(flow, side)) }}
+                    </td>
+                  </tr>
+                </template>
               </tbody>
             </table>
           </div>
@@ -109,7 +135,9 @@ export default {
       else comparison.tableContainer2.value = element
     }
     const recordFor = (row, side) => side === 1 ? row.dadger1 : row.dadger2
-    const flowValue = (flow, side) => side === 1 ? flow.valor1 : flow.valor2
+    const flowValue = (flow, side) =>
+      side === 1 ? flow?.valor1 : flow?.valor2
+    const tableFlows = row => row.flows.length > 0 ? row.flows : [null]
 
     return {
       ...comparison,
@@ -117,7 +145,9 @@ export default {
       setTableContainer,
       recordFor,
       flowValue,
-      flowLabel,
+      tableFlows,
+      flowPeriod,
+      flowSource,
       formatHours,
       formatDays,
       formatFlow
@@ -142,13 +172,20 @@ function formatFlow(value) {
   return value == null ? '—' : value.toLocaleString('pt-BR')
 }
 
-function flowLabel(flow, side) {
+function flowPeriod(flow, side, mode) {
+  if (!flow) return '—'
   const position = side === 1 ? flow.position1 : flow.position2
-  const period = formatHistoricalPeriod(flow.date, flow.endDate)
-  if (period && position != null) return `${period} · QDEF ${position}`
-  if (period) return period
-  if (position != null) return `QDEF ${position} · período sem calendário`
+  if (mode === 'data') {
+    return formatHistoricalPeriod(flow.date, flow.endDate) || '—'
+  }
+  if (position != null) return `QDEF ${position}`
   return 'Período sem calendário'
+}
+
+function flowSource(flow, side, mode) {
+  if (!flow || mode !== 'data') return ''
+  const position = side === 1 ? flow.position1 : flow.position2
+  return position == null ? '' : `Origem: QDEF ${position}`
 }
 
 function formatHistoricalPeriod(start, end) {
@@ -199,60 +236,60 @@ function formatHistoricalPeriod(start, end) {
   width: 126px;
 }
 
+.history-header {
+  text-align: center !important;
+}
+
 .duration-cell strong,
-.duration-cell small {
+.duration-cell small,
+.history-date strong,
+.history-date small {
   display: block;
 }
 
-.duration-cell small {
+.duration-cell small,
+.history-date small {
   margin-top: 2px;
   color: var(--muted);
   font: 500 9px/1.3 var(--font-ui);
 }
 
-.history-cell {
-  min-width: 280px;
+.history-date strong {
+  font-weight: 650;
 }
 
-.flow-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
+.col-duration,
+.duration-cell {
+  width: 126px;
 }
 
-.flow-value {
-  min-width: 58px;
-  display: inline-grid;
-  gap: 2px;
-  padding: 4px 6px;
-  color: var(--text);
-  background: var(--chip);
-  border: 1px solid var(--border);
-  border-radius: 5px;
+.col-date,
+.history-date {
+  width: 174px;
 }
 
-.flow-value small {
-  color: var(--muted);
-  font: 650 8px/1.2 var(--font-ui);
+.col-flow,
+.history-flow {
+  width: 82px;
+  text-align: right !important;
 }
 
-.flow-value strong {
-  font: 700 10px/1.2 var(--font-mono);
+.history-flow {
+  font-weight: 700;
 }
 
-.flow-value.diff {
-  color: var(--warning);
-  background: color-mix(in srgb, var(--warning) 12%, var(--chip));
-  border-color: color-mix(in srgb, var(--warning) 50%, var(--border));
+.entity-cell {
+  vertical-align: top;
 }
 
-.flow-value.faded {
-  opacity: 0.38;
+.data-table tbody tr.entity-start:not(:first-child) td {
+  border-top: 2px solid var(--border);
 }
 
 @media (max-width: 900px) {
-  .history-cell {
-    min-width: 220px;
+  .col-date,
+  .history-date {
+    width: 160px;
   }
 }
 </style>

@@ -17,7 +17,6 @@
           title="Deck A"
           :index="0"
           :ready-types="pairedTypeIds"
-          :deck-title="deckTitle(deckFiles[0])"
           @data-parsed="handleDataParsed(0, $event)"
           @file-removed="handleFileRemove(0, $event)"
         />
@@ -26,7 +25,6 @@
           title="Deck B"
           :index="1"
           :ready-types="pairedTypeIds"
-          :deck-title="deckTitle(deckFiles[1])"
           @data-parsed="handleDataParsed(1, $event)"
           @file-removed="handleFileRemove(1, $event)"
         />

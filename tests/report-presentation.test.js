@@ -287,18 +287,21 @@ test('apresentação VI reúne duração e semanas alinhadas sem destacar exclus
 })
 
 test('App usa layouts especializados alimentados pelos blocos do relatório', async () => {
-  const [source, tableStyles] = await Promise.all([
+  const [source, tableStyles, dropZone] = await Promise.all([
     readFile(new URL('../src/App.vue', import.meta.url), 'utf8'),
     readFile(
       new URL('../src/styles/block-tables.css', import.meta.url),
       'utf8'
-    )
+    ),
+    readFile(new URL('../src/components/DropZone.vue', import.meta.url), 'utf8')
   ])
 
   assert.match(source, /<ComparisonView/)
   assert.match(source, /<RenovaveisComparisonView/)
   assert.match(source, /<DadgnlComparisonView/)
-  assert.match(source, /:deck-title="deckTitle\(deckFiles\[0\]\)"/)
+  assert.doesNotMatch(source, /:deck-title=/)
+  assert.match(source, /class="comparison-deck-title"/)
+  assert.doesNotMatch(dropZone, /deck-title-card|deckTitle/)
   assert.match(source, /:occurrences="coreReport\?\.blocks\?\.dadger/)
   assert.doesNotMatch(source, /<ReportComparisonView/)
   assert.match(
@@ -312,13 +315,19 @@ test('App usa layouts especializados alimentados pelos blocos do relatório', as
   )
   assert.match(comparisonView, /<VIBlock/)
   assert.match(comparisonView, /:compareMode="compareMode"/)
+  assert.doesNotMatch(
+    comparisonView,
+    /comparison-header|Alinhamento temporal|comparison-legend/
+  )
 
   const viBlock = await readFile(
     new URL('../src/components/blocks/VIBlock.vue', import.meta.url),
     'utf8'
   )
-  assert.match(viBlock, /flowLabel\(flow, side\)/)
-  assert.match(viBlock, /faded: !flow\.sameTemporality/)
+  assert.match(viBlock, /colspan="2" class="history-header"/)
+  assert.match(viBlock, /v-for="\(flow, flowIndex\) in tableFlows\(row\)"/)
+  assert.match(viBlock, /flowPeriod\(flow, side, compareMode\)/)
+  assert.match(viBlock, /faded: flow && !flow\.sameTemporality/)
 })
 
 function occurrence({
