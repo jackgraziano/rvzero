@@ -9,9 +9,11 @@ const schema = JSON.parse(
 )
 
 test('schema público descreve os campos obrigatórios do relatório', () => {
-  assert.equal(schema.properties.schemaVersion.const, '1')
+  assert.equal(schema.properties.schemaVersion.const, '2')
+  assert.equal(schema.properties.coreVersion.const, '1.1.0')
   assert.deepEqual(schema.required, [
     'schemaVersion',
+    'coreVersion',
     'mode',
     'inputs',
     'summary',
@@ -37,6 +39,7 @@ test('relatório sintético satisfaz o contrato estrutural sem campos de apresen
   )
 
   assert.equal(report.schemaVersion, schema.properties.schemaVersion.const)
+  assert.equal(report.coreVersion, schema.properties.coreVersion.const)
   assert.equal(schema.properties.mode.enum.includes(report.mode), true)
   assert.deepEqual(Object.keys(report).sort(), schema.required.sort())
 
@@ -67,6 +70,9 @@ function validateReportAgainstSchema(report) {
   if (report.schemaVersion !== schema.properties.schemaVersion.const) {
     errors.push('schemaVersion')
   }
+  if (report.coreVersion !== schema.properties.coreVersion.const) {
+    errors.push('coreVersion')
+  }
   if (!schema.properties.mode.enum.includes(report.mode)) errors.push('mode')
 
   for (const side of ['left', 'right']) {
@@ -78,8 +84,16 @@ function validateReportAgainstSchema(report) {
   }
 
   for (const key of schema.properties.summary.required) {
+    if (key === 'comparablePeriodsByScope') continue
     if (!Number.isInteger(report.summary?.[key]) || report.summary[key] < 0) {
       errors.push(`summary:${key}`)
+    }
+  }
+  const periodScopes =
+    schema.properties.summary.properties.comparablePeriodsByScope
+  for (const key of periodScopes.required) {
+    if (!Number.isInteger(report.summary?.comparablePeriodsByScope?.[key])) {
+      errors.push(`summary:comparablePeriodsByScope:${key}`)
     }
   }
 

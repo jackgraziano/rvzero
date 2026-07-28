@@ -173,7 +173,8 @@ O relatório possui contrato versionado em
 
 ```json
 {
-  "schemaVersion": "1",
+  "schemaVersion": "2",
+  "coreVersion": "1.1.0",
   "mode": "data",
   "inputs": {
     "left": [],
@@ -181,6 +182,12 @@ O relatório possui contrato versionado em
   },
   "summary": {
     "comparablePeriods": 0,
+    "comparablePeriodsByScope": {
+      "dadger": 0,
+      "viHistory": 0,
+      "dadgnl": 0,
+      "renovaveis": 0
+    },
     "differences": 0,
     "onlyLeft": 0,
     "onlyRight": 0,
@@ -190,6 +197,13 @@ O relatório possui contrato versionado em
   "warnings": []
 }
 ```
+
+`summary.comparablePeriods` usa o horizonte DADGER quando os dois lados o
+possuem. Sem DADGER, usa DADGNL e depois renováveis. O detalhamento
+`comparablePeriodsByScope` é calculado diretamente dos calendários parseados e
+não depende de `includeEqual`: `dadger` representa o horizonte futuro,
+`viHistory` as semanas históricas do bloco VI e `dadgnl` seu horizonte semanal
+estendido.
 
 Cada ocorrência usa um estado semântico estável:
 
@@ -244,6 +258,14 @@ NO_COMPARABLE_FILE_TYPES
 ```bash
 node examples/node-basic/index.mjs
 node examples/cli/compare.mjs --left ./dadger.rv0 --right ./dadger.rv3 --mode data
+```
+
+Para gerar o bundle CLI autocontido, sem alterar o build da aplicação web:
+
+```bash
+npm run build:cli
+node dist-cli/compare.mjs --version
+node dist-cli/compare.mjs --left ./dadger.rv0 --right ./dadger.rv3 --mode data --compact
 ```
 
 O exemplo de navegador em `examples/browser-basic/index.html` mostra um

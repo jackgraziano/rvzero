@@ -3,11 +3,19 @@ import { readFile } from 'node:fs/promises'
 import { basename } from 'node:path'
 
 import { decodeFileContent } from 'rvzero/adapters'
-import { compareDeckSets, publicError } from 'rvzero/core'
+import {
+  compareDeckSets,
+  publicError,
+  RVZERO_CORE_VERSION
+} from 'rvzero/core'
 
 const args = parseArgs(process.argv.slice(2))
 
 try {
+  if (args.version) {
+    console.log(RVZERO_CORE_VERSION)
+    process.exit(0)
+  }
   const report = compareDeckSets(
     {
       left: await readFiles(args.left),
@@ -19,7 +27,9 @@ try {
       includeOutsideCommonHorizon: args.includeOutsideCommonHorizon
     }
   )
-  console.log(JSON.stringify(report, null, 2))
+  console.log(args.compact
+    ? JSON.stringify(report)
+    : JSON.stringify(report, null, 2))
   if (args.failOnDifference && report.summary.differences > 0) {
     process.exitCode = 1
   }
@@ -35,7 +45,9 @@ function parseArgs(values) {
     mode: 'estagio',
     includeEqual: false,
     includeOutsideCommonHorizon: false,
-    failOnDifference: false
+    failOnDifference: false,
+    compact: false,
+    version: false
   }
 
   for (let index = 0; index < values.length; index += 1) {
@@ -48,7 +60,8 @@ function parseArgs(values) {
       result.includeOutsideCommonHorizon = true
     } else if (value === '--fail-on-difference') {
       result.failOnDifference = true
-    }
+    } else if (value === '--compact') result.compact = true
+    else if (value === '--version') result.version = true
   }
 
   return result

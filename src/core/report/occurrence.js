@@ -71,22 +71,23 @@ export function includeOccurrence(occurrence, options) {
   return true
 }
 
-export function summarizeBlocks(blocks) {
+export function summarizeBlocks(blocks, periodSummary = {}) {
   const summary = {
-    comparablePeriods: 0,
+    comparablePeriods: periodSummary.comparablePeriods ?? 0,
+    comparablePeriodsByScope: {
+      dadger: 0,
+      viHistory: 0,
+      dadgnl: 0,
+      renovaveis: 0,
+      ...(periodSummary.comparablePeriodsByScope ?? {})
+    },
     differences: 0,
     onlyLeft: 0,
     onlyRight: 0,
     outsideCommonHorizon: 0
   }
-  const comparablePeriods = new Set()
 
   for (const occurrence of flattenBlocks(blocks)) {
-    if (occurrence.status !== OCCURRENCE_STATUS.OUTSIDE_COMMON_HORIZON) {
-      const key = comparablePeriodKey(occurrence.calendar)
-      if (key) comparablePeriods.add(key)
-    }
-
     if (occurrence.status === OCCURRENCE_STATUS.CHANGED) {
       summary.differences += 1
     } else if (occurrence.status === OCCURRENCE_STATUS.ONLY_LEFT) {
@@ -100,7 +101,6 @@ export function summarizeBlocks(blocks) {
     }
   }
 
-  summary.comparablePeriods = comparablePeriods.size
   return summary
 }
 
@@ -148,15 +148,6 @@ function defaultCompareField(leftValue, rightValue) {
     return !semanticEqual(leftValue, rightValue)
   }
   return hasDiff(leftValue, rightValue)
-}
-
-function comparablePeriodKey(calendar) {
-  if (calendar.date) return `data:${calendar.date}`
-  if (calendar.index != null) return `index:${calendar.index}`
-  if (calendar.leftIndex != null && calendar.leftIndex === calendar.rightIndex) {
-    return `index:${calendar.leftIndex}`
-  }
-  return null
 }
 
 function compareCalendar(first, second) {

@@ -2,4 +2,5 @@ exemplos/
 node_modules/
 dist/
 dist-core/
+dist-cli/
 .DS_Store

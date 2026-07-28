@@ -8,6 +8,7 @@ import {
   addBlock,
   summarizeBlocks
 } from './report/occurrence.js'
+import { summarizeComparablePeriods } from './report/periods.js'
 
 const FILE_TYPE_IDS = ['dadger', 'dadgnl', 'renovaveis']
 
@@ -104,7 +105,14 @@ export function compareDeckSets(input, rawOptions = {}) {
       right: right.files
     },
     blocks,
-    summary: summarizeBlocks(blocks),
+    summary: summarizeBlocks(
+      blocks,
+      summarizeComparablePeriods({
+        mode: options.mode,
+        left,
+        right
+      })
+    ),
     warnings
   })
 }

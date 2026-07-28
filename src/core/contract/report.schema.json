@@ -2,10 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://rvzero.local/schemas/report.schema.json",
   "type": "object",
-  "required": ["schemaVersion", "mode", "inputs", "summary", "blocks", "warnings"],
+  "required": ["schemaVersion", "coreVersion", "mode", "inputs", "summary", "blocks", "warnings"],
   "additionalProperties": false,
   "properties": {
-    "schemaVersion": { "const": "1" },
+    "schemaVersion": { "const": "2" },
+    "coreVersion": { "const": "1.1.0" },
     "mode": { "enum": ["data", "estagio"] },
     "inputs": {
       "type": "object",
@@ -20,6 +21,7 @@
       "type": "object",
       "required": [
         "comparablePeriods",
+        "comparablePeriodsByScope",
         "differences",
         "onlyLeft",
         "onlyRight",
@@ -28,6 +30,17 @@
       "additionalProperties": false,
       "properties": {
         "comparablePeriods": { "type": "integer", "minimum": 0 },
+        "comparablePeriodsByScope": {
+          "type": "object",
+          "required": ["dadger", "viHistory", "dadgnl", "renovaveis"],
+          "additionalProperties": false,
+          "properties": {
+            "dadger": { "type": "integer", "minimum": 0 },
+            "viHistory": { "type": "integer", "minimum": 0 },
+            "dadgnl": { "type": "integer", "minimum": 0 },
+            "renovaveis": { "type": "integer", "minimum": 0 }
+          }
+        },
         "differences": { "type": "integer", "minimum": 0 },
         "onlyLeft": { "type": "integer", "minimum": 0 },
         "onlyRight": { "type": "integer", "minimum": 0 },

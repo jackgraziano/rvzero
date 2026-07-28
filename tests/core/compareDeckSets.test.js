@@ -28,7 +28,8 @@ test('compareDeckSets gera relatório versionado com DADGER, DADGNL e renovávei
     }
   )
 
-  assert.equal(report.schemaVersion, '1')
+  assert.equal(report.schemaVersion, '2')
+  assert.equal(report.coreVersion, '1.1.0')
   assert.equal(report.mode, 'data')
   assert.deepEqual(report.inputs.left.map(file => file.type), [
     'dadger',
@@ -99,6 +100,64 @@ test('TE é metadado do DADGER e não gera diferenças entre decks', () => {
   assert.equal(report.blocks.dadger, undefined)
 })
 
+test('resumo separa períodos por escopo e não depende do filtro de iguais', () => {
+  const input = {
+    left: [
+      {
+        name: 'dadger.rv3',
+        content: dadgerWithVi('18/07/2026', 3, [10, 20, 30, 40, 50])
+      },
+      { name: 'dadgnl.rv3', content: dadgnlGL(86, 3, 100) },
+      { name: 'renovaveis.rv3', content: renovaveis(1, 3, 100) }
+    ],
+    right: [
+      {
+        name: 'dadger.rv4',
+        content: dadgerWithVi('25/07/2026', 2, [11, 21, 31, 41, 51])
+      },
+      { name: 'dadgnl.rv4', content: dadgnlGL(86, 2, 100) },
+      { name: 'renovaveis.rv4', content: renovaveis(1, 2, 100) }
+    ]
+  }
+  const options = {
+    mode: 'data',
+    includeOutsideCommonHorizon: true
+  }
+  const withoutEqual = compareDeckSets(input, {
+    ...options,
+    includeEqual: false
+  })
+  const withEqual = compareDeckSets(input, {
+    ...options,
+    includeEqual: true
+  })
+
+  const expected = {
+    comparablePeriods: 2,
+    comparablePeriodsByScope: {
+      dadger: 2,
+      viHistory: 4,
+      dadgnl: 2,
+      renovaveis: 1
+    }
+  }
+  assert.deepEqual(
+    {
+      comparablePeriods: withoutEqual.summary.comparablePeriods,
+      comparablePeriodsByScope:
+        withoutEqual.summary.comparablePeriodsByScope
+    },
+    expected
+  )
+  assert.deepEqual(
+    {
+      comparablePeriods: withEqual.summary.comparablePeriods,
+      comparablePeriodsByScope: withEqual.summary.comparablePeriodsByScope
+    },
+    expected
+  )
+})
+
 test('compareDeckSets compara renováveis por índice quando não há DADGER', () => {
   const report = compareDeckSets(
     {
@@ -163,6 +222,13 @@ function dadger(baseDate, stageCount) {
     lines.push(dpLine(stage, 1, 100 + stage))
   }
   return lines.join('\n')
+}
+
+function dadgerWithVi(baseDate, stageCount, flows) {
+  return [
+    dadger(baseDate, stageCount),
+    `VI  156  360  ${flows.map(value => String(value).padStart(5)).join('')}`
+  ].join('\n')
 }
 
 function dpLine(stage, subsystem, carga) {
