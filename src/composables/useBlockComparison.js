@@ -117,8 +117,20 @@ export function useBlockComparison(props, alignedDataComputed) {
       // Valores para comparação
       switch (sortColumn.value) {
         case 'estagio':
-          valA = a.dadger1?.display || a.dadger2?.display || ''
-          valB = b.dadger1?.display || b.dadger2?.display || ''
+          valA = a.temporalOrder ??
+            a.estagio ??
+            a.dadger1?.estagio ??
+            a.dadger2?.estagio ??
+            a.dadger1?.display ??
+            a.dadger2?.display ??
+            ''
+          valB = b.temporalOrder ??
+            b.estagio ??
+            b.dadger1?.estagio ??
+            b.dadger2?.estagio ??
+            b.dadger1?.display ??
+            b.dadger2?.display ??
+            ''
           break
         default:
           // Para outras colunas, tentar pegar o valor:

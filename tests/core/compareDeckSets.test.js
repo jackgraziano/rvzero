@@ -58,6 +58,25 @@ test('compareDeckSets gera relatório versionado com DADGER, DADGNL e renovávei
   assert.equal(report.summary.outsideCommonHorizon > 0, true)
 })
 
+test('compareDeckSets ordena ocorrências por data cronológica', () => {
+  const content = dadger('27/06/2026', 2)
+  const report = compareDeckSets(
+    {
+      left: [{ name: 'dadger.rv0', content }],
+      right: [{ name: 'dadger.rv0', content }]
+    },
+    {
+      mode: 'data',
+      includeEqual: true
+    }
+  )
+
+  assert.deepEqual(
+    report.blocks.dadger.DP.map(occurrence => occurrence.calendar.date),
+    ['27/06/2026', '04/07/2026']
+  )
+})
+
 test('compareDeckSets compara renováveis por índice quando não há DADGER', () => {
   const report = compareDeckSets(
     {

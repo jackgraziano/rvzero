@@ -69,6 +69,45 @@ test('apresentação de arrays preserva todas as colunas e valores zero', () => 
   assert.equal(row.valores.estagio_2.diff, true)
 })
 
+test('apresentação ordena colunas de data cronologicamente', () => {
+  const occurrences = [
+    occurrence({
+      block: 'HQ',
+      status: 'equal',
+      identity: { numero_restricao: 10 },
+      calendar: {
+        date: '04/07/2026',
+        leftIndex: 2,
+        rightIndex: 2
+      },
+      fields: {
+        limites: field({ pesado_min: 5 }, { pesado_min: 5 }),
+        coeficientes: field([], [])
+      }
+    }),
+    occurrence({
+      block: 'HQ',
+      status: 'equal',
+      identity: { numero_restricao: 10 },
+      calendar: {
+        date: '27/06/2026',
+        leftIndex: 1,
+        rightIndex: 1
+      },
+      fields: {
+        limites: field({ pesado_min: 5 }, { pesado_min: 5 }),
+        coeficientes: field([], [])
+      }
+    })
+  ]
+
+  assert.deepEqual(
+    temporalColumnsFromOccurrences(occurrences, 'data')
+      .map(column => column.label),
+    ['27/06/2026', '04/07/2026']
+  )
+})
+
 test('apresentação entidade por tempo distingue ausência comparável de horizonte', () => {
   const occurrences = [
     occurrence({

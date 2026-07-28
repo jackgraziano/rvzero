@@ -37,7 +37,8 @@ data de início. O alinhamento por data exige um DADGER em cada lado, pois é o
 
 Todas as operações de data usam calendário UTC e formato estrito
 `dd/mm/aaaa`, evitando deslocamentos por fuso horário e datas normalizadas
-silenciosamente pelo JavaScript.
+silenciosamente pelo JavaScript. A ordenação também usa a data interpretada;
+nunca a ordem lexicográfica do texto `dd/mm/aaaa`.
 
 Exemplo real:
 

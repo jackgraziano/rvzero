@@ -1,4 +1,5 @@
 import { hasDiff, semanticEqual } from '../../utils/comparison.js'
+import { compareBrazilianDates } from '../../utils/temporal.js'
 
 export const OCCURRENCE_STATUS = Object.freeze({
   EQUAL: 'equal',
@@ -159,10 +160,16 @@ function comparablePeriodKey(calendar) {
 }
 
 function compareCalendar(first, second) {
-  if ((first.date ?? null) !== (second.date ?? null)) {
-    return String(first.date ?? '').localeCompare(String(second.date ?? ''), 'pt-BR', {
-      numeric: true
-    })
+  const firstDate = first.date ?? null
+  const secondDate = second.date ?? null
+  if (firstDate !== secondDate) {
+    if (firstDate === null) return -1
+    if (secondDate === null) return 1
+
+    const dateComparison = compareBrazilianDates(firstDate, secondDate)
+    if (dateComparison !== 0) return dateComparison
+
+    return firstDate.localeCompare(secondDate, 'pt-BR', { numeric: true })
   }
 
   return (first.index ?? first.leftIndex ?? 0) - (second.index ?? second.leftIndex ?? 0) ||

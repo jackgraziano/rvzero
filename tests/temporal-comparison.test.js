@@ -405,6 +405,30 @@ test('ordenação aceita valores estruturados de restrições', () => {
   )
 })
 
+test('ordenação pelo cabeçalho temporal usa a data, não o texto exibido', () => {
+  const comparison = useBlockComparison(
+    { showOnlyDifferences: false },
+    computed(() => [
+      {
+        key: 'july',
+        temporalOrder: Date.UTC(2026, 6, 4),
+        dadger1: { display: '04/07/2026' }
+      },
+      {
+        key: 'june',
+        temporalOrder: Date.UTC(2026, 5, 27),
+        dadger1: { display: '27/06/2026' }
+      }
+    ])
+  )
+
+  comparison.sortBy('estagio')
+  assert.deepEqual(
+    comparison.sortedData.value.map(row => row.key),
+    ['june', 'july']
+  )
+})
+
 test('comparação semântica verifica valores, ignora estágio e ordem de coleções', () => {
   const first = [
     { estagio: 6, numero_usina: 2, fator: 0.5 },
