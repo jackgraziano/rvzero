@@ -82,6 +82,7 @@ inventados. Um DADGER precisa ter `DT` válido e ao menos um `DP` válido.
 
 | Bloco | Tratamento |
 | --- | --- |
+| `TE` | Metadado `info_dadger.titulo`; exibido nos cartões do deck e não comparado |
 | `DP` | Carga, horas e quantidade de patamares por estágio/subsistema |
 | `PQ` | Forward-fill por fonte+subsistema; soma separada de P/M/L |
 | `CT` | Forward-fill por usina; preserva nome e subsistema |
@@ -94,6 +95,7 @@ inventados. Um DADGER precisa ter `DT` válido e ao menos um `DP` válido.
 | `RI` | Forward-fill por usina+subsistema |
 | `HE` | `CM` associado pelo número da restrição a todas as linhas `HE` |
 | `AC` | Todas as ocorrências são preservadas, inclusive chaves repetidas |
+| `VI` | Usina, tempo de viagem e sequência ordenada e dinâmica de vazões históricas |
 | `OUTROS` | Qualquer registro ativo de duas letras sem parser estruturado |
 
 O parser DADGNL cobre:
@@ -105,9 +107,16 @@ O parser DADGNL cobre:
 | `NL` | Usina, subsistema e lag |
 | `GL` | Geração, duração e data textual para cada usina e semana |
 
-`VI` permanece em `OUTROS`: ele representa histórico de vazões para tempo de
-viagem, e não os estágios futuros do horizonte. `RQ`, ao contrário, possui um
-valor por estágio e é temporal.
+`TE` é metadado de apresentação. Títulos diferentes não criam ocorrências no
+relatório e não afetam o total de diferenças.
+
+`VI` é um bloco estático especializado: ele representa histórico de vazões
+para tempo de viagem, e não os estágios futuros do horizonte. A identidade
+primária é a usina, ocorrências repetidas são preservadas e alinhadas em
+sequência, e cada vazão é comparada pela sua posição no registro. O tempo de
+viagem ocupa as colunas 10–12; a sequência dinâmica de vazões começa na coluna
+15, em campos de cinco colunas. `RQ`, ao contrário, possui um valor por estágio
+e é temporal.
 
 ## Comparação
 
@@ -127,7 +136,8 @@ estado de uma ocorrência.
 `reportPresentation.js` converte as ocorrências versionadas em estruturas de
 apresentação, sem alterar sua classificação. Isso permite preservar os layouts
 especializados: CT continua agrupado por patamar; RE/HQ/HV preservam limites,
-fatores e coeficientes; arrays continuam como entidade × tempo.
+fatores e coeficientes; VI exibe duração e cada vazão histórica separadamente;
+arrays continuam como entidade × tempo.
 
 Nos snapshots expandidos de `RE`, `HQ` e `HV`, `estagio` dentro de limites,
 fatores e coeficientes identifica apenas a linha de origem da última alteração.

@@ -8,6 +8,14 @@ import { buildStageCalendar, formatBrazilianDate, parseBrazilianDate } from '../
 export function parseInfoDadger(lines) {
   const infoDadger = {}
 
+  // TE é metadado descritivo do arquivo, não conteúdo comparável.
+  for (const line of lines) {
+    if (!line.startsWith('TE ')) continue
+    const titulo = line.slice(2).trim()
+    if (titulo) infoDadger.titulo = titulo
+    break
+  }
+
   // Procurar a linha DT (data_base)
   for (const line of lines) {
     if (line.startsWith('DT ')) {

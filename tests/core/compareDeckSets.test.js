@@ -77,6 +77,28 @@ test('compareDeckSets ordena ocorrências por data cronológica', () => {
   )
 })
 
+test('TE é metadado do DADGER e não gera diferenças entre decks', () => {
+  const report = compareDeckSets(
+    {
+      left: [{
+        name: 'dadger.rv0',
+        content: `TE  Título do Deck A\n${dadger('27/06/2026', 1)}`
+      }],
+      right: [{
+        name: 'dadger.rv1',
+        content: `TE  Título diferente do Deck B\n${dadger('27/06/2026', 1)}`
+      }]
+    },
+    {
+      mode: 'data',
+      includeEqual: false
+    }
+  )
+
+  assert.equal(report.summary.differences, 0)
+  assert.equal(report.blocks.dadger, undefined)
+})
+
 test('compareDeckSets compara renováveis por índice quando não há DADGER', () => {
   const report = compareDeckSets(
     {

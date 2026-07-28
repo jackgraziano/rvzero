@@ -33,6 +33,11 @@
         </label>
       </div>
 
+      <div v-if="deckTitle" class="deck-title-card">
+        <span>Registro TE · título do deck</span>
+        <strong>{{ deckTitle }}</strong>
+      </div>
+
       <p v-if="isReading" class="reading-message" role="status">
         Validando {{ pendingCount }} {{ pendingCount === 1 ? 'arquivo' : 'arquivos' }}…
       </p>
@@ -84,7 +89,8 @@ export default {
   props: {
     title: { type: String, required: true },
     index: { type: Number, required: true },
-    readyTypes: { type: Array, default: () => [] }
+    readyTypes: { type: Array, default: () => [] },
+    deckTitle: { type: String, default: '' }
   },
   data() {
     return {
@@ -350,6 +356,27 @@ export default {
   margin: 0;
   color: var(--accent-strong);
   font: 600 10px/1.4 var(--font-mono);
+}
+
+.deck-title-card {
+  display: grid;
+  gap: 4px;
+  padding: 9px 11px;
+  background: color-mix(in srgb, var(--accent-strong) 6%, var(--background));
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 28%, var(--border));
+  border-radius: 7px;
+}
+
+.deck-title-card span {
+  color: var(--accent-strong);
+  font: 700 8px/1.2 var(--font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.deck-title-card strong {
+  color: var(--text);
+  font: 600 10px/1.45 var(--font-ui);
 }
 
 .file-list {

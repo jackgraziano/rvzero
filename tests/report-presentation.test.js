@@ -228,12 +228,19 @@ test('App usa layouts especializados alimentados pelos blocos do relatório', as
   assert.match(source, /<ComparisonView/)
   assert.match(source, /<RenovaveisComparisonView/)
   assert.match(source, /<DadgnlComparisonView/)
+  assert.match(source, /:deck-title="deckTitle\(deckFiles\[0\]\)"/)
   assert.match(source, /:occurrences="coreReport\?\.blocks\?\.dadger/)
   assert.doesNotMatch(source, /<ReportComparisonView/)
   assert.match(
     tableStyles,
     /@media \(max-width: 900px\)[\s\S]*?\.comparison-tables\s*\{[\s\S]*?grid-template-columns:\s*1fr !important/
   )
+
+  const comparisonView = await readFile(
+    new URL('../src/components/ComparisonView.vue', import.meta.url),
+    'utf8'
+  )
+  assert.match(comparisonView, /<VIBlock/)
 })
 
 function occurrence({

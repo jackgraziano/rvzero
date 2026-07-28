@@ -17,6 +17,7 @@
           title="Deck A"
           :index="0"
           :ready-types="pairedTypeIds"
+          :deck-title="deckTitle(deckFiles[0])"
           @data-parsed="handleDataParsed(0, $event)"
           @file-removed="handleFileRemove(0, $event)"
         />
@@ -25,6 +26,7 @@
           title="Deck B"
           :index="1"
           :ready-types="pairedTypeIds"
+          :deck-title="deckTitle(deckFiles[1])"
           @data-parsed="handleDataParsed(1, $event)"
           @file-removed="handleFileRemove(1, $event)"
         />
@@ -56,6 +58,9 @@
             class="comparison-file-set"
           >
             <span>Deck {{ index === 0 ? 'A' : 'B' }}</span>
+            <p v-if="deckTitle(deck)" class="comparison-deck-title">
+              {{ deckTitle(deck) }}
+            </p>
             <div class="comparison-file-list">
               <div
                 v-for="file in loadedFiles(deck)"
@@ -273,6 +278,9 @@ export default {
         content: file.content
       }))
     },
+    deckTitle(deck) {
+      return deck.dadger?.data?.info_dadger?.titulo ?? ''
+    },
     fileCalendarLabel(file) {
       if (file.type.id !== 'dadger') return ''
       const baseDate = file.data.info_dadger?.data_base
@@ -400,6 +408,12 @@ button {
 .comparison-file-list {
   display: grid;
   gap: 6px;
+}
+
+.comparison-deck-title {
+  margin: -2px 0 9px;
+  color: var(--text);
+  font: 600 10px/1.45 var(--font-ui);
 }
 
 .comparison-file {

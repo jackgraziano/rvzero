@@ -4,7 +4,7 @@
  * integralmente para que o comparador não perca blocos novos ou pouco usados.
  */
 const STRUCTURED_MNEMONICS = new Set([
-  'DT', 'DP', 'PQ', 'CT', 'IA', 'UH', 'TI', 'MP', 'FD', 'VE',
+  'TE', 'DT', 'DP', 'PQ', 'CT', 'IA', 'UH', 'TI', 'MP', 'FD', 'VE', 'VI',
   'RE', 'LU', 'FU', 'FT', 'FI', 'FE',
   'HQ', 'LQ', 'CQ', 'HV', 'LV', 'CV',
   'RI', 'HE', 'CM', 'AC', 'RQ'

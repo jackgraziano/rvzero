@@ -21,6 +21,7 @@ import { parseHE } from './heParser.js'
 import { parseAC } from './acParser.js'
 import { parseOutros } from './outrosParser.js'
 import { parseRQ } from './rqParser.js'
+import { parseVI } from './viParser.js'
 import { buildStageCalendar } from '../temporal.js'
 
 /**
@@ -47,6 +48,7 @@ export function parseDadger(fileContent) {
     HE: [],
     AC: [],
     RQ: [],
+    VI: [],
     OUTROS: {}
   }
 
@@ -137,6 +139,9 @@ export function parseDadger(fileContent) {
 
   // Vazão defluente mínima histórica (um valor por estágio)
   result.RQ = parseRQ(lines, numeroEstagios)
+
+  // Tempo de viagem e vazões defluentes anteriores ao horizonte
+  result.VI = parseVI(lines)
 
   // Processar outros blocos (capturar linhas como strings simples)
   result.OUTROS = parseOutros(lines)

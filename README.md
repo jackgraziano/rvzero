@@ -62,6 +62,7 @@ dos patamares do bloco `DP`.
 
 | Bloco | Tratamento |
 | --- | --- |
+| `TE` | Título do deck exibido nos cartões dos conjuntos; não participa da comparação |
 | `DP` | Cargas, horas e patamares por estágio e subsistema |
 | `PQ` | Pequena geração agregada separadamente em Pesada, Média e Leve |
 | `CT` | Usinas térmicas e seus valores por patamar |
@@ -78,10 +79,13 @@ dos patamares do bloco `DP`.
 | `RI` | Restrições de Itaipu |
 | `HE` | Restrições de energia armazenada e coeficientes `CM` |
 | `AC` | Alterações cadastrais, inclusive ocorrências repetidas |
+| `VI` | Tempo de viagem e sequência histórica de vazões defluentes por usina |
 | `OUTROS` | Registros ativos de duas letras sem parser estruturado |
 
-O registro `VI` é mantido como histórico textual, pois representa vazões
-passadas usadas no tempo de viagem, e não estágios futuros do horizonte.
+`VI` é histórico, e não um horizonte futuro: suas vazões são comparadas na
+ordem em que aparecem no registro, sem associação a estágio ou data. O tempo
+de viagem é lido das colunas 10–12 e as vazões defluentes são campos dinâmicos
+de cinco colunas a partir da coluna 15.
 
 ## Blocos DADGNL
 

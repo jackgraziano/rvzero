@@ -20,7 +20,8 @@ const EXPECTED_DADGER_BLOCKS = [
   'RQ',
   'TI',
   'UH',
-  'VE'
+  'VE',
+  'VI'
 ]
 
 test('comparador puro cobre todos os blocos DADGER exibidos pelo site', () => {
@@ -35,6 +36,54 @@ test('comparador puro cobre todos os blocos DADGER exibidos pelo site', () => {
   })
 
   assert.deepEqual(Object.keys(blocks).sort(), EXPECTED_DADGER_BLOCKS)
+  assert.equal(blocks.VI[0].fields.duracao_horas.changed, false)
+  assert.equal(blocks.VI[0].fields.vazao_defluente_1.changed, true)
+  assert.equal(blocks.VI[0].fields.vazao_defluente_2.changed, false)
+})
+
+test('VI preserva repetições e compara cada posição da sequência histórica', () => {
+  const left = dadgerFixture(100)
+  const right = dadgerFixture(100)
+  left.VI = [
+    {
+      numero_usina: 156,
+      duracao_horas: 360,
+      vazoes_defluentes: [10, 20, 30]
+    },
+    {
+      numero_usina: 156,
+      duracao_horas: 168,
+      vazoes_defluentes: [40]
+    }
+  ]
+  right.VI = [
+    {
+      numero_usina: 156,
+      duracao_horas: 360,
+      vazoes_defluentes: [10, 21]
+    },
+    {
+      numero_usina: 156,
+      duracao_horas: 168,
+      vazoes_defluentes: [40]
+    }
+  ]
+
+  const blocks = compareDadgerBlocks(left, right, {
+    mode: 'estagio',
+    options: {
+      includeEqual: true,
+      includeOutsideCommonHorizon: true
+    }
+  })
+
+  assert.equal(blocks.VI.length, 2)
+  assert.equal(blocks.VI[0].status, 'changed')
+  assert.equal(blocks.VI[0].fields.vazao_defluente_1.changed, false)
+  assert.equal(blocks.VI[0].fields.vazao_defluente_2.changed, true)
+  assert.equal(blocks.VI[0].fields.vazao_defluente_3.left, 30)
+  assert.equal(blocks.VI[0].fields.vazao_defluente_3.right, null)
+  assert.equal(blocks.VI[1].status, 'equal')
 })
 
 function dadgerFixture(value) {
@@ -65,6 +114,11 @@ function dadgerFixture(value) {
     FD: [{ numero_usina: 1, conjunto_itaipu: '50', fatores: [value] }],
     VE: [{ numero_usina: 1, volumes: [value] }],
     RQ: [{ numero_ree: 1, vazoes_minimas_pct: [value] }],
+    VI: [{
+      numero_usina: 156,
+      duracao_horas: 360,
+      vazoes_defluentes: [value, 0]
+    }],
     RE: [{
       numero_restricao: 1,
       estagio: 1,

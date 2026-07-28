@@ -182,6 +182,7 @@ export function compareDadgerBlocks(leftDadger, rightDadger, { mode, options }) 
 
   result.UH = compareUH(leftDadger, rightDadger, { mode, options })
   result.AC = compareAC(leftDadger, rightDadger, { mode, options })
+  result.VI = compareVI(leftDadger, rightDadger, options)
   result.OUTROS = compareOutros(leftDadger, rightDadger, options)
 
   return Object.fromEntries(
@@ -300,6 +301,69 @@ function compareOutros(leftDadger, rightDadger, options) {
   }
 
   return sortOccurrences(occurrences)
+}
+
+function compareVI(leftDadger, rightDadger, options) {
+  const records1 = leftDadger?.VI ?? []
+  const records2 = rightDadger?.VI ?? []
+  const plants = new Set([
+    ...records1.map(record => record.numero_usina),
+    ...records2.map(record => record.numero_usina)
+  ])
+  const occurrences = []
+
+  for (const numero_usina of [...plants].sort((first, second) => first - second)) {
+    const plantRecords1 = records1.filter(record =>
+      record.numero_usina === numero_usina
+    )
+    const plantRecords2 = records2.filter(record =>
+      record.numero_usina === numero_usina
+    )
+
+    alignSequences(plantRecords1, plantRecords2, viSignature)
+      .forEach(({ left, right }, sequenceIndex) => {
+        const flowCount = Math.max(
+          left?.vazoes_defluentes?.length ?? 0,
+          right?.vazoes_defluentes?.length ?? 0
+        )
+        const flowFields = Array.from(
+          { length: flowCount },
+          (_, index) => `vazao_defluente_${index + 1}`
+        )
+        const occurrence = makeOccurrence({
+          fileType: 'dadger',
+          block: 'VI',
+          identity: { numero_usina, sequenceIndex },
+          calendar: { sameTemporality: true },
+          left: comparableVIRecord(left),
+          right: comparableVIRecord(right),
+          fieldNames: ['duracao_horas', ...flowFields]
+        })
+        if (includeOccurrence(occurrence, options)) occurrences.push(occurrence)
+      })
+  }
+
+  return sortOccurrences(occurrences)
+}
+
+function comparableVIRecord(record) {
+  if (!record) return null
+  return {
+    duracao_horas: record.duracao_horas,
+    ...Object.fromEntries(
+      record.vazoes_defluentes.map((value, index) => [
+        `vazao_defluente_${index + 1}`,
+        value
+      ])
+    )
+  }
+}
+
+function viSignature(record) {
+  return JSON.stringify([
+    record?.duracao_horas ?? null,
+    record?.vazoes_defluentes ?? []
+  ])
 }
 
 function normalizeAC(dadgerData) {

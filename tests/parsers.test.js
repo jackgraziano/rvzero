@@ -7,6 +7,7 @@ import { parseHE } from '../src/utils/parsers/heParser.js'
 import { parsePQ } from '../src/utils/parsers/pqParser.js'
 import { parseRE } from '../src/utils/parsers/reParser.js'
 import { parseUH } from '../src/utils/parsers/uhParser.js'
+import { parseVI } from '../src/utils/parsers/viParser.js'
 import { parseRenovaveis } from '../src/utils/parsers/renovaveisParser.js'
 import { parseDadgnl } from '../src/utils/parsers/dadgnlParser.js'
 import {
@@ -27,12 +28,21 @@ function fixedLine(length, fields) {
 
 test('parser integrado valida DT/DP e limita arrays ao horizonte do deck', () => {
   const content = [
+    'TE  Deck sintético de regressão',
     'DT  31    1   2026',
     'DP   1    1   3       50536.0      30.0   50538.0      74.0   41997.0      64.0',
     'DP   2    1   3       50536.0      30.0   50538.0      74.0   41997.0      64.0',
     'DP   2   11   3                    30.0                74.0                64.0',
     'MP   1       0    1',
     'RQ   1     100   90',
+    fixedLine(29, [
+      [0, 'VI'],
+      [4, '156'],
+      [9, '360'],
+      [14, '  311'],
+      [19, '    0'],
+      [24, '  485']
+    ]),
     'ZZ dado preservado'
   ].join('\r\n')
   const parsed = parseDadger(content)
@@ -45,7 +55,15 @@ test('parser integrado valida DT/DP e limita arrays ao horizonte do deck', () =>
   )
   assert.deepEqual(parsed.MP[0].fatores, [0, 1])
   assert.deepEqual(parsed.RQ[0].vazoes_minimas_pct, [100, 90])
+  assert.equal(parsed.info_dadger.titulo, 'Deck sintético de regressão')
+  assert.deepEqual(parsed.VI, [{
+    numero_usina: 156,
+    duracao_horas: 360,
+    vazoes_defluentes: [311, 0, 485]
+  }])
   assert.deepEqual(parsed.OUTROS.ZZ, ['ZZ dado preservado'])
+  assert.equal(parsed.OUTROS.TE, undefined)
+  assert.equal(parsed.OUTROS.VI, undefined)
   assert.equal(parsed.OUTROS.RQ, undefined)
 })
 
@@ -58,6 +76,27 @@ test('parser rejeita deck sem calendário mínimo confiável', () => {
     () => parseDadger('DT  31    1   2026'),
     /bloco DP ausente/
   )
+})
+
+test('VI preserva quantidade dinâmica e ordem das vazões históricas', () => {
+  const records = parseVI([
+    '&VI  999  12',
+    'VI  156  360    311  449  485  380  210',
+    'VI  162  168     16    0   15'
+  ])
+
+  assert.deepEqual(records, [
+    {
+      numero_usina: 156,
+      duracao_horas: 360,
+      vazoes_defluentes: [311, 449, 485, 380, 210]
+    },
+    {
+      numero_usina: 162,
+      duracao_horas: 168,
+      vazoes_defluentes: [16, 0, 15]
+    }
+  ])
 })
 
 test('CM é associado por número a todos os estágios HE', () => {

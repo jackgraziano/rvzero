@@ -17,6 +17,9 @@
         >
           <span>Deck {{ index === 0 ? 'A' : 'B' }}</span>
           <h3 :title="file.name">{{ file.name }}</h3>
+          <p v-if="file.data.info_dadger?.titulo" class="dadger-title">
+            {{ file.data.info_dadger.titulo }}
+          </p>
           <p>DT {{ file.data.info_dadger.data_base }}</p>
           <p>{{ horizonLabel(file.data) }}</p>
         </article>
@@ -178,6 +181,16 @@
         :occurrences="blockOccurrences('AC')"
       />
 
+      <VIBlock
+        v-if="hasBlockData('VI')"
+        :dadger1Data="dadger1Data"
+        :dadger1Name="dadger1Name"
+        :dadger2Data="dadger2Data"
+        :dadger2Name="dadger2Name"
+        :showOnlyDifferences="showOnlyDifferences"
+        :occurrences="blockOccurrences('VI')"
+      />
+
       <StageArrayBlock
         v-if="hasBlockData('TI')"
         :dadger1Data="dadger1Data"
@@ -273,6 +286,7 @@ import HVBlock from './blocks/HVBlock.vue'
 import RIBlock from './blocks/RIBlock.vue'
 import HEBlock from './blocks/HEBlock.vue'
 import ACBlock from './blocks/ACBlock.vue'
+import VIBlock from './blocks/VIBlock.vue'
 import OutrosBlock from './blocks/OutrosBlock.vue'
 
 export default {
@@ -290,6 +304,7 @@ export default {
     RIBlock,
     HEBlock,
     ACBlock,
+    VIBlock,
     OutrosBlock
   },
   props: {
@@ -452,6 +467,12 @@ export default {
   margin: 2px 0 0;
   color: var(--muted);
   font: 500 10px/1.35 var(--font-ui);
+}
+
+.dadger-info .dadger-title {
+  margin: 0 0 7px;
+  color: var(--text);
+  font-weight: 600;
 }
 
 .comparison-legend {
