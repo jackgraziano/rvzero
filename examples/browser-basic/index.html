@@ -11,6 +11,7 @@
     <pre id="output"></pre>
 
     <script type="module">
+      import { readBrowserFile } from '../../src/adapters/index.js'
       import { compareDeckSets, publicError } from '../../src/core/index.js'
 
       const output = document.querySelector('#output')
@@ -38,7 +39,7 @@
         const files = [...document.querySelector(selector).files]
         return Promise.all(files.map(async file => ({
           name: file.name,
-          content: await file.text()
+          content: await readBrowserFile(file)
         })))
       }
     </script>

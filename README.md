@@ -46,6 +46,7 @@ dos patamares do bloco `DP`.
 - Fatores e coeficientes extensos são agrupados por tipo e contexto para evitar
   a exibição de objetos internos como texto corrido.
 - Suporte a campos opcionais, valores zero e registros repetidos.
+- Leitura resiliente de UTF-8, UTF-16 com BOM e arquivos Latin-1/Windows-1252.
 - Detecção dinâmica de blocos simples ainda sem parser estruturado.
 - Upload simultâneo de DADGER, DADGNL e `renovaveis.*` por deck.
 - Comparação de DADGNL por estágio/semana e de renováveis por `PerIni` quando
@@ -115,9 +116,16 @@ comparações temporais silenciosamente incorretas.
 O mesmo núcleo usado pelo site pode ser importado em Node.js ou em aplicações
 web. O núcleo recebe nomes e conteúdos textuais; leitura de arquivos locais,
 uploads do navegador, ZIPs ou rede deve ser feita por um adaptador externo.
+Para fontes em bytes, `decodeFileContent` aplica a mesma detecção de encoding
+usada pelo site:
 
 ```js
+import { readFile } from 'node:fs/promises'
+
+import { decodeFileContent } from 'rvzero/adapters'
 import { compareDeckSets } from 'rvzero/core'
+
+const dadgerRv1 = decodeFileContent(await readFile('./dadger.rv1'))
 
 const report = compareDeckSets(
   {
@@ -233,7 +241,9 @@ node examples/cli/compare.mjs --left ./dadger.rv0 --right ./dadger.rv3 --mode da
 ```
 
 O exemplo de navegador em `examples/browser-basic/index.html` mostra um
-adaptador mínimo usando `File.text()`.
+adaptador que lê os bytes com `readBrowserFile()`. A CLI usa o mesmo
+`decodeFileContent()`, portanto não presume UTF-8 para DADGER, DADGNL,
+renováveis ou novos tipos de arquivo.
 
 ### Compatibilidade
 

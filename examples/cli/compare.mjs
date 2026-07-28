@@ -2,6 +2,7 @@
 import { readFile } from 'node:fs/promises'
 import { basename } from 'node:path'
 
+import { decodeFileContent } from 'rvzero/adapters'
 import { compareDeckSets, publicError } from 'rvzero/core'
 
 const args = parseArgs(process.argv.slice(2))
@@ -56,6 +57,6 @@ function parseArgs(values) {
 async function readFiles(paths) {
   return Promise.all(paths.map(async path => ({
     name: basename(path),
-    content: await readFile(path, 'utf8')
+    content: decodeFileContent(await readFile(path))
   })))
 }

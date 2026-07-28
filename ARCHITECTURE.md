@@ -54,6 +54,7 @@ Modo estágio: estágio 3 ↔ estágio 3
 ```text
 DropZone
   → conjunto por lado (DADGER + DADGNL + renováveis)
+  → decodificação comum (BOM → UTF-8 válido → Windows-1252/Latin-1)
   → fileTypeRegistry
   → parseDadger / parseDadgnl / parseRenovaveis
       → parser de cada bloco
@@ -64,6 +65,13 @@ DropZone
       → comparação semântica
       → filtro de diferenças comparáveis
 ```
+
+A decodificação acontece no adaptador e é independente do tipo de arquivo.
+Assim, DADGER, DADGNL, renováveis e tipos adicionados futuramente seguem a
+mesma regra. BOMs de UTF-8 e UTF-16 são respeitados; sem BOM, os bytes são
+validados como UTF-8 estrito e, se inválidos, decodificados como Windows-1252,
+compatível com o conteúdo imprimível usual de Latin-1. O núcleo continua
+recebendo apenas conteúdo textual.
 
 ## Parsers
 

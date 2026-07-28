@@ -324,7 +324,8 @@ Entregas:
 - `App.vue` chama `compareDeckSets()`;
 - componentes recebem resultados prontos;
 - composables mantêm apenas estado visual, ordenação, filtros e scroll;
-- upload continua usando `FileReader` somente no adaptador do navegador;
+- upload continua lendo bytes somente no adaptador do navegador, que centraliza
+  a detecção de encoding antes de entregar texto ao núcleo;
 - mensagens de erro usam os códigos públicos.
 
 Critérios de aceite:

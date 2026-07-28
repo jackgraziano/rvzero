@@ -5,6 +5,7 @@
   "license": "MIT",
   "type": "module",
   "exports": {
+    "./adapters": "./src/adapters/index.js",
     "./core": "./src/core/index.js"
   },
   "engines": {
