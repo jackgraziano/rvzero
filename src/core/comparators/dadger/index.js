@@ -88,6 +88,7 @@ const TEMPORAL_RECORD_BLOCKS = [
     block: 'RE',
     secondaryKey: 'numero_restricao',
     identity: (_record, numero_restricao) => ({ numero_restricao }),
+    ignoredFields: ['estagio_inicial', 'estagio_final'],
     fields: [
       'estagio_inicial',
       'estagio_final',
@@ -102,12 +103,14 @@ const TEMPORAL_RECORD_BLOCKS = [
     block: 'HQ',
     secondaryKey: 'numero_restricao',
     identity: (_record, numero_restricao) => ({ numero_restricao }),
+    ignoredFields: ['estagio_inicial', 'estagio_final'],
     fields: ['estagio_inicial', 'estagio_final', 'limites', 'coeficientes']
   },
   {
     block: 'HV',
     secondaryKey: 'numero_restricao',
     identity: (_record, numero_restricao) => ({ numero_restricao }),
+    ignoredFields: ['estagio_inicial', 'estagio_final'],
     fields: ['estagio_inicial', 'estagio_final', 'limites', 'coeficientes']
   }
 ]

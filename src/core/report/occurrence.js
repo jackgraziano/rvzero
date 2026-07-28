@@ -16,8 +16,10 @@ export function makeOccurrence({
   left = null,
   right = null,
   fieldNames = [],
+  ignoredFieldNames = [],
   compareField = defaultCompareField
 }) {
+  const ignoredFields = new Set(ignoredFieldNames)
   const fields = Object.fromEntries(
     fieldNames.map(field => {
       const leftValue = left?.[field]
@@ -27,7 +29,8 @@ export function makeOccurrence({
         {
           left: leftValue ?? null,
           right: rightValue ?? null,
-          changed: compareField(leftValue, rightValue, field)
+          changed: !ignoredFields.has(field) &&
+            compareField(leftValue, rightValue, field)
         }
       ]
     })
@@ -141,7 +144,7 @@ function stripInternalCalendar(calendar) {
 function defaultCompareField(leftValue, rightValue) {
   if (leftValue == null && rightValue == null) return false
   if (typeof leftValue === 'object' || typeof rightValue === 'object') {
-    return !semanticEqual(leftValue, rightValue, [])
+    return !semanticEqual(leftValue, rightValue)
   }
   return hasDiff(leftValue, rightValue)
 }

@@ -18,6 +18,7 @@ export function compareTemporalRecordBlock({
   secondaryKey,
   identity,
   fields,
+  ignoredFields = [],
   options
 }) {
   const records1 = leftDadger?.[block] ?? []
@@ -31,7 +32,8 @@ export function compareTemporalRecordBlock({
       calendar,
       left,
       right,
-      fieldNames: fields
+      fieldNames: fields,
+      ignoredFieldNames: ignoredFields
     })
   }
 

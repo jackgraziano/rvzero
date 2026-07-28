@@ -128,6 +128,14 @@ apresentação, sem alterar sua classificação. Isso permite preservar os layou
 especializados: CT continua agrupado por patamar; RE/HQ/HV preservam limites,
 fatores e coeficientes; arrays continuam como entidade × tempo.
 
+Nos snapshots expandidos de `RE`, `HQ` e `HV`, `estagio` dentro de limites,
+fatores e coeficientes identifica apenas a linha de origem da última alteração.
+Ele não faz parte do conteúdo comparável. Da mesma forma,
+`estagio_inicial`/`estagio_final` são metadados de vigência: a comparação dessa
+vigência já é representada pela presença ou ausência da restrição em cada
+período alinhado. Esses campos permanecem disponíveis nas ocorrências, mas não
+geram diferença por si próprios.
+
 `useTemporalComparison` atende os blocos com arrays a partir das ocorrências da
 API. `StageArrayBlock.vue` renderiza TI, MP, FD, VE e RQ sem componentes
 duplicados. `useEntityTemporalComparison` atende RE, HQ e HV.
