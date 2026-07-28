@@ -87,3 +87,73 @@ export function buildStageCalendar(baseDate, stageCount, dpRecords = []) {
 
   return calendar
 }
+
+/**
+ * Associa os valores históricos do registro VI ao calendário do próprio deck.
+ *
+ * Em estudos semanais, QDEFn representa a semana iniciada n semanas antes de
+ * DT. Quando o primeiro estágio é mensal, apenas QDEF1 possui calendário
+ * definido: ele representa o mês imediatamente anterior ao início do estudo.
+ * Entradas adicionais são preservadas sem uma temporalidade inventada.
+ */
+export function buildViHistoryCalendar(infoDadger, flowCount) {
+  const count = Number.isInteger(flowCount) && flowCount > 0 ? flowCount : 0
+  const baseDate = parseBrazilianDate(infoDadger?.data_base)
+  if (!baseDate || count === 0) return []
+
+  const firstStage = (infoDadger?.estagios ?? [])
+    .find(stage => stage.numero === 1)
+  const firstStageIsMonthly =
+    firstStage?.duracao_horas != null &&
+    firstStage.duracao_horas > 7 * 24 &&
+    firstStage.duracao_horas % 24 === 0
+
+  if (firstStageIsMonthly) {
+    const previousMonthStart = new Date(Date.UTC(
+      baseDate.getUTCFullYear(),
+      baseDate.getUTCMonth() - 1,
+      1
+    ))
+    const previousMonthEnd = new Date(Date.UTC(
+      baseDate.getUTCFullYear(),
+      baseDate.getUTCMonth(),
+      0
+    ))
+
+    return Array.from({ length: count }, (_, index) => {
+      const position = index + 1
+      if (position !== 1) {
+        return {
+          position,
+          key: null,
+          date: null,
+          endDate: null,
+          granularity: null
+        }
+      }
+
+      const date = formatBrazilianDate(previousMonthStart)
+      return {
+        position,
+        key: `month:${date}`,
+        date,
+        endDate: formatBrazilianDate(previousMonthEnd),
+        granularity: 'month'
+      }
+    })
+  }
+
+  return Array.from({ length: count }, (_, index) => {
+    const position = index + 1
+    const startsAt = addDays(baseDate, -7 * position)
+    const endsAt = addDays(startsAt, 6)
+    const date = formatBrazilianDate(startsAt)
+    return {
+      position,
+      key: `week:${date}`,
+      date,
+      endDate: formatBrazilianDate(endsAt),
+      granularity: 'week'
+    }
+  })
+}

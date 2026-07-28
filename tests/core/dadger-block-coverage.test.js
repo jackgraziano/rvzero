@@ -36,9 +36,15 @@ test('comparador puro cobre todos os blocos DADGER exibidos pelo site', () => {
   })
 
   assert.deepEqual(Object.keys(blocks).sort(), EXPECTED_DADGER_BLOCKS)
-  assert.equal(blocks.VI[0].fields.duracao_horas.changed, false)
-  assert.equal(blocks.VI[0].fields.vazao_defluente_1.changed, true)
-  assert.equal(blocks.VI[0].fields.vazao_defluente_2.changed, false)
+  const duration = blocks.VI.find(occurrence =>
+    occurrence.fields.duracao_horas
+  )
+  const flows = blocks.VI.filter(occurrence =>
+    occurrence.fields.vazao_defluente
+  )
+  assert.equal(duration.fields.duracao_horas.changed, false)
+  assert.equal(flows[0].fields.vazao_defluente.changed, true)
+  assert.equal(flows[1].fields.vazao_defluente.changed, false)
 })
 
 test('VI preserva repetições e compara cada posição da sequência histórica', () => {
@@ -77,14 +83,121 @@ test('VI preserva repetições e compara cada posição da sequência histórica
     }
   })
 
-  assert.equal(blocks.VI.length, 2)
-  assert.equal(blocks.VI[0].status, 'changed')
-  assert.equal(blocks.VI[0].fields.vazao_defluente_1.changed, false)
-  assert.equal(blocks.VI[0].fields.vazao_defluente_2.changed, true)
-  assert.equal(blocks.VI[0].fields.vazao_defluente_3.left, 30)
-  assert.equal(blocks.VI[0].fields.vazao_defluente_3.right, null)
-  assert.equal(blocks.VI[1].status, 'equal')
+  assert.equal(blocks.VI.length, 6)
+  const firstRecord = blocks.VI.filter(occurrence =>
+    occurrence.identity.sequenceIndex === 0
+  )
+  const firstFlows = firstRecord.filter(occurrence =>
+    occurrence.fields.vazao_defluente
+  )
+  assert.equal(firstRecord[0].fields.duracao_horas.changed, false)
+  assert.equal(firstFlows[0].status, 'equal')
+  assert.equal(firstFlows[1].status, 'changed')
+  assert.equal(firstFlows[2].fields.vazao_defluente.left, 30)
+  assert.equal(firstFlows[2].fields.vazao_defluente.right, null)
+
+  const secondRecord = blocks.VI.filter(occurrence =>
+    occurrence.identity.sequenceIndex === 1
+  )
+  assert.deepEqual(
+    secondRecord.map(occurrence => occurrence.status),
+    ['equal', 'equal']
+  )
 })
+
+test('VI alinha QDEFs pela semana histórica derivada do DT de cada deck', () => {
+  const left = viDeck('21/02/2026', [311, 449, 485, 380, 210])
+  const right = viDeck('28/02/2026', [423, 346, 449, 485, 504])
+  const blocks = compareDadgerBlocks(left, right, {
+    mode: 'data',
+    options: {
+      includeEqual: true,
+      includeOutsideCommonHorizon: true
+    }
+  })
+  const flows = blocks.VI.filter(occurrence =>
+    occurrence.fields.vazao_defluente
+  )
+
+  assert.equal(flows.length, 6)
+  const sharedEqual = flows.find(occurrence =>
+    occurrence.calendar.date === '07/02/2026'
+  )
+  assert.equal(sharedEqual.status, 'equal')
+  assert.equal(sharedEqual.calendar.leftIndex, 2)
+  assert.equal(sharedEqual.calendar.rightIndex, 3)
+  assert.equal(sharedEqual.fields.vazao_defluente.left, 449)
+  assert.equal(sharedEqual.fields.vazao_defluente.right, 449)
+
+  const sharedChanged = flows.find(occurrence =>
+    occurrence.calendar.date === '14/02/2026'
+  )
+  assert.equal(sharedChanged.status, 'changed')
+  assert.equal(sharedChanged.calendar.leftIndex, 1)
+  assert.equal(sharedChanged.calendar.rightIndex, 2)
+
+  const onlyLeftHistory = flows.find(occurrence =>
+    occurrence.calendar.date === '17/01/2026'
+  )
+  assert.equal(onlyLeftHistory.status, 'outside-common-horizon')
+  assert.equal(onlyLeftHistory.calendar.leftIndex, 5)
+  assert.equal(onlyLeftHistory.calendar.rightIndex, undefined)
+
+  const onlyRightHistory = flows.find(occurrence =>
+    occurrence.calendar.date === '21/02/2026'
+  )
+  assert.equal(onlyRightHistory.status, 'outside-common-horizon')
+  assert.equal(onlyRightHistory.calendar.leftIndex, undefined)
+  assert.equal(onlyRightHistory.calendar.rightIndex, 1)
+})
+
+test('VI compara a duração mesmo sem semanas históricas comuns', () => {
+  const left = viDeck('31/01/2026', [10, 20], 360)
+  const right = viDeck('06/06/2026', [10, 20], 168)
+  const blocks = compareDadgerBlocks(left, right, {
+    mode: 'data',
+    options: {
+      includeEqual: true,
+      includeOutsideCommonHorizon: true
+    }
+  })
+
+  const duration = blocks.VI.find(occurrence =>
+    occurrence.fields.duracao_horas
+  )
+  const flows = blocks.VI.filter(occurrence =>
+    occurrence.fields.vazao_defluente
+  )
+  assert.equal(duration.status, 'changed')
+  assert.equal(duration.fields.duracao_horas.left, 360)
+  assert.equal(duration.fields.duracao_horas.right, 168)
+  assert.equal(
+    flows.every(occurrence =>
+      occurrence.status === 'outside-common-horizon'
+    ),
+    true
+  )
+})
+
+function viDeck(baseDate, flows, duration = 360) {
+  return {
+    info_dadger: {
+      data_base: baseDate,
+      numero_estagios: 1,
+      datas_estagios: { 1: baseDate },
+      estagios: [{
+        numero: 1,
+        data_inicio: baseDate,
+        duracao_horas: 168
+      }]
+    },
+    VI: [{
+      numero_usina: 156,
+      duracao_horas: duration,
+      vazoes_defluentes: flows
+    }]
+  }
+}
 
 function dadgerFixture(value) {
   return {

@@ -110,13 +110,17 @@ O parser DADGNL cobre:
 `TE` é metadado de apresentação. Títulos diferentes não criam ocorrências no
 relatório e não afetam o total de diferenças.
 
-`VI` é um bloco estático especializado: ele representa histórico de vazões
-para tempo de viagem, e não os estágios futuros do horizonte. A identidade
-primária é a usina, ocorrências repetidas são preservadas e alinhadas em
-sequência, e cada vazão é comparada pela sua posição no registro. O tempo de
-viagem ocupa as colunas 10–12; a sequência dinâmica de vazões começa na coluna
-15, em campos de cinco colunas. `RQ`, ao contrário, possui um valor por estágio
-e é temporal.
+`VI` é um bloco histórico especializado, e não um horizonte futuro. A
+identidade primária é a usina, ocorrências repetidas são preservadas e
+alinhadas em sequência, e o tempo de viagem permanece uma configuração
+estática comparável. Em um primeiro estágio semanal, `QDEFn` recebe o período
+histórico iniciado em `DT - n × 7 dias`. Assim, no modo `data`, uma revisão
+pode alinhar seu `QDEF2` ao `QDEF3` da revisão seguinte; semanas exclusivas
+ficam fora do horizonte comum e não contam como diferença. No modo `estagio`,
+as posições são comparadas diretamente como diagnóstico. Se o primeiro estágio
+for mensal, apenas `QDEF1` recebe o mês anterior como período conhecido;
+valores adicionais são preservados sem calendário inventado. `RQ`, ao
+contrário, possui um valor por estágio futuro.
 
 ## Comparação
 

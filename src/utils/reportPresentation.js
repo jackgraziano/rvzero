@@ -1,4 +1,7 @@
-import { parseBrazilianDate } from './temporal.js'
+import {
+  compareBrazilianDates,
+  parseBrazilianDate
+} from './temporal.js'
 
 const DIFFERENCE_STATUSES = new Set(['changed', 'only-left', 'only-right'])
 
@@ -70,6 +73,90 @@ export function recordRowsFromOccurrences(occurrences, {
       ...differences
     }
   })
+}
+
+export function viRowsFromOccurrences(occurrences, mode = 'data') {
+  const groups = new Map()
+  const sourceOccurrences = occurrences ?? []
+
+  sourceOccurrences.forEach((occurrence, occurrenceIndex) => {
+    const numero_usina = occurrence.identity?.numero_usina ?? null
+    const sequenceIndex = occurrence.identity?.sequenceIndex ?? 0
+    const key = `${numero_usina}-${sequenceIndex}`
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        numero_usina,
+        dadger1: null,
+        dadger2: null,
+        hasLeft: false,
+        hasRight: false,
+        duracao_diff: false,
+        flows: [],
+        has_diff: false
+      })
+    }
+
+    const row = groups.get(key)
+    const leftPresent = occurrenceHasSide(occurrence, 'left')
+    const rightPresent = occurrenceHasSide(occurrence, 'right')
+    row.hasLeft ||= leftPresent
+    row.hasRight ||= rightPresent
+    row.has_diff ||= DIFFERENCE_STATUSES.has(occurrence.status)
+
+    const duration = occurrence.fields?.duracao_horas
+    if (duration) {
+      if (leftPresent) {
+        row.dadger1 = {
+          numero_usina,
+          duracao_horas: duration.left
+        }
+      }
+      if (rightPresent) {
+        row.dadger2 = {
+          numero_usina,
+          duracao_horas: duration.right
+        }
+      }
+      row.duracao_diff = occurrence.status !== 'outside-common-horizon' &&
+        duration.changed
+    }
+
+    const flow = occurrence.fields?.vazao_defluente
+    if (flow) {
+      row.flows.push({
+        key: [
+          occurrence.calendar?.date ?? 'sem-data',
+          occurrence.calendar?.index ?? 'sem-indice',
+          occurrence.calendar?.leftIndex ?? 'L-',
+          occurrence.calendar?.rightIndex ?? 'R-',
+          occurrenceIndex
+        ].join(':'),
+        date: occurrence.calendar?.date ?? null,
+        endDate: occurrence.calendar?.endDate ?? null,
+        granularity: occurrence.calendar?.granularity ?? null,
+        position1: occurrence.calendar?.leftIndex ?? null,
+        position2: occurrence.calendar?.rightIndex ?? null,
+        valor1: flow.left,
+        valor2: flow.right,
+        diff: flow.changed,
+        sameTemporality: occurrence.status !== 'outside-common-horizon'
+      })
+    }
+  })
+
+  return [...groups.values()].map(row => ({
+    ...row,
+    onlyInOne: !row.hasLeft || !row.hasRight,
+    sameTemporality: true,
+    flows: row.flows.sort((first, second) => {
+      if (mode === 'data') {
+        return compareBrazilianDates(second.date, first.date)
+      }
+      return (first.position1 ?? first.position2 ?? 0) -
+        (second.position1 ?? second.position2 ?? 0)
+    })
+  }))
 }
 
 export function temporalColumnsFromOccurrences(occurrences, mode = 'estagio') {

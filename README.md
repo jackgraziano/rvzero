@@ -82,10 +82,12 @@ dos patamares do bloco `DP`.
 | `VI` | Tempo de viagem e sequência histórica de vazões defluentes por usina |
 | `OUTROS` | Registros ativos de duas letras sem parser estruturado |
 
-`VI` é histórico, e não um horizonte futuro: suas vazões são comparadas na
-ordem em que aparecem no registro, sem associação a estágio ou data. O tempo
-de viagem é lido das colunas 10–12 e as vazões defluentes são campos dinâmicos
-de cinco colunas a partir da coluna 15.
+`VI` é histórico, e não um horizonte futuro. Em um estudo semanal, `QDEFn`
+corresponde à semana iniciada em `DT - n × 7 dias`; no modo Data, os valores
+são alinhados por essas datas e semanas exclusivas ficam esmaecidas. No modo
+Estágio, a posição `QDEF1`, `QDEF2`, etc. é comparada diretamente para
+diagnóstico. O tempo de viagem é uma configuração estática da usina e continua
+comparável mesmo quando não há semanas históricas comuns.
 
 ## Blocos DADGNL
 

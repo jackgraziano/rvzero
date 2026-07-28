@@ -9,7 +9,10 @@ import {
   hasDiff,
   semanticEqual
 } from '../src/utils/comparison.js'
-import { buildStageCalendar } from '../src/utils/temporal.js'
+import {
+  buildStageCalendar,
+  buildViHistoryCalendar
+} from '../src/utils/temporal.js'
 import { useTemporalComparison } from '../src/composables/useTemporalComparison.js'
 import { useEntityTemporalComparison } from '../src/composables/useEntityTemporalComparison.js'
 import {
@@ -56,6 +59,75 @@ test('calendário usa início semanal e duração real informada pelo DP', () =>
   assert.equal(calendar[5].data_inicio, '07/03/2026')
   assert.equal(calendar[5].data_fim, '31/03/2026')
   assert.equal(calendar[5].duracao_horas, 600)
+})
+
+test('calendário VI ancora cada QDEF nas semanas anteriores ao DT', () => {
+  const history = buildViHistoryCalendar({
+    data_base: '28/02/2026',
+    estagios: [{ numero: 1, duracao_horas: 168 }]
+  }, 5)
+
+  assert.deepEqual(history, [
+    {
+      position: 1,
+      key: 'week:21/02/2026',
+      date: '21/02/2026',
+      endDate: '27/02/2026',
+      granularity: 'week'
+    },
+    {
+      position: 2,
+      key: 'week:14/02/2026',
+      date: '14/02/2026',
+      endDate: '20/02/2026',
+      granularity: 'week'
+    },
+    {
+      position: 3,
+      key: 'week:07/02/2026',
+      date: '07/02/2026',
+      endDate: '13/02/2026',
+      granularity: 'week'
+    },
+    {
+      position: 4,
+      key: 'week:31/01/2026',
+      date: '31/01/2026',
+      endDate: '06/02/2026',
+      granularity: 'week'
+    },
+    {
+      position: 5,
+      key: 'week:24/01/2026',
+      date: '24/01/2026',
+      endDate: '30/01/2026',
+      granularity: 'week'
+    }
+  ])
+})
+
+test('calendário VI mensal não inventa semanas para QDEFs adicionais', () => {
+  const history = buildViHistoryCalendar({
+    data_base: '04/04/2026',
+    estagios: [{ numero: 1, duracao_horas: 648 }]
+  }, 2)
+
+  assert.deepEqual(history, [
+    {
+      position: 1,
+      key: 'month:01/03/2026',
+      date: '01/03/2026',
+      endDate: '31/03/2026',
+      granularity: 'month'
+    },
+    {
+      position: 2,
+      key: null,
+      date: null,
+      endDate: null,
+      granularity: null
+    }
+  ])
 })
 
 test('modo data alinha estágios diferentes que começam no mesmo dia', () => {

@@ -7,7 +7,8 @@ import {
   entityTemporalRowsFromOccurrences,
   recordRowsFromOccurrences,
   stageArrayRowsFromOccurrences,
-  temporalColumnsFromOccurrences
+  temporalColumnsFromOccurrences,
+  viRowsFromOccurrences
 } from '../src/utils/reportPresentation.js'
 
 test('apresentação CT mantém uma linha especializada por usina e período', () => {
@@ -216,6 +217,75 @@ test('API preserva a data de origem de COTVOL no modo estágio', () => {
   assert.equal(blocks.AC[0].calendar.rightSourceDate, '31/01/2026')
 })
 
+test('apresentação VI reúne duração e semanas alinhadas sem destacar exclusivas', () => {
+  const [row] = viRowsFromOccurrences([
+    occurrence({
+      block: 'VI',
+      status: 'equal',
+      identity: { numero_usina: 156, sequenceIndex: 0 },
+      calendar: {},
+      fields: {
+        duracao_horas: field(360, 360)
+      }
+    }),
+    occurrence({
+      block: 'VI',
+      status: 'changed',
+      identity: { numero_usina: 156, sequenceIndex: 0 },
+      calendar: {
+        date: '14/02/2026',
+        endDate: '20/02/2026',
+        leftIndex: 1,
+        rightIndex: 2
+      },
+      fields: {
+        vazao_defluente: field(311, 346, true)
+      }
+    }),
+    occurrence({
+      block: 'VI',
+      status: 'equal',
+      identity: { numero_usina: 156, sequenceIndex: 0 },
+      calendar: {
+        date: '07/02/2026',
+        endDate: '13/02/2026',
+        leftIndex: 2,
+        rightIndex: 3
+      },
+      fields: {
+        vazao_defluente: field(449, 449)
+      }
+    }),
+    occurrence({
+      block: 'VI',
+      status: 'outside-common-horizon',
+      identity: { numero_usina: 156, sequenceIndex: 0 },
+      calendar: {
+        date: '17/01/2026',
+        endDate: '23/01/2026',
+        leftIndex: 5
+      },
+      fields: {
+        vazao_defluente: field(210, null, true)
+      }
+    })
+  ], 'data')
+
+  assert.equal(row.dadger1.duracao_horas, 360)
+  assert.equal(row.dadger2.duracao_horas, 360)
+  assert.equal(row.duracao_diff, false)
+  assert.equal(row.onlyInOne, false)
+  assert.equal(row.has_diff, true)
+  assert.deepEqual(
+    row.flows.map(flow => flow.date),
+    ['14/02/2026', '07/02/2026', '17/01/2026']
+  )
+  assert.equal(row.flows[0].position1, 1)
+  assert.equal(row.flows[0].position2, 2)
+  assert.equal(row.flows[1].diff, false)
+  assert.equal(row.flows[2].sameTemporality, false)
+})
+
 test('App usa layouts especializados alimentados pelos blocos do relatório', async () => {
   const [source, tableStyles] = await Promise.all([
     readFile(new URL('../src/App.vue', import.meta.url), 'utf8'),
@@ -241,6 +311,14 @@ test('App usa layouts especializados alimentados pelos blocos do relatório', as
     'utf8'
   )
   assert.match(comparisonView, /<VIBlock/)
+  assert.match(comparisonView, /:compareMode="compareMode"/)
+
+  const viBlock = await readFile(
+    new URL('../src/components/blocks/VIBlock.vue', import.meta.url),
+    'utf8'
+  )
+  assert.match(viBlock, /flowLabel\(flow, side\)/)
+  assert.match(viBlock, /faded: !flow\.sameTemporality/)
 })
 
 function occurrence({

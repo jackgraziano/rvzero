@@ -57,11 +57,14 @@
                     <div v-if="row.flows.length" class="flow-list">
                       <span
                         v-for="flow in row.flows"
-                        :key="flow.position"
+                        :key="flow.key"
                         class="flow-value"
-                        :class="{ diff: flow.diff && !row.onlyInOne }"
+                        :class="{
+                          diff: flow.diff && flow.sameTemporality && !row.onlyInOne,
+                          faded: !flow.sameTemporality
+                        }"
                       >
-                        <small>QDEF {{ flow.position }}</small>
+                        <small>{{ flowLabel(flow, side) }}</small>
                         <strong>{{ formatFlow(flowValue(flow, side)) }}</strong>
                       </span>
                     </div>
@@ -79,9 +82,10 @@
 
 <script>
 import { computed } from 'vue'
-import { alignSequences, hasDiff } from '../../utils/comparison.js'
 import { useBlockComparison } from '../../composables/useBlockComparison.js'
-import { recordRowsFromOccurrences } from '../../utils/reportPresentation.js'
+import {
+  viRowsFromOccurrences
+} from '../../utils/reportPresentation.js'
 
 export default {
   name: 'VIBlock',
@@ -90,13 +94,13 @@ export default {
     dadger1Name: { type: String, required: true },
     dadger2Data: { type: Object, required: true },
     dadger2Name: { type: String, required: true },
+    compareMode: { type: String, required: true },
     showOnlyDifferences: { type: Boolean, required: true },
-    occurrences: { type: Array, default: null }
+    occurrences: { type: Array, default: () => [] }
   },
   setup(props) {
-    const alignedData = computed(() => Array.isArray(props.occurrences)
-      ? rowsFromOccurrences(props.occurrences)
-      : rowsFromParsedData(props.dadger1Data.VI, props.dadger2Data.VI)
+    const alignedData = computed(() =>
+      viRowsFromOccurrences(props.occurrences, props.compareMode)
     )
     const comparison = useBlockComparison(props, alignedData)
     const filteredData = comparison.createFilteredData()
@@ -113,101 +117,12 @@ export default {
       setTableContainer,
       recordFor,
       flowValue,
+      flowLabel,
       formatHours,
       formatDays,
       formatFlow
     }
   }
-}
-
-function rowsFromOccurrences(occurrences) {
-  return recordRowsFromOccurrences(occurrences, {
-    temporalField: null
-  }).map(row => {
-    const flows = Object.entries(row.occurrence.fields)
-      .flatMap(([field, comparison]) => {
-        const match = /^vazao_defluente_(\d+)$/.exec(field)
-        if (!match) return []
-        return [{
-          position: Number(match[1]),
-          valor1: comparison.left,
-          valor2: comparison.right,
-          diff: comparison.changed
-        }]
-      })
-      .sort((first, second) => first.position - second.position)
-
-    return {
-      ...row,
-      duracao_diff: Boolean(
-        row.occurrence.fields.duracao_horas?.changed
-      ),
-      flows
-    }
-  })
-}
-
-function rowsFromParsedData(records1 = [], records2 = []) {
-  const plants = new Set([
-    ...records1.map(record => record.numero_usina),
-    ...records2.map(record => record.numero_usina)
-  ])
-  const rows = []
-
-  for (const numero_usina of [...plants].sort((first, second) => first - second)) {
-    const plantRecords1 = records1.filter(record =>
-      record.numero_usina === numero_usina
-    )
-    const plantRecords2 = records2.filter(record =>
-      record.numero_usina === numero_usina
-    )
-    alignSequences(plantRecords1, plantRecords2, viSignature)
-      .forEach(({ left, right }, sequenceIndex) => {
-        const flowCount = Math.max(
-          left?.vazoes_defluentes?.length ?? 0,
-          right?.vazoes_defluentes?.length ?? 0
-        )
-        const flows = Array.from({ length: flowCount }, (_, index) => {
-          const valor1 = left?.vazoes_defluentes?.[index] ?? null
-          const valor2 = right?.vazoes_defluentes?.[index] ?? null
-          return {
-            position: index + 1,
-            valor1,
-            valor2,
-            diff: hasDiff(valor1, valor2)
-          }
-        })
-        const duracao_diff = hasDiff(
-          left?.duracao_horas,
-          right?.duracao_horas
-        )
-        const onlyInOne = !left || !right
-        const hasDifference = onlyInOne ||
-          duracao_diff ||
-          flows.some(flow => flow.diff)
-
-        rows.push({
-          key: `${numero_usina}-${sequenceIndex}`,
-          numero_usina,
-          dadger1: left,
-          dadger2: right,
-          onlyInOne,
-          sameTemporality: true,
-          duracao_diff,
-          flows,
-          has_diff: hasDifference
-        })
-      })
-  }
-
-  return rows
-}
-
-function viSignature(record) {
-  return JSON.stringify([
-    record?.duracao_horas ?? null,
-    record?.vazoes_defluentes ?? []
-  ])
 }
 
 function formatHours(value) {
@@ -225,6 +140,32 @@ function formatDays(value) {
 
 function formatFlow(value) {
   return value == null ? '—' : value.toLocaleString('pt-BR')
+}
+
+function flowLabel(flow, side) {
+  const position = side === 1 ? flow.position1 : flow.position2
+  const period = formatHistoricalPeriod(flow.date, flow.endDate)
+  if (period && position != null) return `${period} · QDEF ${position}`
+  if (period) return period
+  if (position != null) return `QDEF ${position} · período sem calendário`
+  return 'Período sem calendário'
+}
+
+function formatHistoricalPeriod(start, end) {
+  if (!start) return ''
+  if (!end || end === start) return start
+
+  const startParts = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(start)
+  const endParts = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(end)
+  if (
+    startParts &&
+    endParts &&
+    startParts[2] === endParts[2] &&
+    startParts[3] === endParts[3]
+  ) {
+    return `${startParts[1]}–${endParts[1]}/${endParts[2]}/${endParts[3]}`
+  }
+  return `${start}–${end}`
 }
 </script>
 
@@ -303,6 +244,10 @@ function formatFlow(value) {
   color: var(--warning);
   background: color-mix(in srgb, var(--warning) 12%, var(--chip));
   border-color: color-mix(in srgb, var(--warning) 50%, var(--border));
+}
+
+.flow-value.faded {
+  opacity: 0.38;
 }
 
 @media (max-width: 900px) {

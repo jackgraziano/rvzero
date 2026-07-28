@@ -187,6 +187,7 @@
         :dadger1Name="dadger1Name"
         :dadger2Data="dadger2Data"
         :dadger2Name="dadger2Name"
+        :compareMode="compareMode"
         :showOnlyDifferences="showOnlyDifferences"
         :occurrences="blockOccurrences('VI')"
       />

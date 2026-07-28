@@ -61,6 +61,11 @@ Antes de concluir uma alteração:
 - `RQ` é temporal, com um valor por estágio.
 - `VI` é histórico para tempo de viagem e não deve ser tratado como horizonte
   futuro.
+- Em um primeiro estágio semanal, `QDEFn` do `VI` representa a semana iniciada
+  em `DT - n × 7 dias`. No modo `data`, alinhe essas semanas históricas pela
+  data; posições exclusivas devem ser esmaecidas e não contar como diferença.
+- Quando o primeiro estágio é mensal, apenas `QDEF1` possui calendário
+  definido e representa o mês anterior ao `DT`.
 
 Exemplo obrigatório de regressão temporal:
 
