@@ -287,13 +287,14 @@ test('apresentação VI reúne duração e semanas alinhadas sem destacar exclus
 })
 
 test('App usa layouts especializados alimentados pelos blocos do relatório', async () => {
-  const [source, tableStyles, dropZone] = await Promise.all([
+  const [source, tableStyles, dropZone, topBar] = await Promise.all([
     readFile(new URL('../src/App.vue', import.meta.url), 'utf8'),
     readFile(
       new URL('../src/styles/block-tables.css', import.meta.url),
       'utf8'
     ),
-    readFile(new URL('../src/components/DropZone.vue', import.meta.url), 'utf8')
+    readFile(new URL('../src/components/DropZone.vue', import.meta.url), 'utf8'),
+    readFile(new URL('../src/components/TopBar.vue', import.meta.url), 'utf8')
   ])
 
   assert.match(source, /<ComparisonView/)
@@ -302,6 +303,9 @@ test('App usa layouts especializados alimentados pelos blocos do relatório', as
   assert.doesNotMatch(source, /:deck-title=/)
   assert.match(source, /class="comparison-deck-title"/)
   assert.doesNotMatch(dropZone, /deck-title-card|deckTitle/)
+  assert.match(dropZone, /dadger\.rv\*, renovaveis\.csv ou dadgnl\.rv\*/)
+  assert.match(topBar, /Comparador de decks de Decomp/)
+  assert.doesNotMatch(topBar, /Software de código aberto|modal-kicker/)
   assert.match(source, /:occurrences="coreReport\?\.blocks\?\.dadger/)
   assert.doesNotMatch(source, /<ReportComparisonView/)
   assert.match(

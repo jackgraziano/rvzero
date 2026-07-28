@@ -25,7 +25,7 @@
           <h2>
             {{ files.length ? 'Adicione arquivos a este conjunto' : 'Arraste os arquivos para cá' }}
           </h2>
-          <p>{{ supportedTypesText }} · até um de cada tipo · processamento local</p>
+          <p>dadger.rv*, renovaveis.csv ou dadgnl.rv*</p>
         </div>
         <label class="upload-button">
           {{ files.length ? 'Adicionar ou substituir' : 'Escolher arquivos' }}
@@ -76,7 +76,7 @@
 
 <script>
 import { readBrowserFile } from '../adapters/browserFiles.js'
-import { detectFileType, parseFile, getSupportedTypes } from '../utils/fileTypeRegistry.js'
+import { detectFileType, parseFile } from '../utils/fileTypeRegistry.js'
 
 export default {
   name: 'DropZone',
@@ -98,9 +98,6 @@ export default {
   computed: {
     isReading() {
       return this.pendingCount > 0
-    },
-    supportedTypesText() {
-      return getSupportedTypes().map(type => type.name).join(' ou ')
     }
   },
   methods: {

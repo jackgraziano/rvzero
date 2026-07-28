@@ -4,7 +4,7 @@
       <span class="brand-mark" aria-hidden="true">RV0</span>
       <div>
         <h1>RVZero</h1>
-        <p>Comparador temporal de decks DECOMP</p>
+        <p>Comparador de decks de Decomp</p>
       </div>
     </div>
 
@@ -78,7 +78,6 @@
         >
           ×
         </button>
-        <span class="modal-kicker">Software de código aberto</span>
         <h2 id="about-title">Sobre o RVZero</h2>
         <p>
           O RVZero é uma ferramenta de código aberto destinada à análise
@@ -345,16 +344,8 @@ export default {
   font-family: var(--font-ui);
 }
 
-.modal-kicker {
-  color: var(--accent);
-  font-size: 11px;
-  font-weight: 750;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
 .modal-content h2 {
-  margin: 8px 0 12px;
+  margin: 0 0 12px;
   font-size: 22px;
 }
 
