@@ -68,6 +68,7 @@
 <script>
 import { ref, computed } from 'vue'
 import { alignSequences } from '../../utils/comparison.js'
+import { recordRowsFromOccurrences } from '../../utils/reportPresentation.js'
 
 export default {
   name: 'OutrosBlock',
@@ -76,7 +77,8 @@ export default {
     dadger1Name: { type: String, required: true },
     dadger2Data: { type: Object, required: true },
     dadger2Name: { type: String, required: true },
-    showOnlyDifferences: { type: Boolean, required: true }
+    showOnlyDifferences: { type: Boolean, required: true },
+    occurrences: { type: Array, default: null }
   },
   setup(props) {
     const collapsed = ref(true)
@@ -86,12 +88,33 @@ export default {
     }
 
     const mnemonicos = computed(() => [...new Set([
+      ...(Array.isArray(props.occurrences)
+        ? props.occurrences.map(occurrence => occurrence.identity?.mnemonico)
+        : []),
       ...Object.keys(props.dadger1Data.OUTROS ?? {}),
       ...Object.keys(props.dadger2Data.OUTROS ?? {})
     ])].sort())
 
     // Comparações linha a linha para cada mnemônico
     const comparacoes = computed(() => {
+      if (Array.isArray(props.occurrences)) {
+        const rows = recordRowsFromOccurrences(props.occurrences, {
+          temporalField: null
+        })
+        const result = Object.fromEntries(
+          mnemonicos.value.map(mnemonic => [mnemonic, []])
+        )
+        for (const row of rows) {
+          result[row.mnemonico].push({
+            linha1: row.dadger1?.linha ?? null,
+            linha2: row.dadger2?.linha ?? null,
+            onlyInOne: row.onlyInOne,
+            different: row.occurrence.status === 'changed'
+          })
+        }
+        return result
+      }
+
       const result = {}
 
       const outros1 = props.dadger1Data.OUTROS || {}
@@ -142,6 +165,12 @@ export default {
 
     // Verificar se há diferenças no bloco
     const hasDifferences = computed(() => {
+      if (Array.isArray(props.occurrences)) {
+        return props.occurrences.some(occurrence =>
+          ['changed', 'only-left', 'only-right'].includes(occurrence.status)
+        )
+      }
+
       for (const mnem of mnemonicos.value) {
         const comp = comparacoes.value[mnem]
         // OUTROS não tem temporalidade, então onlyInOne sempre conta

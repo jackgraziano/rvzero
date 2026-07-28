@@ -24,6 +24,7 @@
       :dadger2-data="dadger2Data"
       :compare-mode="compareMode"
       :show-only-differences="showOnlyDifferences"
+      :occurrences="occurrences"
     />
   </div>
 </template>
@@ -44,7 +45,8 @@ export default {
     dadger1Data: { type: Object, default: null },
     dadger2Data: { type: Object, default: null },
     compareMode: { type: String, required: true },
-    showOnlyDifferences: { type: Boolean, required: true }
+    showOnlyDifferences: { type: Boolean, required: true },
+    occurrences: { type: Array, default: null }
   }
 }
 </script>

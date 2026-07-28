@@ -154,6 +154,7 @@
 <script>
 import { computed } from 'vue'
 import { hasDiff, formatNumber, formatRange, alignByEstagio, alignByData } from '../../utils/comparison.js'
+import { recordRowsFromOccurrences } from '../../utils/reportPresentation.js'
 import { useBlockComparison } from '../../composables/useBlockComparison.js'
 
 export default {
@@ -164,7 +165,8 @@ export default {
     dadger2Data: { type: Object, required: true },
     dadger2Name: { type: String, required: true },
     compareMode: { type: String, required: true },
-    showOnlyDifferences: { type: Boolean, required: true }
+    showOnlyDifferences: { type: Boolean, required: true },
+    occurrences: { type: Array, default: null }
   },
   setup(props) {
     // Coluna de tempo baseada no modo de comparação
@@ -208,6 +210,18 @@ export default {
 
     // Alinhar dados por estágio ou data
     const alignedData = computed(() => {
+      if (Array.isArray(props.occurrences)) {
+        return recordRowsFromOccurrences(props.occurrences, {
+          mode: props.compareMode
+        }).map(row => ({
+          ...row,
+          estagio: row.dadger1?.estagio ?? row.dadger2?.estagio ?? null,
+          pesado_diff: row.diff_pesado,
+          medio_diff: row.diff_medio,
+          leve_diff: row.diff_leve
+        }))
+      }
+
       const registros1 = props.dadger1Data.RI || []
       const registros2 = props.dadger2Data.RI || []
       const entityKey = record => `${record.usina}\u0000${record.subsistema}`

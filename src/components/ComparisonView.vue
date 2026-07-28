@@ -41,6 +41,7 @@
         :dadger2Name="dadger2Name"
         :compareMode="compareMode"
         :showOnlyDifferences="showOnlyDifferences"
+        :occurrences="blockOccurrences('UH')"
       />
 
       <!-- Bloco CT -->
@@ -52,6 +53,7 @@
         :dadger2Name="dadger2Name"
         :compareMode="compareMode"
         :showOnlyDifferences="showOnlyDifferences"
+        :occurrences="blockOccurrences('CT')"
       />
 
       <!-- Bloco DP -->
@@ -63,6 +65,7 @@
         :dadger2Name="dadger2Name"
         :compareMode="compareMode"
         :showOnlyDifferences="showOnlyDifferences"
+        :occurrences="blockOccurrences('DP')"
       />
 
       <!-- Bloco PQ -->
@@ -74,6 +77,7 @@
         :dadger2Name="dadger2Name"
         :compareMode="compareMode"
         :showOnlyDifferences="showOnlyDifferences"
+        :occurrences="blockOccurrences('PQ')"
       />
 
       <!-- Bloco RI -->
@@ -85,6 +89,7 @@
         :dadger2Name="dadger2Name"
         :compareMode="compareMode"
         :showOnlyDifferences="showOnlyDifferences"
+        :occurrences="blockOccurrences('RI')"
       />
 
       <!-- Bloco IA -->
@@ -96,6 +101,7 @@
         :dadger2Name="dadger2Name"
         :compareMode="compareMode"
         :showOnlyDifferences="showOnlyDifferences"
+        :occurrences="blockOccurrences('IA')"
       />
 
       <StageArrayBlock
@@ -112,6 +118,7 @@
         entityLabel="Nº Usina"
         title="BLOCO MP - MANUTENÇÃO PROGRAMADA"
         hasItaipuSet
+        :occurrences="blockOccurrences('MP')"
       />
 
       <StageArrayBlock
@@ -128,6 +135,7 @@
         entityLabel="Nº Usina"
         title="BLOCO FD - FATORES DE DISPONIBILIDADE"
         hasItaipuSet
+        :occurrences="blockOccurrences('FD')"
       />
 
       <StageArrayBlock
@@ -143,6 +151,7 @@
         entityField="numero_usina"
         entityLabel="Nº Usina"
         title="BLOCO VE - VOLUME DE ESPERA"
+        :occurrences="blockOccurrences('VE')"
       />
 
       <!-- Bloco RE -->
@@ -154,6 +163,7 @@
         :dadger2Name="dadger2Name"
         :compareMode="compareMode"
         :showOnlyDifferences="showOnlyDifferences"
+        :occurrences="blockOccurrences('RE')"
       />
 
       <!-- Bloco AC -->
@@ -165,6 +175,7 @@
         :dadger2Name="dadger2Name"
         :compareMode="compareMode"
         :showOnlyDifferences="showOnlyDifferences"
+        :occurrences="blockOccurrences('AC')"
       />
 
       <StageArrayBlock
@@ -180,6 +191,7 @@
         entityField="numero_usina"
         entityLabel="Nº Usina"
         title="BLOCO TI - VAZÃO DESVIADA"
+        :occurrences="blockOccurrences('TI')"
       />
 
       <!-- Bloco HV -->
@@ -191,6 +203,7 @@
         :dadger2Name="dadger2Name"
         :compareMode="compareMode"
         :showOnlyDifferences="showOnlyDifferences"
+        :occurrences="blockOccurrences('HV')"
       />
 
       <!-- Bloco HQ -->
@@ -202,6 +215,7 @@
         :dadger2Name="dadger2Name"
         :compareMode="compareMode"
         :showOnlyDifferences="showOnlyDifferences"
+        :occurrences="blockOccurrences('HQ')"
       />
 
       <!-- Bloco HE -->
@@ -213,6 +227,7 @@
         :dadger2Name="dadger2Name"
         :compareMode="compareMode"
         :showOnlyDifferences="showOnlyDifferences"
+        :occurrences="blockOccurrences('HE')"
       />
 
       <StageArrayBlock
@@ -228,6 +243,7 @@
         entityField="numero_ree"
         entityLabel="Nº REE"
         title="BLOCO RQ - VAZÃO DEFLUENTE MÍNIMA (%)"
+        :occurrences="blockOccurrences('RQ')"
       />
 
       <OutrosBlock
@@ -237,6 +253,7 @@
         :dadger2Data="dadger2Data"
         :dadger2Name="dadger2Name"
         :showOnlyDifferences="showOnlyDifferences"
+        :occurrences="blockOccurrences('OUTROS')"
       />
 
     </div>
@@ -299,6 +316,10 @@ export default {
     showOnlyDifferences: {
       type: Boolean,
       required: true
+    },
+    occurrences: {
+      type: Object,
+      default: () => ({})
     }
   },
   computed: {
@@ -339,6 +360,9 @@ export default {
     }
   },
   methods: {
+    blockOccurrences(blockKey) {
+      return this.occurrences[blockKey] ?? []
+    },
     hasBlockData(blockKey) {
       return [this.dadger1Data[blockKey], this.dadger2Data[blockKey]]
         .some(value => Array.isArray(value)

@@ -154,7 +154,8 @@ export default {
     dadger2Data: { type: Object, required: true },
     dadger2Name: { type: String, required: true },
     compareMode: { type: String, required: true },
-    showOnlyDifferences: { type: Boolean, required: true }
+    showOnlyDifferences: { type: Boolean, required: true },
+    occurrences: { type: Array, default: null }
   },
   setup(props) {
     // Função para extrair valor completo da restrição

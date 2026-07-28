@@ -87,7 +87,8 @@ export default {
     entityField: { type: String, required: true },
     entityLabel: { type: String, required: true },
     title: { type: String, required: true },
-    hasItaipuSet: { type: Boolean, default: false }
+    hasItaipuSet: { type: Boolean, default: false },
+    occurrences: { type: Array, default: null }
   },
   setup(props) {
     const getEntityKey = record => props.hasItaipuSet

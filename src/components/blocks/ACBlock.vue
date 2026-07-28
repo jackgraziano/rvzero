@@ -109,6 +109,7 @@ import {
   buildCotvolSnapshots,
   cotvolSignature
 } from '../../utils/cotvol.js'
+import { recordRowsFromOccurrences } from '../../utils/reportPresentation.js'
 import { formatCompactNumber } from '../../utils/restrictionDisplay.js'
 
 export default {
@@ -119,7 +120,8 @@ export default {
     dadger2Data: { type: Object, required: true },
     dadger2Name: { type: String, required: true },
     compareMode: { type: String, required: true },
-    showOnlyDifferences: { type: Boolean, required: true }
+    showOnlyDifferences: { type: Boolean, required: true },
+    occurrences: { type: Array, default: null }
   },
   setup(props) {
     const collapsed = ref(true)
@@ -138,6 +140,27 @@ export default {
 
     // Comparações agrupadas por usina
     const comparacoesPorUsina = computed(() => {
+      if (Array.isArray(props.occurrences)) {
+        const rows = recordRowsFromOccurrences(props.occurrences, {
+          mode: props.compareMode,
+          includeSourceDate: true
+        })
+        const result = {}
+        for (const row of rows) {
+          if (!result[row.usina]) result[row.usina] = []
+          result[row.usina].push({
+            chave: row.key,
+            reg1: normalizeOccurrenceRecord(row.dadger1, row),
+            reg2: normalizeOccurrenceRecord(row.dadger2, row),
+            onlyInOne: row.onlyInOne,
+            different: row.occurrence.status === 'changed',
+            sameTemporality: row.sameTemporality,
+            has_diff: row.has_diff
+          })
+        }
+        return result
+      }
+
       const result = {}
 
       const registros1 = normalizedRecords(props.dadger1Data)
@@ -306,6 +329,16 @@ export default {
       formatCompactNumber,
       hasDifferences,
       hasPeriod
+    }
+
+    function normalizeOccurrenceRecord(record, row) {
+      if (!record) return null
+      const cotvol = record.mnemonico === 'COTVOL'
+      return {
+        ...record,
+        cotvol,
+        data_inicio: row.occurrence.calendar?.date ?? null
+      }
     }
   }
 }

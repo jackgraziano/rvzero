@@ -132,6 +132,7 @@
 <script>
 import { computed } from 'vue'
 import { hasDiff, formatNumber, formatNumberScientific } from '../../utils/comparison.js'
+import { recordRowsFromOccurrences } from '../../utils/reportPresentation.js'
 import { useBlockComparison } from '../../composables/useBlockComparison.js'
 
 export default {
@@ -142,11 +143,19 @@ export default {
     dadger2Data: { type: Object, required: true },
     dadger2Name: { type: String, required: true },
     compareMode: { type: String, required: true },
-    showOnlyDifferences: { type: Boolean, required: true }
+    showOnlyDifferences: { type: Boolean, required: true },
+    occurrences: { type: Array, default: null }
   },
   setup(props) {
     // Computed: dados alinhados (lógica específica do bloco UH)
     const alignedData = computed(() => {
+      if (Array.isArray(props.occurrences)) {
+        return recordRowsFromOccurrences(props.occurrences, {
+          mode: props.compareMode,
+          temporalField: null
+        })
+      }
+
       const registros1 = props.dadger1Data.UH || []
       const registros2 = props.dadger2Data.UH || []
       const sameTemporality = props.compareMode !== 'data' ||

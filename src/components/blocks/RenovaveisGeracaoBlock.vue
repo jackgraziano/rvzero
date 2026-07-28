@@ -111,6 +111,7 @@
 import { computed } from 'vue'
 import { formatNumber } from '../../utils/comparison.js'
 import { alignRenovaveisGeneration } from '../../utils/renovaveisComparison.js'
+import { recordRowsFromOccurrences } from '../../utils/reportPresentation.js'
 import { useBlockComparison } from '../../composables/useBlockComparison.js'
 
 export default {
@@ -123,18 +124,48 @@ export default {
     dadger1Data: { type: Object, default: null },
     dadger2Data: { type: Object, default: null },
     compareMode: { type: String, required: true },
-    showOnlyDifferences: { type: Boolean, required: true }
+    showOnlyDifferences: { type: Boolean, required: true },
+    occurrences: { type: Array, default: null }
   },
   setup(props) {
-    const alignedData = computed(() => alignRenovaveisGeneration(
-      props.renovaveis1Data,
-      props.renovaveis2Data,
-      {
-        compareMode: props.compareMode,
-        dadger1Data: props.dadger1Data,
-        dadger2Data: props.dadger2Data
+    const alignedData = computed(() => {
+      if (Array.isArray(props.occurrences)) {
+        return recordRowsFromOccurrences(props.occurrences, {
+          mode: props.compareMode,
+          leftKey: 'ren1',
+          rightKey: 'ren2',
+          temporalField: 'periodo',
+          temporalAbbreviation: 'Período'
+        }).map(row => {
+          const calendar = row.occurrence.calendar ?? {}
+          const period = calendar.index ??
+            calendar.leftIndex ??
+            calendar.rightIndex ??
+            null
+          return {
+            ...row,
+            period,
+            periodLabel: props.compareMode === 'data'
+              ? calendar.date ?? 'Sem data associada'
+              : `Período ${period}`,
+            submercado: row.ren1?.submercado ?? row.ren2?.submercado,
+            patamar: row.ren1?.patamar ?? row.ren2?.patamar,
+            geracaoMedia:
+              row.ren1?.geracaoMedia ?? row.ren2?.geracaoMedia ?? null
+          }
+        })
       }
-    ))
+
+      return alignRenovaveisGeneration(
+        props.renovaveis1Data,
+        props.renovaveis2Data,
+        {
+          compareMode: props.compareMode,
+          dadger1Data: props.dadger1Data,
+          dadger2Data: props.dadger2Data
+        }
+      )
+    })
     const temporalColumnLabel = computed(
       () => props.compareMode === 'data' ? 'Data / PerIni' : 'Período'
     )

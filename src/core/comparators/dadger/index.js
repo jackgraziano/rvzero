@@ -247,7 +247,13 @@ function compareAC(leftDadger, rightDadger, { mode, options }) {
               mnemonico: record?.mnemonico ?? null,
               sequenceIndex
             },
-            calendar: acCalendar(record, leftDadger, rightDadger, mode),
+            calendar: acCalendar(
+              left,
+              right,
+              leftDadger,
+              rightDadger,
+              mode
+            ),
             left,
             right,
             fieldNames: record?.cotvol
@@ -317,7 +323,8 @@ function comparableACValue(record) {
   return record.cotvol ? cotvolSignature(record) : record.dados.trimEnd()
 }
 
-function acCalendar(record, leftDadger, rightDadger, mode) {
+function acCalendar(left, right, leftDadger, rightDadger, mode) {
+  const record = left ?? right
   if (!record?.cotvol || record.estagio === null) {
     return { sameTemporality: true }
   }
@@ -333,16 +340,20 @@ function acCalendar(record, leftDadger, rightDadger, mode) {
     }
   }
 
-  return calendarFor(
-    mode,
-    record.estagio,
-    record.estagio <= (leftDadger?.info_dadger?.numero_estagios ?? 0)
-      ? { estagio: record.estagio }
-      : null,
-    record.estagio <= (rightDadger?.info_dadger?.numero_estagios ?? 0)
-      ? { estagio: record.estagio }
-      : null,
-    record.estagio <= (leftDadger?.info_dadger?.numero_estagios ?? 0) &&
+  return {
+    ...calendarFor(
+      mode,
+      record.estagio,
+      record.estagio <= (leftDadger?.info_dadger?.numero_estagios ?? 0)
+        ? { estagio: record.estagio }
+        : null,
       record.estagio <= (rightDadger?.info_dadger?.numero_estagios ?? 0)
-  )
+        ? { estagio: record.estagio }
+        : null,
+      record.estagio <= (leftDadger?.info_dadger?.numero_estagios ?? 0) &&
+        record.estagio <= (rightDadger?.info_dadger?.numero_estagios ?? 0)
+    ),
+    leftSourceDate: left?.data_inicio ?? null,
+    rightSourceDate: right?.data_inicio ?? null
+  }
 }

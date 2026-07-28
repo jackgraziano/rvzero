@@ -72,10 +72,41 @@
           </div>
         </header>
 
-        <ReportComparisonView
-          v-if="coreReport"
-          :report="coreReport"
+        <ComparisonView
+          v-if="hasDadgerComparison"
+          :dadger1-data="deckFiles[0].dadger.data"
+          :dadger1-name="deckFiles[0].dadger.name"
+          :dadger2-data="deckFiles[1].dadger.data"
+          :dadger2-name="deckFiles[1].dadger.name"
+          :compare-mode="activeCompareMode"
           :show-only-differences="showOnlyDifferences"
+          :occurrences="coreReport?.blocks?.dadger ?? {}"
+        />
+
+        <RenovaveisComparisonView
+          v-if="hasRenovaveisComparison"
+          :renovaveis1-data="deckFiles[0].renovaveis.data"
+          :renovaveis1-name="deckFiles[0].renovaveis.name"
+          :renovaveis2-data="deckFiles[1].renovaveis.data"
+          :renovaveis2-name="deckFiles[1].renovaveis.name"
+          :dadger1-data="deckFiles[0].dadger?.data ?? null"
+          :dadger2-data="deckFiles[1].dadger?.data ?? null"
+          :compare-mode="activeCompareMode"
+          :show-only-differences="showOnlyDifferences"
+          :occurrences="coreReport?.blocks?.renovaveis?.geracaoAgregada ?? []"
+        />
+
+        <DadgnlComparisonView
+          v-if="hasDadgnlComparison"
+          :dadgnl1-data="deckFiles[0].dadgnl.data"
+          :dadgnl1-name="deckFiles[0].dadgnl.name"
+          :dadgnl2-data="deckFiles[1].dadgnl.data"
+          :dadgnl2-name="deckFiles[1].dadgnl.name"
+          :dadger1-data="deckFiles[0].dadger?.data ?? null"
+          :dadger2-data="deckFiles[1].dadger?.data ?? null"
+          :compare-mode="activeCompareMode"
+          :show-only-differences="showOnlyDifferences"
+          :occurrences="coreReport?.blocks?.dadgnl ?? {}"
         />
       </section>
 
@@ -97,7 +128,9 @@
 <script>
 import TopBar from './components/TopBar.vue'
 import DropZone from './components/DropZone.vue'
-import ReportComparisonView from './components/ReportComparisonView.vue'
+import ComparisonView from './components/ComparisonView.vue'
+import RenovaveisComparisonView from './components/RenovaveisComparisonView.vue'
+import DadgnlComparisonView from './components/DadgnlComparisonView.vue'
 import { compareDeckSets, publicError } from './core/index.js'
 
 const emptyDeck = () => ({
@@ -111,7 +144,9 @@ export default {
   components: {
     TopBar,
     DropZone,
-    ReportComparisonView
+    ComparisonView,
+    RenovaveisComparisonView,
+    DadgnlComparisonView
   },
   data() {
     return {
@@ -163,7 +198,7 @@ export default {
             },
             {
               mode: this.activeCompareMode,
-              includeEqual: !this.showOnlyDifferences,
+              includeEqual: true,
               includeOutsideCommonHorizon: true
             }
           ),

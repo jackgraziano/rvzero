@@ -110,7 +110,11 @@ valor por estágio e é temporal.
 
 ## Comparação
 
-`src/utils/comparison.js` concentra:
+`src/core` concentra a produção das ocorrências do relatório público, incluindo
+alinhamento, igualdade e classificação semântica. O frontend não recalcula o
+estado de uma ocorrência.
+
+`src/utils/comparison.js` permanece como base para:
 
 - alinhamento por data ou estágio com índices `Map`;
 - igualdade semântica de objetos e coleções, ignorando o número do estágio
@@ -119,9 +123,14 @@ valor por estágio e é temporal.
   forma que uma inserção não desloque todas as linhas posteriores;
 - formatação comum e tratamento uniforme de `null`/`undefined`.
 
-`useTemporalComparison` atende os blocos com arrays. `StageArrayBlock.vue`
-renderiza TI, MP, FD, VE e RQ sem componentes duplicados.
-`useEntityTemporalComparison` atende RE, HQ e HV.
+`reportPresentation.js` converte as ocorrências versionadas em estruturas de
+apresentação, sem alterar sua classificação. Isso permite preservar os layouts
+especializados: CT continua agrupado por patamar; RE/HQ/HV preservam limites,
+fatores e coeficientes; arrays continuam como entidade × tempo.
+
+`useTemporalComparison` atende os blocos com arrays a partir das ocorrências da
+API. `StageArrayBlock.vue` renderiza TI, MP, FD, VE e RQ sem componentes
+duplicados. `useEntityTemporalComparison` atende RE, HQ e HV.
 `useBlockComparison` é a fonte única para ordenação, scroll, filtro e indicação
 de diferenças. `renovaveisComparison.js` concentra a associação de `PerIni` ao
 calendário e mantém períodos fora do horizonte compartilhado fora do conjunto

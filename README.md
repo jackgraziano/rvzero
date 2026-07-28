@@ -315,7 +315,8 @@ Conjunto de arquivos por revisão
   → alinhamento por data/estágio
   → comparação semântica
   → relatório público versionado
-  → componentes Vue
+  → adaptador de apresentação
+  → componentes Vue especializados por domínio
 ```
 
 Principais diretórios:
@@ -324,16 +325,24 @@ Principais diretórios:
 src/
 ├── core/             # API programática sem Vue ou DOM
 ├── components/
-│   ├── blocks/       # Componentes legados de blocos específicos
-│   └── ReportComparisonView.vue
-├── composables/      # Alinhamento e comportamento compartilhado
+│   ├── blocks/       # Tabelas especializadas de cada bloco
+│   ├── ComparisonView.vue
+│   ├── DadgnlComparisonView.vue
+│   └── RenovaveisComparisonView.vue
+├── composables/      # Ordenação, filtro, collapse e scroll
 └── utils/
     ├── parsers/      # Leitura posicional dos blocos
     ├── comparison.js
+    ├── reportPresentation.js
     └── temporal.js
 
 tests/                # Testes unitários e de regressão
 ```
+
+O frontend consome as ocorrências produzidas por `compareDeckSets()`, mas não
+as exibe como uma tabela genérica de campos. `reportPresentation.js` adapta o
+contrato semântico aos layouts de domínio: tabelas lado a lado, patamares
+agrupados, matrizes temporais e listas próprias de fatores e coeficientes.
 
 As decisões de domínio e os detalhes de cada bloco estão em
 [ARCHITECTURE.md](ARCHITECTURE.md).

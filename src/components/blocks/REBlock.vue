@@ -106,7 +106,8 @@ export default {
     dadger2Data: { type: Object, required: true },
     dadger2Name: { type: String, required: true },
     compareMode: { type: String, required: true },
-    showOnlyDifferences: { type: Boolean, required: true }
+    showOnlyDifferences: { type: Boolean, required: true },
+    occurrences: { type: Array, default: null }
   },
   setup(props) {
     const getEntityValue = record => record
@@ -133,12 +134,17 @@ export default {
         if (!first && !second) return []
 
         const onlyInOne = !first || !second
-        const limitsDiff = Boolean(
-          first && second && !semanticEqual(first.limites, second.limites)
-        )
-        const factorsDiff = Boolean(first && second && FACTOR_FIELDS.some(
-          field => !semanticEqual(first[field], second[field])
-        ))
+        const reportFields = temporal.occurrence?.fields
+        const limitsDiff = reportFields
+          ? Boolean(reportFields.limites?.changed)
+          : Boolean(
+              first && second && !semanticEqual(first.limites, second.limites)
+            )
+        const factorsDiff = reportFields
+          ? FACTOR_FIELDS.some(field => reportFields[field]?.changed)
+          : Boolean(first && second && FACTOR_FIELDS.some(
+              field => !semanticEqual(first[field], second[field])
+            ))
         const sameTemporality = temporal.dataExisteEmAmbos
 
         return [{

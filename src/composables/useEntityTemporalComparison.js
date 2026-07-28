@@ -3,6 +3,10 @@ import {
   collectUniqueDates,
   encontrarEstagioPorData
 } from '../utils/comparison.js'
+import {
+  entityTemporalRowsFromOccurrences,
+  temporalColumnsFromOccurrences
+} from '../utils/reportPresentation.js'
 
 export function useEntityTemporalComparison(
   props,
@@ -12,6 +16,13 @@ export function useEntityTemporalComparison(
   compareValues
 ) {
   const colunasTempo = computed(() => {
+    if (Array.isArray(props.occurrences)) {
+      return temporalColumnsFromOccurrences(
+        props.occurrences,
+        props.compareMode
+      )
+    }
+
     if (props.compareMode === 'data') {
       return collectUniqueDates(props.dadger1Data, props.dadger2Data)
         .map(data => ({ key: `data_${data}`, label: data, data }))
@@ -29,6 +40,14 @@ export function useEntityTemporalComparison(
   })
 
   const alignedData = computed(() => {
+    if (Array.isArray(props.occurrences)) {
+      return entityTemporalRowsFromOccurrences(
+        props.occurrences,
+        colunasTempo.value,
+        entityKey
+      )
+    }
+
     const records1 = props.dadger1Data[blockKey] ?? []
     const records2 = props.dadger2Data[blockKey] ?? []
     const entities = new Set([

@@ -92,6 +92,7 @@ import {
   alignByEstagio,
   hasDiff
 } from '../../utils/comparison.js'
+import { recordRowsFromOccurrences } from '../../utils/reportPresentation.js'
 import { useBlockComparison } from '../../composables/useBlockComparison.js'
 
 export default {
@@ -102,7 +103,8 @@ export default {
     dadger2Data: { type: Object, required: true },
     dadger2Name: { type: String, required: true },
     compareMode: { type: String, required: true },
-    showOnlyDifferences: { type: Boolean, required: true }
+    showOnlyDifferences: { type: Boolean, required: true },
+    occurrences: { type: Array, default: null }
   },
   setup(props) {
     const numberOfLoadLevels = computed(() => Math.max(
@@ -112,6 +114,32 @@ export default {
     const interchangeKey = record =>
       `${record.subsistema_de}\u0000${record.subsistema_para}`
     const alignedData = computed(() => {
+      if (Array.isArray(props.occurrences)) {
+        return recordRowsFromOccurrences(props.occurrences, {
+          mode: props.compareMode
+        }).map(row => {
+          const capacities1 = row.dadger1?.capacidades ?? []
+          const capacities2 = row.dadger2?.capacidades ?? []
+          return {
+            ...row,
+            capacityDifferences: Array.from(
+              { length: numberOfLoadLevels.value },
+              (_, index) => ({
+                de_para: hasDiff(
+                  capacities1[index]?.de_para,
+                  capacities2[index]?.de_para
+                ),
+                para_de: hasDiff(
+                  capacities1[index]?.para_de,
+                  capacities2[index]?.para_de
+                )
+              })
+            ),
+            flagDifference: row.diff_flag_penalidade
+          }
+        })
+      }
+
       const transform = (
         record1,
         record2,

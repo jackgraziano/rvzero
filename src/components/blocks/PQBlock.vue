@@ -98,6 +98,7 @@
 <script>
 import { computed } from 'vue'
 import { alignByEstagio, alignByData, hasDiff } from '../../utils/comparison.js'
+import { recordRowsFromOccurrences } from '../../utils/reportPresentation.js'
 import { useBlockComparison } from '../../composables/useBlockComparison.js'
 
 export default {
@@ -108,7 +109,8 @@ export default {
     dadger2Data: { type: Object, required: true },
     dadger2Name: { type: String, required: true },
     compareMode: { type: String, required: true },
-    showOnlyDifferences: { type: Boolean, required: true }
+    showOnlyDifferences: { type: Boolean, required: true },
+    occurrences: { type: Array, default: null }
   },
   setup(props) {
     const generationFields = [
@@ -118,6 +120,12 @@ export default {
     ]
     // Computed: dados alinhados (lógica específica do bloco PQ)
     const alignedData = computed(() => {
+      if (Array.isArray(props.occurrences)) {
+        return recordRowsFromOccurrences(props.occurrences, {
+          mode: props.compareMode
+        })
+      }
+
       const registros1 = props.dadger1Data.PQ
       const registros2 = props.dadger2Data.PQ
 

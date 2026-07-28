@@ -63,6 +63,7 @@ import {
   alignDadgnlNL,
   alignDadgnlTG
 } from '../utils/dadgnlComparison.js'
+import { recordRowsFromOccurrences } from '../utils/reportPresentation.js'
 
 const identityColumns = [
   { key: 'codigo_usina', label: 'Cód' },
@@ -103,7 +104,8 @@ export default {
     dadger1Data: { type: Object, default: null },
     dadger2Data: { type: Object, default: null },
     compareMode: { type: String, required: true },
-    showOnlyDifferences: { type: Boolean, required: true }
+    showOnlyDifferences: { type: Boolean, required: true },
+    occurrences: { type: Object, default: () => ({}) }
   },
   computed: {
     temporalColumn() {
@@ -149,6 +151,15 @@ export default {
       }
     },
     tgRows() {
+      if (Array.isArray(this.occurrences.TG)) {
+        return recordRowsFromOccurrences(this.occurrences.TG, {
+          mode: this.compareMode,
+          identityAliases: { codigoUsina: 'codigo_usina' },
+          temporalField: 'estagio',
+          temporalAbbreviation: 'Est',
+          includeSourceDate: true
+        })
+      }
       return alignDadgnlTG(
         this.dadgnl1Data,
         this.dadgnl2Data,
@@ -156,12 +167,33 @@ export default {
       )
     },
     gsRows() {
+      if (Array.isArray(this.occurrences.GS)) {
+        return recordRowsFromOccurrences(this.occurrences.GS, {
+          mode: this.compareMode,
+          temporalField: null
+        })
+      }
       return alignDadgnlGS(this.dadgnl1Data, this.dadgnl2Data)
     },
     nlRows() {
+      if (Array.isArray(this.occurrences.NL)) {
+        return recordRowsFromOccurrences(this.occurrences.NL, {
+          mode: this.compareMode,
+          temporalField: null
+        })
+      }
       return alignDadgnlNL(this.dadgnl1Data, this.dadgnl2Data)
     },
     glRows() {
+      if (Array.isArray(this.occurrences.GL)) {
+        return recordRowsFromOccurrences(this.occurrences.GL, {
+          mode: this.compareMode,
+          identityAliases: { codigoUsina: 'codigo_usina' },
+          temporalField: 'semana',
+          temporalAbbreviation: 'Sem',
+          includeSourceDate: true
+        })
+      }
       return alignDadgnlGL(
         this.dadgnl1Data,
         this.dadgnl2Data,
