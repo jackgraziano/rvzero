@@ -86,6 +86,9 @@
           calendário da revisão; todo o processamento ocorre localmente, sem
           envio dos arquivos a servidores.
         </p>
+        <p class="build-info">
+          Build no ar: <code>{{ buildSha }}</code>
+        </p>
         <a
           href="https://github.com/jackgraziano/rvzero"
           target="_blank"
@@ -115,6 +118,7 @@ export default {
   data() {
     return {
       showAbout: false,
+      buildSha: __SHASHA__,
       compareOptions: [
         {
           value: 'data',
@@ -354,6 +358,22 @@ export default {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.65;
+}
+
+.modal-content .build-info {
+  margin-top: 16px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.build-info code {
+  padding: 3px 6px;
+  color: var(--accent-strong);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-family: var(--font-mono);
 }
 
 .modal-content a {

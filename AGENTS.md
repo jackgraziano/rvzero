@@ -30,6 +30,9 @@ Antes de concluir uma alteração:
 5. Quando parsers ou temporalidade mudarem, valide também com pelo menos dois
    DADGERs reais de revisões e datas-base diferentes.
 
+Todos os commits devem ser criados com `git shasha`, nunca com `git commit`,
+para que `.shasha` identifique o build correspondente.
+
 ## Invariantes temporais
 
 - `DT` é a data de início do estágio 1.
